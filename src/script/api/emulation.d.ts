@@ -13,8 +13,8 @@ interface EmulationOptions {
   socketPeer?: {text: string} | {hex: string} | {file: string};
   /** Additional descriptors bound to the same stdin stream. */
   stdinDescriptors?: number[];
-  /** Virtual path-to-byte map; every opened path needs an entry. No host file access.
-   * Modes r/w/a/r+ and b variants preserve bytes without text translation. */
+  /** Virtual path-to-byte map; CRT streams need an entry. No host file access.
+   * Windows CreateFile can add paths. Windows CRT streams require binary modes. */
   files?: Record<string, number[]>;
   /** Process parameters for x86-64/i386 PE emulation; no host environment access. */
   windows?: {
@@ -24,6 +24,10 @@ interface EmulationOptions {
     imagePath?: string;
     /** Case-insensitive names; defaults to an empty environment. */
     environment?: Record<string, string>;
+    /** Key paths start with HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, HKEY_CLASSES_ROOT,
+     * HKEY_USERS or HKEY_CURRENT_CONFIG. Names use ASCII without case. String values
+     * contain UTF-16LE bytes, including any terminators; type is the REG_* number. */
+    registry?: Record<string, Record<string, {type: number; bytes: number[]}>>;
   };
   /** Main arguments including argv[0]; mutually exclusive with arguments. */
   argv?: string[];
@@ -56,7 +60,7 @@ interface EmulationOptions {
   };
 }
 interface EmulationReport {
-  /** File contents committed by fflush/fclose; no host writes. */
+  /** File contents committed by fflush/fclose or Windows WriteFile; no host writes. */
   files: Record<string, number[]>;
   /** Captured bytes decoded as UTF-8 with replacement for invalid sequences. */
   stdout: string;

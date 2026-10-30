@@ -15,7 +15,7 @@ pub(super) fn read_range(bytes: &[u8], slice_offset: u64, offset: u64, len: u64)
     bytes.get(start..end)
 }
 
-pub(super) fn bounded_bytes(image: &Image, address: u64, size: u64) -> Option<&[u8]> {
+pub(crate) fn bounded_bytes(image: &Image, address: u64, size: u64) -> Option<&[u8]> {
     let Some(section) = image.section_at(address) else {
         return None;
     };

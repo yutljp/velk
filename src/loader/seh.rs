@@ -39,7 +39,7 @@ fn code(image: &Image, address: u64) -> bool {
         && read_bytes(image, address, 1).is_some()
 }
 
-pub(super) fn exception_directory(image: &Image) -> Option<(u64, &[u8])> {
+pub(crate) fn exception_directory(image: &Image) -> Option<(u64, &[u8])> {
     let Ok(file) = object::read::pe::PeFile64::parse(image.bytes.as_slice()) else {
         return None;
     };

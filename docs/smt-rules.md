@@ -62,6 +62,10 @@ Windows virtual-memory page alignment has bit-vector checks for rounding starts
 down and ends up, with a negative control for missing the end adjustment. Concrete
 cases compare the checked helper with 128-bit arithmetic, including overflow.
 These checks do not prove the heap allocator or Windows API state transitions.
+UCRT `snprintf` checks prove that the copied prefix leaves room for a terminator
+at nonzero 32-bit and 64-bit capacities and never exceeds the formatted length.
+A negative control omits the terminator adjustment. Formatting, locale behavior,
+and memory validity are outside this arithmetic proof.
 
 The [inventory](../tests/smt_inventory.tsv) records grouped rewrite
 families, source locations, side conditions, applicable widths and current

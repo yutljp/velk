@@ -248,8 +248,26 @@ ntdll、kernel32、kernelbase、およびインポートした DLL のローダ�
 メインイメージの静的 TLS テンプレートとゼロ領域を用意してから、TLS コールバックを
 `DLL_PROCESS_ATTACH` で呼び出します。各エミュレーションで選択した関数の前に1回実行し、
 そのメモリー変更を結果に含めます。`TlsAlloc`、`TlsFree`、`TlsGetValue`、`TlsSetValue`
-は TEB の64スロットを扱います。追加のスレッドと DLL 初期化ルーチンには未対応です。
-スレッドとプロセス終了時の TLS コールバックは呼び出しません。
+は TEB の64スロットを扱います。DLL 初期化ルーチンには未対応です。
+`ExitProcess` は終了コードを記録する前に、メインイメージのコールバックを
+`DLL_PROCESS_DETACH` と非 NULL の予約引数で呼び出します。モデル化した CRT を読み込んだ
+場合、その前に CRT のファイルストリームをフラッシュして閉じます。終了後の CRT 標準入出力
+は出力せず、CRT が所有する Windows 標準ハンドルも閉じます。別に開いた Windows の
+ファイルハンドルは終了コールバック内でも使用できます。`exit` は先に `atexit` と `_onexit`
+のハンドラーを登録の逆順で呼び出します。直接の `ExitProcess` はこれらを呼び出しません。
+終了コールバック内の API 呼び出しは、失敗した書き込みも含めて `apiCalls` に残ります。
+選択した関数からの通常の
+復帰ではプロセスを終了せず、終了時のコールバックも実行しません。
+`CreateThread` は NULL のセキュリティー記述子、既定のスタックサイズ、ゼロの作成フラグに
+対応します。待機中のスレッドは、そのハンドルを `WaitForSingleObject` に `INFINITE` と
+ともに渡すと実行します。タイムアウトがゼロなら実行せずに待機中と返します。実行は逐次的です。
+各ワーカーは別のスタック、TEB、最終エラー値、静的 TLS テンプレート、動的 TLS スロットを
+持ちます。開始関数の前に `DLL_THREAD_ATTACH`、復帰または `ExitThread` の後に
+`DLL_THREAD_DETACH` でコールバックを呼び、予約引数は両方とも NULL です。
+`GetExitCodeThread` は完了まで `STILL_ACTIVE` を返します。有限時間の待機、スレッド内からの
+別スレッドの待機、待機中のスレッドハンドルのクローズ、初期スレッドからの `ExitThread`
+は診断を出して停止します。開始前のスレッドはプロセス終了時にコールバックを受けません。
+プロセス終了時のコールバック内の `ExitProcess` は診断を出して停止します。
 
 `GetCurrentProcessId` と `GetCurrentThreadId` は1000と1001を返します。プロセスとスレッドの
 疑似ハンドル、`ExitProcess`、TEB の最終エラー値をモデル化しています。`Sleep` は実際には
@@ -279,6 +297,18 @@ velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameter
 `apiCalls` は DLL 名付きの API 名と16進数のスカラー引数を実行順に記録します。
 CRT の可変引数関数は固定引数だけを記録し、シグネチャが不明な関数の引数配列は空です。
 インポートした msvcrt/ucrt の関数は、既存の C ライブラリーフックとその制限に従います。
+エクスポート表にはメモリー・文字列操作、割り当て、整数の書式付き入出力とファイルストリームの
+関数を含みます。`__acrt_iob_func` は UCRT の三つの標準ストリームを返します。
+UCRT の書式付き出力は `__stdio_common_vfprintf` と `__stdio_common_vsprintf`、
+入力は長さ制限のない NUL 終端文字列に対する `__stdio_common_vsscanf` で処理します。
+これらの関数は既定のロケールを使い、未対応のオプションビットを拒否します。
+文字列への出力は、切り詰めない場合の従来の終端オプションと、切り詰める場合の
+標準の `snprintf` オプションに対応します。
+`_crt_atexit` は UCRT の終了コールバックを登録します。モデルの UCRT エクスポート表には
+`printf`、`sprintf`、`sscanf`、`atexit` などのインラインラッパーを含めず、
+これらの名前のインポートはプロセスの初期化時に失敗します。
+Windows CRT のファイルストリームはバイナリーモードに限定します。テキスト変換、
+`strtol` の Windows データモデル、`realloc`、CRT の起動・即時終了関数には未対応です。
 
 `GetProcessHeap` は PEB に記録したプロセスヒープのハンドルを返します。`HeapAlloc`、
 `HeapReAlloc`、`HeapFree` はブロックのサイズを管理し、サイズ 0 の割り当ても扱います。
@@ -293,21 +323,96 @@ CRT の可変引数関数は固定引数だけを記録し、シグネチャが�
 合計 16 MiB の上限があります。`VirtualFree` はデコミットと元の割り当てアドレスを指定した
 予約全体の解放に対応し、別の解放アドレスでは未対応として停止します。
 再コミットしたページはゼロにします。`VirtualProtect` は一つの仮想予約内のコミット済み
-ページの保護を変更し、最初のページの以前の保護値を返します。`PAGE_NOACCESS`、
+ページの保護を変更し、最初のページの以前の保護値を返します。
+以前の保護値を受け取るポインターが null なら API の失敗を返し、その他の不正な
+出力ポインターでは API 境界でエミュレーションを停止します。`PAGE_NOACCESS`、
 `PAGE_READONLY`、`PAGE_READWRITE` と各実行属性付きの値について読み書きの権限を
 検査します。仮想領域のコード実行、イメージやヒープの保護変更、変更領域内の出力ポインター、
 ガードページ、その他の割り当て・保護フラグは未対応で、成功を返さず停止します。
 仕様は [HeapReAlloc](https://learn.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heaprealloc)
 と [VirtualAlloc](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc) を参照してください。
-文字列変換、コンソール・ファイル、レジストリー、SEH API は未実装です。
+`lstrlenA/W` はバイト数または UTF-16 コード単位数を数えます。孤立サロゲートも数え、
+NULL ポインターには 0 を返します。`MultiByteToWideChar` と `WideCharToMultiByte` は
+UTF-8（65001）と、CP_ACP（0）または 1252 の ASCII 入力に対応します。その他の
+コードページと非 ASCII の ANSI 変換は診断を出して停止します。明示した長さでは途中の
+NUL を保持し、長さ -1 では終端も含めます。出力容量 0 では必要な長さを返します。
+不正なフラグ・引数、容量不足、厳格な Unicode 検証の失敗は最終エラーを設定します。
+厳格な検証を指定しない場合、不正な UTF-8/UTF-16 を U+FFFD に置換します。仕様は
+[MultiByteToWideChar](https://learn.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-multibytetowidechar)
+と [WideCharToMultiByte](https://learn.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) を参照してください。
+`GetStdHandle` とプロセスパラメーターは仮想 stdin、stdout、stderr のハンドルを返します。
+`WriteFile`、`ReadFile`、`CreateFileA/W`、`CloseHandle` は `files` 上の同期ファイルを扱い、
+ハンドルを閉じた後は内容を CRT ストリームと共有できます。同じファイルを CRT と Windows の
+ハンドルで同時に開く場合は診断を出して停止します。読み取りはバイトを保持し、EOF では短い読み取り数を返し、
+各ハンドルの位置を進めます。書き込みは直ちにレポートに反映します。作成方法 1–5、
+汎用読み書きアクセス、読み書きの共有モードに対応します。パスは ASCII に限定し、大小文字を
+区別せず、スラッシュを同じ扱いにします。ホストへのアクセス、カレントディレクトリーの展開、
+ディレクトリー、セキュリティー記述子、非同期 I/O、シークには未対応です。未対応のアクセス、
+属性、共有フラグ、相対パス成分では診断を出して停止します。読み書きには処理数の出力ポインターが
+必要です。`WriteConsoleA/W` は仮想出力ハンドルへの ASCII または正しい UTF-16 を記録し、
+W の出力数は UTF-16 コード単位数です。仮想ハンドルはコンソールを表します。Wine との比較では
+リダイレクトした出力に `WriteFile` を使います。仕様は
+[CreateFile](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea) を参照してください。
+
+レジストリーの内容は `windows.registry` に、例えば
+`{"HKEY_CURRENT_USER\\Software\\Example":{"Count":{"type":4,"bytes":[37,0,0,0]}}}`
+と指定します。`HKEY_CLASSES_ROOT`、`HKEY_CURRENT_USER`、`HKEY_LOCAL_MACHINE`、
+`HKEY_USERS`、`HKEY_CURRENT_CONFIG` の五つのルートがあります。キー名と値名は ASCII に
+限定し、大小文字を区別しません。指定したパスの親キーも存在します。型は Windows の
+`REG_*` の番号で、データは生バイト列です。文字列型には UTF-16LE を使います。
+`RegOpenKeyExA/W`、`RegQueryValueExA/W`、`RegCloseKey` は既定のビューの読み取りに対応します。
+クエリーは型とバイト数を返し、容量不足には `ERROR_MORE_DATA` を返し、最終エラーを保持します。
+ANSI 文字列のクエリーは ASCII に限定します。書き込み、列挙、別のビュー、`RegGetValue`
+には未対応です。仕様は
+[RegQueryValueEx](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regqueryvalueexa) を参照してください。
+フィクスチャの `documented_registry` 関数は指定した DWORD を返します。
+
+```sh
+velk --emulate target/windows-emulation-fixtures/x86_64.registry.O0.exe documented_registry --emulation-options '{"windows":{"registry":{"HKEY_CURRENT_USER\\Software\\Example":{"Count":{"type":4,"bytes":[37,0,0,0]}}}}}' --json
+```
+
+メモリーの読み書きによるアクセス違反、整数のゼロ除算、`int3` は i386 の `fs:[0]` ハンドラーまたは x64 の
+`.pdata` ハンドラーにディスパッチします。ハンドラーは検索を続行するか、`CONTEXT` の
+整数・XMM レジスターと命令ポインターを変更して実行を再開できます。登録チェーンと
+アンワインド検索の上限は128フレームです。x64 の検索はバージョン1のスタック割り当て、
+保存した整数レジスター、フレームポインターに対応します。連鎖したアンワインドレコード、
+プロローグ・エピローグ内の例外、反復命令、スケールしない大きな割り当て、遠いオフセットの
+保存レジスター、XMM のアンワインド保存、マシンフレーム、入れ子の例外、言語固有のクリーンアップ・アンワインド
+ハンドラー、その他の disposition は診断を出して停止します。未モデル化のコンテキスト
+フィールド（フラグ、セグメントセレクター、デバッグレジスター、x87 状態など）の読み取りや
+変更も停止します。
+ディスパッチャーの仮想 `ContextRecord` は公開しません。フックへの不正なポインターは
+API 境界で停止し、DLL 内の例外位置を作りません。
+ディスパッチ前に未定義だったコンテキストのビットは、ハンドラーによる変更後も未定義として
+扱います。
+戻りアドレスの検索には呼び出し後の継続命令のアドレスを使います。継続命令が認識可能な
+x64 エピローグの先頭なら、そのフレームのハンドラーを呼びません。
 
 テストは両アーキテクチャを `-O0` と `-O2` でコンパイルし、プロセス状態、エクスポート
 経由の呼び出し、ヒープの内容、仮想メモリーの状態遷移、不正アクセスの拒否、および
 各実行インターフェースのレポートを検査します。ページの丸めには SMT 検査と具体的な
-オーバーフローのテストがあります。無視指定の `windows_matches_wine` テストは、
-プロセスとメモリーのフィクスチャの標準出力（メモリーのチェックサムを含む）と終了コードを
-Wine と比較します。`target/` 以下にプレフィックスと実行時ディレクトリーを初期化します。
-Wine のサーバーソケットも作成できる環境が必要です。
+オーバーフローのテストがあります。`windows_matches_wine` テストは、
+プロセス、メモリー、文字列、ファイル、レジストリー、CRT のフィクスチャの標準出力、標準エラー、
+終了コード、ファイルのバイト列を Wine と比較します。出力にはメモリーのチェックサムや変換結果を
+含みます。レジストリーを開くオプションのビット `1`、レジストリーキーとして開かれていない
+ハンドルのクローズ、直接指定した終端のないデータの取得は、個別のエミュレーションテストで検査します。
+[RegOpenKeyEx](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regopenkeyexa)
+で指定できるオプションはゼロまたは `REG_OPTION_OPEN_LINK` です。
+[RegCloseKey](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regclosekey)
+には開かれたキーのハンドルが必要です。
+[RegSetValueExW](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regsetvalueexw)
+では、文字列データとバイト数に終端文字を含める必要があります。共通のフィクスチャでは
+これらの入力を Wine に渡しません。Wine が Windows より寛容な、仕様で定められた
+文字変換の引数検査も比較から除外します。
+テキストの CRLF は正規化します。`target/` 以下にプレフィックスと実行時ディレクトリーを初期化します。
+Wine の起動を検査し、初期化や起動ができない環境では理由を出して比較をスキップします。
+プレフィックスではクラッシュデバッガーを無効にし、Wine の各呼び出しに45秒の制限を
+設けます。出力はファイルに記録します。
+テストは全フィクスチャの差分を集めてから失敗を報告します。
+実行ファイルと、その隣に保存した `.exe.stdout`、`.exe.status` を比較するには、
+`uv run tools/compare_windows_reference.py target/wine-reference` を実行します。
+全実行ファイルの標準出力と終了コードを検査し、すべての差分を報告します。
+レジストリーの保存結果に上記の三つの個別検査が含まれる場合は、共通の検査だけを比較します。
 
 C++ ストリームのモデルは、64 ビットの ELF と Mach-O を対象に、libstdc++ と libc++ の
 マングル名を認識します。`std::cout` への C 文字列、`std::string`、文字、十進整数、

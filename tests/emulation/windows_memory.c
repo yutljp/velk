@@ -87,7 +87,6 @@ EXPORT unsigned virtual_boundaries(void) {
     result &= VirtualProtect(p + 0x1000, 1, 4, &previous) && previous == 2;
     result &= VirtualProtect(p + 0x2000, 1, 4, &previous) && previous == 4;
     result &= !VirtualProtect(p, 1, 4, 0);
-    result &= !VirtualProtect(p, 1, 4, (u32 *)(word)1);
     result &= VirtualProtect(p, 1, 4, &previous) && previous == 2;
     result &= VirtualFree(p, 0, 0x4000) != 0;
     result &= !VirtualProtect(p, 1, 4, &previous);
@@ -121,6 +120,10 @@ EXPORT word heap_reallocation_failure(word size) {
 }
 EXPORT word virtual_oversize(word size) { return (word)VirtualAlloc(0, size, 0x3000, 4); }
 EXPORT word virtual_overflow(word address) { return (word)VirtualAlloc((void *)address, 0x1001, 0x3000, 4); }
+EXPORT unsigned virtual_invalid_output(word output) {
+    void *p = VirtualAlloc(0, 0x1000, 0x3000, 4);
+    return VirtualProtect(p, 1, 2, (u32 *)output);
+}
 EXPORT unsigned dynamic_heap(void) {
     handle module = GetModuleHandleA("kernelbase.dll");
     handle (CALL *heap)(void) = (handle (CALL *)(void))GetProcAddress(module, "GetProcessHeap");

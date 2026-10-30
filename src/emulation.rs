@@ -227,6 +227,19 @@ pub struct WindowsOptions {
     pub image_path: String,
     /// Environment variables, encoded as a sorted UTF-16 environment block.
     pub environment: BTreeMap<String, String>,
+    /// Registry key paths to value names, types and raw Windows bytes.
+    pub registry: BTreeMap<String, BTreeMap<String, RegistryValue>>,
+}
+
+/// A registry value stored as raw bytes; string types use UTF-16LE.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct RegistryValue {
+    /// Windows `REG_*` type number, for example 1 for `REG_SZ` or 4 for `REG_DWORD`.
+    #[serde(rename = "type")]
+    pub value_type: u32,
+    /// Stored bytes, including any string terminators.
+    pub bytes: Vec<u8>,
 }
 
 impl Default for WindowsOptions {
@@ -235,6 +248,7 @@ impl Default for WindowsOptions {
             command_line: "program.exe".to_owned(),
             image_path: "C:\\program.exe".to_owned(),
             environment: BTreeMap::new(),
+            registry: BTreeMap::new(),
         }
     }
 }

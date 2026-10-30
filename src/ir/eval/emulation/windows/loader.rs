@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::loader::{Format, Isa};
 
-use super::{APIS, CRT_APIS, Export, Module, Process, Runner, crt, kernel, module_name};
+use super::{Export, Module, Process, Runner, apis, crt, module_name};
 
 struct Headers {
     base: u64,
@@ -277,13 +277,15 @@ impl Runner<'_> {
         let mut exports = BTreeMap::new();
         for dll in dlls {
             let mut functions = names.remove(&dll).expect("DLL import names");
-            let table = if kernel(&dll) {
-                APIS
-            } else if crt(&dll) {
-                CRT_APIS
-            } else {
-                &[]
-            };
+            let table = apis(&dll);
+            if crt(&dll) && dll != "msvcrt.dll" {
+                for name in &functions {
+                    // rand is exported but has no deterministic model.
+                    if name != "rand" && !table.iter().any(|(export, _)| export == name) {
+                        return Err(format!("unavailable Windows export {dll}!{name}"));
+                    }
+                }
+            }
             for &(name, _) in table {
                 functions.insert(name.to_owned());
             }
@@ -352,6 +354,14 @@ impl Runner<'_> {
         self.setup_store(parameters, 0x100, 4);
         self.setup_store(parameters + 4, 0x100, 4);
         self.setup_store(parameters + 8, 1, 4);
+        for (index, handle) in super::io::STANDARD.into_iter().enumerate() {
+            let offset = if width == 8 { 0x20 } else { 0x18 };
+            self.setup_store(
+                parameters + offset + index as u64 * u64::from(width),
+                handle,
+                width,
+            );
+        }
         let teb = self
             .machine
             .strict_memory
@@ -469,13 +479,24 @@ impl Runner<'_> {
             environment_pointer,
             width,
         );
-        let callbacks = self.setup_static_tls(&header, teb)?;
+        let callbacks = self.setup_static_tls(header.tls, teb)?;
         let heap = self.setup_bytes(&[0; 64])?;
         self.setup_store(peb + if width == 8 { 0x30 } else { 0x18 }, heap, width);
         self.windows = Some(Process {
             modules,
             exports,
             callbacks,
+            detaching: false,
+            crt_closed: false,
+            crt_exiting: false,
+            exit_handlers: Vec::new(),
+            exception_active: false,
+            instruction_state: None,
+            tls_directory: header.tls,
+            threads: BTreeMap::new(),
+            active_thread: None,
+            teb,
+            next_thread_id: 1002,
             command_line: [command_ansi, command_wide],
             environment_bytes: environment,
             environment_blocks: BTreeSet::new(),
@@ -484,6 +505,12 @@ impl Runner<'_> {
             heap,
             heap_blocks: BTreeMap::new(),
             virtual_allocations: BTreeMap::new(),
+            file_handles: BTreeMap::new(),
+            standard_handles: [true; 3],
+            crt_output: [Vec::new(), Vec::new()],
+            crt_buffering: [None, None],
+            registry: super::registry::contents(&self.options.windows.registry)?,
+            registry_handles: BTreeMap::new(),
         });
         Ok(())
     }
@@ -571,8 +598,12 @@ impl Runner<'_> {
         Ok(exports)
     }
 
-    fn setup_static_tls(&mut self, header: &Headers, teb: u64) -> Result<Vec<u64>, String> {
-        let (directory, size) = header.tls;
+    pub(super) fn setup_static_tls(
+        &mut self,
+        tls: (u64, u64),
+        teb: u64,
+    ) -> Result<Vec<u64>, String> {
+        let (directory, size) = tls;
         if directory == 0 {
             return Ok(Vec::new());
         }
@@ -631,7 +662,9 @@ impl Runner<'_> {
         {
             return Err(format!("invalid PE TLS index at 0x{index:x}"));
         }
-        self.setup_store(index, 0, 4);
+        if self.windows.is_none() {
+            self.setup_store(index, 0, 4);
+        }
         self.setup_store(vector, data, width);
         self.setup_store(teb + u64::from(width) * 11, vector, width);
         let mut addresses = Vec::new();

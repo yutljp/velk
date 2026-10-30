@@ -281,8 +281,29 @@ The main image's static TLS template and zero-fill are initialized before its TL
 callbacks run with `DLL_PROCESS_ATTACH`. The callbacks run once per emulation,
 before the selected function, and their memory writes appear in the report.
 `TlsAlloc`, `TlsFree`, `TlsGetValue`, and `TlsSetValue` model 64 TEB slots.
-Additional threads and DLL initialization routines are unsupported.
-Thread and process-detach TLS callbacks are not invoked.
+DLL initialization routines are unsupported.
+`ExitProcess` runs the main image's callbacks with `DLL_PROCESS_DETACH` and a
+non-null reserved argument before recording the exit status. When a modeled CRT
+is loaded, its file streams are flushed and closed before these callbacks. CRT
+stdio calls after shutdown produce no output, and the standard Windows handles
+owned by the CRT are closed. Separate Windows file handles remain usable during
+detach. `exit` first calls `atexit` and `_onexit` handlers in reverse registration
+order; direct `ExitProcess` does not call those handlers. Detach-time API calls
+remain in `apiCalls`, including failed writes. An ordinary return
+from the selected function does not terminate the process or run detach callbacks.
+`CreateThread` supports a null security descriptor, default stack size, and zero
+creation flags. A pending thread runs when its handle is passed to
+`WaitForSingleObject` with `INFINITE`; a zero timeout reports a pending thread
+without running it. Execution is sequential. Each worker has a separate stack,
+TEB, last-error value, static TLS template, and dynamic TLS slots. Its callbacks
+receive `DLL_THREAD_ATTACH` before the start routine and `DLL_THREAD_DETACH` after
+the routine returns or calls `ExitThread`. Both callbacks have a null reserved
+argument. `GetExitCodeThread` reports `STILL_ACTIVE` until completion.
+Finite waits, nested thread waits, closing a pending thread handle, and
+`ExitThread` on the initial thread stop with a diagnostic. Threads that have not
+started do not receive callbacks on process termination.
+`ExitProcess` inside a process detach callback stops
+with a diagnostic.
 
 `GetCurrentProcessId` and `GetCurrentThreadId` return 1000 and 1001. Process and
 thread pseudo-handles, `ExitProcess`, and the TEB's last-error value are modeled.
@@ -313,7 +334,19 @@ velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameter
 `apiCalls` lists DLL-qualified names and hexadecimal scalar arguments in execution
 order. For variadic CRT functions, only fixed arguments are listed; unknown
 signatures have an empty argument list. Imported msvcrt/ucrt functions use the
-existing C library hooks and their documented limits.
+existing C library hooks and their documented limits. The export tables include
+memory/string and allocation functions, integer formatting/scanning functions,
+and file streams. `__acrt_iob_func` supplies UCRT's three standard streams.
+UCRT formatting uses `__stdio_common_vfprintf` and `__stdio_common_vsprintf`;
+scanning uses `__stdio_common_vsscanf` with an unbounded NUL-terminated input.
+These entry points require the default locale and reject unsupported option bits.
+The string formatter accepts legacy termination options for untruncated output
+and standard `snprintf` options for truncation.
+`_crt_atexit` registers UCRT exit callbacks. The modeled UCRT export table omits
+inline wrappers such as `printf`, `sprintf`, `sscanf`, and `atexit`; importing
+these names fails during process setup.
+Windows CRT file streams require binary modes; text translation, `strtol`'s
+Windows data model, `realloc`, CRT startup, and immediate termination functions are unsupported.
 
 `GetProcessHeap` returns the process-heap handle recorded in the PEB. `HeapAlloc`,
 `HeapReAlloc`, and `HeapFree` track block sizes; zero-size allocations are supported.
@@ -329,6 +362,8 @@ and unsupported heap flags stop with an error. Heap exceptions are unsupported.
 at the original allocation address; other release addresses stop as unsupported.
 Recommitted pages are zero-filled. `VirtualProtect` changes committed pages in a
 single virtual reservation and returns the first page's previous protection.
+A null previous-protection pointer returns an API failure; other invalid output
+pointers stop emulation at the API boundary.
 Read and write permissions are enforced for `PAGE_NOACCESS`, `PAGE_READONLY`,
 `PAGE_READWRITE` and their execute variants. Executing virtual-memory code,
 changing image/heap protections, output pointers within the changed region, guard
@@ -336,14 +371,93 @@ pages and other allocation/protection flags are unsupported. Unsupported modes
 stop; they do not report a successful operation. See the contracts for
 [HeapReAlloc](https://learn.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heaprealloc)
 and [VirtualAlloc](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc).
-String conversion, console/file, registry, and SEH APIs are not modeled.
+`lstrlenA/W` count bytes or UTF-16 code units, including unpaired surrogates;
+a null pointer returns zero. `MultiByteToWideChar` and `WideCharToMultiByte`
+support UTF-8 (65001) and ASCII input with CP_ACP (0) or 1252. Other code pages
+and non-ASCII ANSI conversion stop with a diagnostic. Explicit lengths preserve
+embedded NULs; length -1 includes the terminator. Zero output capacity queries
+the required size. Invalid flags, invalid parameters, insufficient capacity,
+and strict Unicode failures set last error. Without the strict flag, invalid
+UTF-8/UTF-16 is replaced with U+FFFD. See
+[MultiByteToWideChar](https://learn.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-multibytetowidechar)
+and [WideCharToMultiByte](https://learn.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte).
+`GetStdHandle` and the process parameters expose virtual stdin, stdout and stderr
+handles. `WriteFile`, `ReadFile`, `CreateFileA/W`, and `CloseHandle` support
+synchronous files over `files`, shared with CRT streams after closing their handles.
+Simultaneous CRT and Windows handles for the same file stop with a diagnostic.
+Reads preserve bytes,
+return short counts at EOF, and advance each handle's position. Writes are
+immediately visible in the report. File creation dispositions 1–5, generic read/write
+access, and read/write sharing are modeled. Paths require ASCII, compare without
+case, and treat slashes alike. There is no host access, current-directory expansion,
+directory model, security descriptor, asynchronous I/O, or file seeking. Unsupported
+access, attributes, sharing flags or relative path components stop with a diagnostic.
+Read/write calls require a count output pointer. `WriteConsoleA/W` capture ASCII or
+valid UTF-16 from the virtual output handles; the W count is in UTF-16 code units.
+These handles model consoles, whereas Wine comparisons use `WriteFile` for redirected
+output. See [CreateFile](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea).
+
+Supply registry contents in `windows.registry`, for example
+`{"HKEY_CURRENT_USER\\Software\\Example":{"Count":{"type":4,"bytes":[37,0,0,0]}}}`.
+The five roots `HKEY_CLASSES_ROOT`, `HKEY_CURRENT_USER`, `HKEY_LOCAL_MACHINE`,
+`HKEY_USERS`, and `HKEY_CURRENT_CONFIG` exist. Key/value names require ASCII and
+compare without case; parent keys of supplied paths also exist. Types are Windows
+`REG_*` numbers; data is raw bytes, with UTF-16LE for string types. `RegOpenKeyExA/W`,
+`RegQueryValueExA/W`, and `RegCloseKey` support read access in the default view.
+Queries report types and byte counts, return `ERROR_MORE_DATA` for short buffers,
+and preserve last error. ANSI string queries require ASCII. Registry writes,
+enumeration, alternate views and `RegGetValue` are unsupported. See
+[RegQueryValueEx](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regqueryvalueexa).
+The fixture's `documented_registry` function returns the supplied DWORD:
+
+```sh
+velk --emulate target/windows-emulation-fixtures/x86_64.registry.O0.exe documented_registry --emulation-options '{"windows":{"registry":{"HKEY_CURRENT_USER\\Software\\Example":{"Count":{"type":4,"bytes":[37,0,0,0]}}}}}' --json
+```
+
+Memory read/write access violations, integer division by zero, and `int3` dispatch to i386
+`fs:[0]` handlers or x64 `.pdata` handlers. Handlers may continue the search or
+resume execution by changing the integer/XMM registers and instruction pointer
+in `CONTEXT`. Registration chains and unwind searches are bounded to 128 frames.
+x64 searches support version-one stack allocation, saved integer registers and
+frame pointers. Chained unwind records, prologue/epilogue exceptions, repeated
+instructions, large unscaled allocations, far saved-register offsets, XMM unwind
+saves, machine frames,
+nested exceptions, language-specific cleanup/unwind handlers, and other handler
+dispositions stop with a diagnostic. Reads or changes to unmodeled context fields
+(including flags, segment selectors, debug registers, and x87 state) also stop.
+The dispatcher context's virtual `ContextRecord` is not exposed. Invalid hook
+pointers stop at the API boundary rather than synthesizing a DLL fault location.
+Context bits that were undefined before dispatch remain undefined after handler
+changes.
+Return addresses are searched at the continuation instruction. A handler is
+skipped when that continuation starts a recognized x64 epilogue.
 The Windows tests compile both architectures at `-O0` and `-O2`, check process
 state and export calls, heap contents, virtual-memory transitions and rejected
 accesses, and compare reports across the execution interfaces. Page alignment has
-SMT checks and concrete overflow cases. The ignored `windows_matches_wine` test
-compares process and memory fixtures' stdout (including memory checksums) and exit
-codes with Wine. It initializes a prefix and runtime directory under `target/`;
-Wine must also be able to create its server sockets.
+SMT checks and concrete overflow cases. The `windows_matches_wine` test
+compares process, memory, string, file, registry and CRT fixtures' stdout, stderr,
+exit codes and file bytes with Wine. Outputs include memory checksums and conversion
+results. Registry open option bit `1`, closing a handle not opened as a registry
+key, and querying directly supplied unterminated data have separate emulation tests.
+[RegOpenKeyEx](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regopenkeyexa)
+accepts zero or `REG_OPTION_OPEN_LINK`;
+[RegCloseKey](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regclosekey)
+requires an open key handle.
+[RegSetValueExW](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regsetvalueexw)
+requires string data and its byte count to include the terminator. The shared
+fixture does not pass those inputs to Wine. The comparison also skips documented
+conversion parameter checks where Wine is more permissive than Windows.
+It normalizes CRLF in captured text. It initializes a prefix
+and runtime directory under `target/` and probes startup; when Wine cannot initialize
+or start, it prints the reason and skips native comparisons.
+The prefix disables the crash debugger, and every Wine invocation has a 45-second
+timeout with file-backed output capture.
+All fixture differences are collected before the test fails.
+To compare saved executables with adjacent `.exe.stdout` and `.exe.status` files, run
+`uv run tools/compare_windows_reference.py target/wine-reference`.
+This checks stdout and exit status for every executable and reports every difference.
+For registry captures containing the three separate cases above, it compares only
+the shared cases.
 
 ## File streams
 

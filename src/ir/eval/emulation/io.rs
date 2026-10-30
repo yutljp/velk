@@ -4,6 +4,7 @@ mod arguments;
 mod files;
 mod formatting;
 mod scanning;
+mod ucrt;
 
 use arguments::Arguments;
 
@@ -326,7 +327,7 @@ impl Runner<'_> {
                         self.store_bytes(address(first, count)?, &[0])?;
                     }
                 } else {
-                    self.emit(stream, &bytes)?;
+                    self.windows_crt_write(stream, &bytes)?;
                 }
                 Ok(bytes.len() as u64)
             }
@@ -344,7 +345,7 @@ impl Runner<'_> {
                 if matches!(operation, Puts) {
                     bytes.push(b'\n');
                 }
-                self.emit(stream, &bytes)?;
+                self.windows_crt_write(stream, &bytes)?;
                 Ok(if matches!(operation, Putchar) {
                     u64::from(first as u8)
                 } else {
@@ -372,7 +373,11 @@ impl Runner<'_> {
                 };
                 self.check_memory_range(base, count, /* write */ false)?;
                 let bytes = self.bytes_at(base, Some(count as usize))?;
-                self.emit(stream, &bytes)?;
+                if matches!(operation, Fwrite) {
+                    self.windows_crt_write(stream, &bytes)?;
+                } else {
+                    self.emit(stream, &bytes)?;
+                }
                 Ok(result)
             }
             Read | Fread | Fgets | Gets => {

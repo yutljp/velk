@@ -41,6 +41,20 @@ pub(super) fn default_buffering_mode(format: crate::loader::Format) -> u32 {
     }
 }
 
+pub(super) const CRT_BUFFER_SIZE: usize = 512;
+
+pub(super) fn buffering_flush_length(mode: u32, buffered: &[u8], buffer_size: usize) -> usize {
+    match mode {
+        0 => buffered.len(),
+        4 if buffered.len() >= buffer_size => buffer_size,
+        64 => buffered
+            .iter()
+            .rposition(|&byte| byte == b'\n')
+            .map_or(0, |index| index + 1),
+        _ => 0,
+    }
+}
+
 pub(super) fn line_buffer_size(size: u64) -> Option<u64> {
     let size = size as u32 as i32;
     (size > 0).then_some((size - 1) as u64)
@@ -387,6 +401,22 @@ mod tests {
             }
             assert!(!valid_buffering_mode(2, format));
         }
+    }
+
+    #[test]
+    fn buffering_flushes_match_stdio_modes() {
+        assert_eq!(buffering_flush_length(0, b"text", CRT_BUFFER_SIZE), 4);
+        assert_eq!(buffering_flush_length(4, b"text", CRT_BUFFER_SIZE), 0);
+        let full = vec![b'x'; CRT_BUFFER_SIZE + 1];
+        assert_eq!(
+            buffering_flush_length(4, &full, CRT_BUFFER_SIZE),
+            CRT_BUFFER_SIZE
+        );
+        assert_eq!(buffering_flush_length(64, b"one\ntwo", CRT_BUFFER_SIZE), 4);
+        assert_eq!(
+            buffering_flush_length(64, b"no newline", CRT_BUFFER_SIZE),
+            0
+        );
     }
 
     #[test]

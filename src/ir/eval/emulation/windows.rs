@@ -1,13 +1,20 @@
 //! Deterministic Windows process state and user-mode API calls.
 
+mod crt;
+mod io;
 mod loader;
 mod memory;
+mod registry;
+pub(super) mod seh;
+mod strings;
+mod threads;
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::emulation::ApiCall;
 use crate::ir::{CallKind, Convention, Expr, RegRef};
 use crate::loader::Isa;
+use crate::ssa::ranges::Fact;
 
 use super::{Runner, Stop};
 
@@ -15,6 +22,17 @@ pub(super) struct Process {
     modules: Vec<Module>,
     exports: BTreeMap<u64, Export>,
     callbacks: Vec<u64>,
+    detaching: bool,
+    crt_closed: bool,
+    crt_exiting: bool,
+    exit_handlers: Vec<u64>,
+    exception_active: bool,
+    instruction_state: Option<seh::State>,
+    tls_directory: (u64, u64),
+    threads: BTreeMap<u64, threads::Thread>,
+    active_thread: Option<u64>,
+    teb: u64,
+    next_thread_id: u32,
     command_line: [u64; 2],
     environment_bytes: Vec<u8>,
     environment_blocks: BTreeSet<u64>,
@@ -23,6 +41,12 @@ pub(super) struct Process {
     heap: u64,
     heap_blocks: BTreeMap<u64, memory::HeapBlock>,
     virtual_allocations: BTreeMap<u64, memory::Allocation>,
+    file_handles: BTreeMap<u64, u32>,
+    standard_handles: [bool; 3],
+    crt_output: [Vec<u8>; 2],
+    crt_buffering: [Option<u32>; 2],
+    registry: BTreeMap<String, BTreeMap<String, crate::emulation::RegistryValue>>,
+    registry_handles: BTreeMap<u64, registry::Key>,
 }
 
 struct Module {
@@ -39,6 +63,13 @@ struct Export {
     name: String,
 }
 
+pub(super) enum TlsReason {
+    ProcessAttach,
+    ProcessDetach,
+    ThreadAttach,
+    ThreadDetach,
+}
+
 // These counts are also the sizes popped by the i386 stdcall entry points.
 const APIS: &[(&str, usize)] = &[
     ("GetModuleHandleA", 1),
@@ -51,6 +82,10 @@ const APIS: &[(&str, usize)] = &[
     ("GetCurrentProcess", 0),
     ("GetCurrentThread", 0),
     ("ExitProcess", 1),
+    ("CreateThread", 6),
+    ("ExitThread", 1),
+    ("WaitForSingleObject", 2),
+    ("GetExitCodeThread", 2),
     ("GetLastError", 0),
     ("SetLastError", 1),
     ("Sleep", 1),
@@ -76,9 +111,24 @@ const APIS: &[(&str, usize)] = &[
     ("VirtualAlloc", 4),
     ("VirtualProtect", 4),
     ("VirtualFree", 3),
+    ("lstrlenA", 1),
+    ("lstrlenW", 1),
+    ("MultiByteToWideChar", 6),
+    ("WideCharToMultiByte", 8),
+    ("GetStdHandle", 1),
+    ("WriteFile", 5),
+    ("ReadFile", 5),
+    ("WriteConsoleA", 5),
+    ("WriteConsoleW", 5),
+    ("CreateFileA", 7),
+    ("CreateFileW", 7),
+    ("CloseHandle", 1),
 ];
 
 const CRT_APIS: &[(&str, usize)] = &[
+    ("atexit", 1),
+    ("_onexit", 1),
+    ("exit", 1),
     ("printf", 1),
     ("fprintf", 2),
     ("sprintf", 2),
@@ -99,6 +149,85 @@ const CRT_APIS: &[(&str, usize)] = &[
     ("strcpy", 2),
     ("strncpy", 3),
     ("strchr", 2),
+    ("memchr", 3),
+    ("strcspn", 2),
+    ("atoi", 1),
+    ("strtol", 3),
+    ("toupper", 1),
+    ("tolower", 1),
+    ("vprintf", 2),
+    ("vfprintf", 3),
+    ("vsprintf", 3),
+    ("vsnprintf", 4),
+    ("scanf", 1),
+    ("fscanf", 2),
+    ("sscanf", 2),
+    ("vscanf", 2),
+    ("vfscanf", 3),
+    ("vsscanf", 3),
+    ("fopen", 2),
+    ("fclose", 1),
+    ("fflush", 1),
+    ("setbuf", 2),
+    ("setvbuf", 4),
+    ("fputs", 2),
+    ("fwrite", 4),
+    ("fread", 4),
+    ("fgets", 3),
+    ("getchar", 0),
+    ("feof", 1),
+    ("ferror", 1),
+];
+
+const UCRT_APIS: &[(&str, usize)] = &[
+    ("_crt_atexit", 1),
+    ("exit", 1),
+    ("__acrt_iob_func", 1),
+    ("__stdio_common_vfprintf", 5),
+    ("__stdio_common_vsprintf", 6),
+    ("__stdio_common_vsscanf", 6),
+    ("puts", 1),
+    ("putchar", 1),
+    ("malloc", 1),
+    ("calloc", 2),
+    ("free", 1),
+    ("memcpy", 3),
+    ("memmove", 3),
+    ("memset", 3),
+    ("memcmp", 3),
+    ("strlen", 1),
+    ("strnlen", 2),
+    ("strcmp", 2),
+    ("strncmp", 3),
+    ("strcpy", 2),
+    ("strncpy", 3),
+    ("strchr", 2),
+    ("memchr", 3),
+    ("strcspn", 2),
+    ("atoi", 1),
+    ("strtol", 3),
+    ("toupper", 1),
+    ("tolower", 1),
+    ("fopen", 2),
+    ("fclose", 1),
+    ("fflush", 1),
+    ("setbuf", 2),
+    ("setvbuf", 4),
+    ("fputs", 2),
+    ("fwrite", 4),
+    ("fread", 4),
+    ("fgets", 3),
+    ("getchar", 0),
+    ("feof", 1),
+    ("ferror", 1),
+];
+
+const REGISTRY_APIS: &[(&str, usize)] = &[
+    ("RegOpenKeyExA", 5),
+    ("RegOpenKeyExW", 5),
+    ("RegQueryValueExA", 6),
+    ("RegQueryValueExW", 6),
+    ("RegCloseKey", 1),
 ];
 
 fn kernel(dll: &str) -> bool {
@@ -109,15 +238,22 @@ fn crt(dll: &str) -> bool {
     matches!(dll, "msvcrt.dll" | "ucrtbase.dll") || dll.starts_with("api-ms-win-crt-")
 }
 
-fn signature(export: &Export) -> Option<usize> {
-    let table = if kernel(&export.dll) {
+fn apis(dll: &str) -> &'static [(&'static str, usize)] {
+    if kernel(dll) {
         APIS
-    } else if crt(&export.dll) {
+    } else if dll == "msvcrt.dll" {
         CRT_APIS
+    } else if crt(dll) {
+        UCRT_APIS
+    } else if dll == "advapi32.dll" {
+        REGISTRY_APIS
     } else {
-        return None;
-    };
-    table
+        &[]
+    }
+}
+
+fn signature(export: &Export) -> Option<usize> {
+    apis(&export.dll)
         .iter()
         .find(|(name, _)| *name == export.name)
         .map(|(_, count)| *count)
@@ -161,11 +297,7 @@ impl Runner<'_> {
     }
 
     fn last_error_address(&self) -> u64 {
-        self.machine
-            .strict_memory
-            .as_ref()
-            .expect("strict memory")
-            .tls_base
+        self.windows_teb()
             + if self.image.isa == Isa::X86_64 {
                 0x68
             } else {
@@ -184,32 +316,14 @@ impl Runner<'_> {
     }
 
     fn wide_string(&mut self, address: u64) -> Result<String, Stop> {
-        let mut units = Vec::new();
-        for offset in (0..super::HEAP_SIZE).step_by(2) {
-            let Some(at) = address.checked_add(offset) else {
-                return Err(Stop::Error("UTF-16 string address overflows".to_owned()));
-            };
-            let low = match self.read_byte(at) {
-                Ok(byte) => byte,
-                Err(stop) => return Err(stop),
-            };
-            let Some(high_address) = at.checked_add(1) else {
-                return Err(Stop::Error("UTF-16 string address overflows".to_owned()));
-            };
-            let high = match self.read_byte(high_address) {
-                Ok(byte) => byte,
-                Err(stop) => return Err(stop),
-            };
-            let unit = u16::from_le_bytes([low, high]);
-            if unit == 0 {
-                return match String::from_utf16(&units) {
-                    Ok(text) => Ok(text),
-                    Err(_) => Err(Stop::Error("invalid UTF-16 string".to_owned())),
-                };
-            }
-            units.push(unit);
+        let units = match self.wide_units(address, -1) {
+            Ok(units) => units,
+            Err(stop) => return Err(stop),
+        };
+        match String::from_utf16(&units[..units.len() - 1]) {
+            Ok(text) => Ok(text),
+            Err(_) => Err(Stop::Error("invalid UTF-16 string".to_owned())),
         }
-        Err(Stop::Error("UTF-16 string exceeds 16 MiB".to_owned()))
     }
 
     fn windows_string(&mut self, pointer: u64, wide: bool) -> Result<String, Stop> {
@@ -258,11 +372,17 @@ impl Runner<'_> {
         };
         let mut arguments = Vec::new();
         if let Some(count) = signature(&export) {
+            let wide_options =
+                self.image.isa == Isa::I386 && export.name.starts_with("__stdio_common_");
+            let count = count + usize::from(wide_options);
             for index in 0..count {
                 match self.argument(index, convention, kind) {
                     Ok(value) => arguments.push(value),
                     Err(stop) => return Some(Err(stop)),
                 }
+            }
+            if wide_options {
+                arguments[0] = arguments[0] as u32 as u64 | (arguments.remove(1) << 32);
             }
         }
         let qualified = format!("{}!{}", export.dll, export.name);
@@ -290,6 +410,12 @@ impl Runner<'_> {
                 slot.and_then(|slot| self.options.call_returns.get(&crate::addr::format(slot)))
             });
         let overridden = override_value.is_some();
+        if !overridden
+            && signature(&export).is_some()
+            && let Err(stop) = self.windows_check_teb()
+        {
+            return Some(Err(stop));
+        }
         let result = if let Some(word) = override_value {
             match word.value() {
                 Ok(value) => Ok(value),
@@ -297,11 +423,62 @@ impl Runner<'_> {
             }
         } else if kernel(&export.dll) && signature(&export).is_some() {
             self.windows_api(&export.name, &arguments)
-        } else if crt(&export.dll) {
-            match super::hooks::find(&export.name) {
-                Some(hook) => self.hook(hook, convention, kind, depth),
-                None if self.options.skip_calls => Ok(0),
-                None => Err(Stop::Error(format!("unhandled Windows API {qualified}"))),
+        } else if export.dll == "advapi32.dll" && signature(&export).is_some() {
+            self.windows_registry_api(&export.name, &arguments)
+        } else if crt(&export.dll) && signature(&export).is_some() {
+            if let Some(result) = self.windows_crt_lifecycle(&export.name, &arguments) {
+                result
+            } else if export.name.starts_with("__stdio_common_") {
+                self.windows_ucrt_io(&export.name, &arguments)
+            } else if export.name == "__acrt_iob_func" {
+                let index = arguments[0] as u32 as usize;
+                if index >= self.streams.len() {
+                    Err(Stop::Error("__acrt_iob_func index exceeds 2".to_owned()))
+                } else if self.streams[index] != 0 {
+                    Ok(self.streams[index])
+                } else {
+                    let stream = self.allocate(1);
+                    if stream == 0 {
+                        Err(Stop::Error("CRT stream allocation failed".to_owned()))
+                    } else {
+                        self.streams[index] = stream;
+                        Ok(stream)
+                    }
+                }
+            } else if export.name == "fopen" {
+                let path = match self.windows_string(arguments[0], /* wide */ false) {
+                    Ok(path) => io::path_key(&path),
+                    Err(stop) => return Some(Err(stop)),
+                };
+                for &handle in self.windows_state().file_handles.keys() {
+                    if io::path_key(&self.files.streams[&handle].path) == path {
+                        return Some(Err(Stop::Error(
+                            "simultaneous CRT and Windows file handles are unsupported".to_owned(),
+                        )));
+                    }
+                }
+                let mode = match self.bytes_at(arguments[1], None) {
+                    Ok(mode) => mode,
+                    Err(stop) => return Some(Err(stop)),
+                };
+                if !mode.contains(&b'b') {
+                    Err(Stop::Error(
+                        "Windows CRT file streams require binary mode".to_owned(),
+                    ))
+                } else {
+                    self.hook(
+                        super::hooks::Hook::Io(super::io::Operation::Fopen),
+                        convention,
+                        kind,
+                        depth,
+                    )
+                }
+            } else {
+                match super::hooks::find(&export.name) {
+                    Some(hook) => self.hook(hook, convention, kind, depth),
+                    None if self.options.skip_calls => Ok(0),
+                    None => Err(Stop::Error(format!("unhandled Windows API {qualified}"))),
+                }
             }
         } else if self.options.skip_calls {
             Ok(0)
@@ -310,6 +487,12 @@ impl Runner<'_> {
         };
         let value = match result {
             Ok(value) => value,
+            Err(Stop::Exception(exception)) => {
+                return Some(Err(Stop::Error(format!(
+                    "Windows API {qualified}: {}",
+                    exception.message
+                ))));
+            }
             Err(stop) => return Some(Err(stop)),
         };
         self.external_result(
@@ -388,6 +571,11 @@ impl Runner<'_> {
         let width = crate::arch::pointer_bytes(self.image.isa);
         let mask = crate::ir::semantics::mask(u32::from(width) * 8);
         match name {
+            "GetStdHandle" | "WriteFile" | "ReadFile" | "WriteConsoleA" | "WriteConsoleW"
+            | "CreateFileA" | "CreateFileW" | "CloseHandle" => self.windows_io(name, args),
+            "lstrlenA" | "lstrlenW" | "MultiByteToWideChar" | "WideCharToMultiByte" => {
+                self.windows_string_api(name, args)
+            }
             "GetProcessHeap" => Ok(self.windows_state().heap),
             "HeapAlloc" | "HeapReAlloc" | "HeapFree" => self.windows_heap(name, args),
             "VirtualAlloc" | "VirtualProtect" | "VirtualFree" => {
@@ -446,18 +634,14 @@ impl Runner<'_> {
                 }
             }
             "GetCurrentProcessId" => Ok(1000),
-            "GetCurrentThreadId" => Ok(1001),
+            "GetCurrentThreadId" => Ok(self
+                .machine
+                .load(self.windows_teb() + u64::from(width) * 9, width)),
             "GetCurrentProcess" => Ok(mask),
             "GetCurrentThread" => Ok(mask - 1),
-            "ExitProcess" => {
-                self.assign_fact(
-                    RegRef {
-                        index: crate::arch::RETURN,
-                        width: 32,
-                    },
-                    crate::ssa::ranges::Fact::constant(u64::from(args[0] as u32)),
-                );
-                Err(Stop::Exit)
+            "ExitProcess" => self.windows_terminate(args[0] as u32),
+            "CreateThread" | "ExitThread" | "WaitForSingleObject" | "GetExitCodeThread" => {
+                self.windows_thread_api(name, args)
             }
             "GetLastError" => {
                 let value = self.machine.load(self.last_error_address(), 4);
@@ -591,6 +775,21 @@ impl Runner<'_> {
                 self.windows_state_mut().tls_used[index] = true;
                 let address = self.tls_slot(index);
                 self.machine.store(address, 0, width);
+                let main_teb = self
+                    .machine
+                    .strict_memory
+                    .as_ref()
+                    .expect("strict memory")
+                    .tls_base;
+                if main_teb != self.windows_teb() {
+                    self.machine.store(
+                        main_teb
+                            + if width == 8 { 0x1480 } else { 0xe10 }
+                            + index as u64 * u64::from(width),
+                        0,
+                        width,
+                    );
+                }
                 Ok(index as u64)
             }
             "TlsFree" | "TlsSetValue" | "TlsGetValue" => {
@@ -618,11 +817,7 @@ impl Runner<'_> {
     }
 
     fn tls_slot(&self, index: usize) -> u64 {
-        self.machine
-            .strict_memory
-            .as_ref()
-            .expect("strict memory")
-            .tls_base
+        self.windows_teb()
             + if self.image.isa == Isa::X86_64 {
                 0x1480
             } else {
@@ -631,47 +826,103 @@ impl Runner<'_> {
             + index as u64 * u64::from(crate::arch::pointer_bytes(self.image.isa))
     }
 
-    pub(super) fn windows_callbacks(&mut self) -> Result<(), Stop> {
+    fn windows_teb(&self) -> u64 {
+        self.machine.register(if self.image.isa == Isa::X86_64 {
+            crate::arch::x86::GS_BASE
+        } else {
+            crate::arch::x86::FS_BASE
+        })
+    }
+
+    fn windows_check_teb(&self) -> Result<(), Stop> {
+        let teb = self.windows_teb();
+        if teb != self.windows_state().teb {
+            return Err(Stop::Error(format!("invalid Windows TEB at 0x{teb:x}")));
+        }
+        match self.check_memory_range(teb, 0x2000, /* write */ false) {
+            Ok(()) => Ok(()),
+            Err(stop) => Err(Stop::Error(format!(
+                "invalid Windows TEB at 0x{teb:x}: {stop:?}"
+            ))),
+        }
+    }
+
+    pub(super) fn windows_invoke(
+        &mut self,
+        callback: u64,
+        arguments: &[u64],
+        convention: Convention,
+    ) -> Result<u64, Stop> {
+        let convention = if self.image.isa == Isa::X86_64 {
+            Convention::Win64
+        } else {
+            convention
+        };
+        let registers = self.machine.registers.clone();
+        let facts = self.facts.clone();
+        let address = self.address;
+        let cleanup = self.return_cleanup;
+        let width = crate::arch::pointer_bytes(self.image.isa);
+        let sp = crate::arch::stack_pointer(self.image.isa);
+        let Some(stack) = self.machine.register(sp).checked_sub(0x100) else {
+            return Err(Stop::Error("Windows callback stack underflows".to_owned()));
+        };
+        let stack = stack & !15;
+        self.assign_fact(
+            RegRef {
+                index: sp,
+                width: width * 8,
+            },
+            Fact::constant(stack),
+        );
+        for (index, &value) in arguments.iter().enumerate() {
+            if let Some(&register) = convention.arguments().get(index) {
+                self.assign_fact(
+                    RegRef {
+                        index: register,
+                        width: width * 8,
+                    },
+                    Fact::constant(value),
+                );
+            } else {
+                let offset = if width == 8 {
+                    32 + (index - 4) * 8
+                } else {
+                    index * 4
+                };
+                self.machine.store(stack + offset as u64, value, width);
+            }
+        }
+        if let Err(stop) = self.call(callback, convention, CallKind::Invoke, 0) {
+            return Err(stop);
+        }
+        let value = self.machine.register(crate::arch::RETURN);
+        self.machine.registers = registers;
+        self.facts = facts;
+        self.address = address;
+        self.return_cleanup = cleanup;
+        Ok(value)
+    }
+
+    pub(super) fn windows_callbacks(&mut self, reason: TlsReason) -> Result<(), Stop> {
         let Some(state) = &self.windows else {
             return Ok(());
         };
         let callbacks = state.callbacks.clone();
         let base = state.modules[0].base;
-        let registers = self.machine.registers.clone();
-        let facts = self.facts.clone();
-        let address = self.address;
-        let width = crate::arch::pointer_bytes(self.image.isa);
-        let sp = crate::arch::stack_pointer(self.image.isa);
-        let stack = self.machine.register(sp).saturating_sub(0x100) & !15;
+        let (reason, reserved) = match reason {
+            TlsReason::ProcessAttach => (1, 0),
+            TlsReason::ProcessDetach => (0, 1),
+            TlsReason::ThreadAttach => (2, 0),
+            TlsReason::ThreadDetach => (3, 0),
+        };
         for callback in callbacks {
-            self.machine.registers = registers.clone();
-            self.facts = facts.clone();
-            self.machine.registers.insert(sp, stack);
-            let convention = if width == 8 {
-                Convention::Win64
-            } else {
-                Convention::Stdcall
-            };
-            for (index, value) in [base, 1, 0].into_iter().enumerate() {
-                if let Some(&register) = convention.arguments().get(index) {
-                    self.machine.assign(
-                        RegRef {
-                            index: register,
-                            width: width * 8,
-                        },
-                        value,
-                    );
-                } else {
-                    self.machine.store(stack + index as u64 * 4, value, 4);
-                }
-            }
-            if let Err(stop) = self.call(callback, convention, CallKind::Invoke, 0) {
+            if let Err(stop) =
+                self.windows_invoke(callback, &[base, reason, reserved], Convention::Stdcall)
+            {
                 return Err(stop);
             }
         }
-        self.machine.registers = registers;
-        self.facts = facts;
-        self.address = address;
         Ok(())
     }
 }

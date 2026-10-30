@@ -231,14 +231,13 @@ impl Runner<'_> {
             if args[3] == 0 {
                 return self.windows_failure(998);
             }
-            if self
-                .check_memory_range(args[3], 4, /* write */ true)
-                .is_err()
-            {
-                // An invalid output pointer is an API failure, not a guest memory access.
-                return self.windows_failure(998);
+            if let Err(stop) = self.check_memory_range(args[3], 4, /* write */ true) {
+                return Err(Stop::Error(format!(
+                    "VirtualProtect: invalid output pointer 0x{:x}: {stop:?}",
+                    args[3]
+                )));
             }
-            if args[3] < end && args[3] + 4 > start {
+            if args[3] < end && args[3].saturating_add(4) > start {
                 return Err(Stop::Error(
                     "VirtualProtect output in the changed region is unsupported".to_owned(),
                 ));

@@ -78,6 +78,9 @@ enum Stop {
     UnpackAddress,
     WrittenCode,
     Error(String),
+    Exception(windows::seh::Exception),
+    Resume(u64),
+    ThreadExit(u32),
 }
 
 #[derive(Clone, Copy)]
@@ -238,21 +241,23 @@ fn run_with_recovery(
         }
     }
     let mut files = options.files.clone();
-    let tracer_process_id = if options.anti_analysis.debugger_present {
-        options.anti_analysis.tracer_process_id
-    } else {
-        0
-    };
-    let status = format!(
-        "Name:\tprogram\nState:\tR (running)\nPid:\t1000\nPPid:\t{}\nTracerPid:\t{}\nUid:\t1000\t1000\t1000\t1000\nGid:\t1000\t1000\t1000\t1000\n",
-        options.anti_analysis.parent_process_id, tracer_process_id
-    );
-    files
-        .entry("/proc/self/status".to_owned())
-        .or_insert_with(|| status.into_bytes());
-    files.entry("/proc/self/maps".to_owned()).or_insert_with(|| {
+    if image.format != crate::loader::Format::Pe {
+        let tracer_process_id = if options.anti_analysis.debugger_present {
+            options.anti_analysis.tracer_process_id
+        } else {
+            0
+        };
+        let status = format!(
+            "Name:\tprogram\nState:\tR (running)\nPid:\t1000\nPPid:\t{}\nTracerPid:\t{}\nUid:\t1000\t1000\t1000\t1000\nGid:\t1000\t1000\t1000\t1000\n",
+            options.anti_analysis.parent_process_id, tracer_process_id
+        );
+        files
+            .entry("/proc/self/status".to_owned())
+            .or_insert_with(|| status.into_bytes());
+        files.entry("/proc/self/maps".to_owned()).or_insert_with(|| {
         b"00400000-00401000 r-xp 00000000 00:00 0 [program]\n7fff0000-80000000 rw-p 00000000 00:00 0 [stack]\n".to_vec()
     });
+    }
     let mut runner = Runner {
         files: match super::stdio::Files::new(files) {
             Ok(files) => files,
@@ -336,7 +341,7 @@ fn run_with_recovery(
             runner.machine.store(stack, 0, width);
         }
     }
-    let stopped = match runner.windows_callbacks() {
+    let stopped = match runner.windows_callbacks(windows::TlsReason::ProcessAttach) {
         Ok(()) => runner.execute(start, 0),
         Err(stop) => stop,
     };
@@ -552,6 +557,21 @@ impl Runner<'_> {
                 "error",
                 Some(format!("instruction 0x{:x}: {error}", self.address)),
             ),
+            Stop::Exception(exception) => (
+                "error",
+                Some(format!(
+                    "instruction 0x{:x}: unhandled Windows exception 0x{:08x}: {}",
+                    self.address, exception.code, exception.message
+                )),
+            ),
+            Stop::Resume(address) => (
+                "error",
+                Some(format!("unhandled Windows continuation at 0x{address:x}")),
+            ),
+            Stop::ThreadExit(code) => (
+                "error",
+                Some(format!("unhandled Windows thread exit {code}")),
+            ),
         };
         if self.image.isa == Isa::Arm32 {
             let pc = if reason == "return" {
@@ -615,9 +635,11 @@ impl Runner<'_> {
             }
         };
         let mut files = self.files.committed.clone();
-        for path in ["/proc/self/status", "/proc/self/maps"] {
-            if !self.options.files.contains_key(path) {
-                files.remove(path);
+        if self.image.format != crate::loader::Format::Pe {
+            for path in ["/proc/self/status", "/proc/self/maps"] {
+                if !self.options.files.contains_key(path) {
+                    files.remove(path);
+                }
             }
         }
         let windows_exports = self.windows_exports();
@@ -665,15 +687,16 @@ impl Runner<'_> {
     }
 
     fn memory_error(&self) -> std::result::Result<(), Stop> {
-        match self
-            .machine
-            .strict_memory
-            .as_ref()
-            .expect("strict memory")
-            .fault
-            .borrow_mut()
-            .take()
-        {
+        let memory = self.machine.strict_memory.as_ref().expect("strict memory");
+        let access = memory.fault_access.borrow_mut().take();
+        match memory.fault.borrow_mut().take() {
+            Some(error) if self.windows.is_some() && access.is_some() => {
+                Err(Stop::Exception(windows::seh::Exception {
+                    code: 0xc0000005,
+                    access,
+                    message: error,
+                }))
+            }
             Some(error) => Err(Stop::Error(error)),
             None => Ok(()),
         }
@@ -699,6 +722,7 @@ impl Runner<'_> {
         }
         match result {
             Ok(value) => Ok(value),
+            Err("division by zero") if self.windows.is_some() => Err(self.windows_divide_fault()),
             Err(error) => Err(Stop::Error(error.to_owned())),
         }
     }
@@ -768,6 +792,34 @@ impl Runner<'_> {
     }
 
     fn execute(&mut self, address: u64, depth: usize) -> Stop {
+        let stack = self
+            .machine
+            .register(crate::arch::stack_pointer(self.image.isa));
+        let mut target = address;
+        loop {
+            let stopped = self.execute_code(target, depth);
+            let stopped = match stopped {
+                Stop::Exception(exception) => match self.windows_exception(exception) {
+                    Ok(target) => Stop::Resume(target),
+                    Err(stop) => stop,
+                },
+                stop => stop,
+            };
+            match stopped {
+                Stop::Resume(address)
+                    if self
+                        .machine
+                        .register(crate::arch::stack_pointer(self.image.isa))
+                        <= stack =>
+                {
+                    target = address;
+                }
+                stop => return stop,
+            }
+        }
+    }
+
+    fn execute_code(&mut self, address: u64, depth: usize) -> Stop {
         if let Some(recovery) = &mut self.recovery {
             recovery.depth = depth;
         }
@@ -823,6 +875,7 @@ impl Runner<'_> {
                     if let Some(stop) = self.unpack_stop(*address) {
                         return stop;
                     }
+                    self.windows_instruction_state();
                     if self.ends.contains(address) {
                         return Stop::End;
                     }
@@ -1032,6 +1085,17 @@ impl Runner<'_> {
                 }
             }
             Stmt::Trap { .. } => {
+                if self.windows.is_some()
+                    && self
+                        .x86_instruction()
+                        .is_ok_and(|instruction| instruction.mnemonic() == iced_x86::Mnemonic::Int3)
+                {
+                    return Err(Stop::Exception(windows::seh::Exception {
+                        code: 0x80000003,
+                        access: None,
+                        message: "breakpoint".to_owned(),
+                    }));
+                }
                 let handler = self.signal_handlers.get(&5).copied();
                 let breakpoint = self.image.format == crate::loader::Format::Elf
                     && self.image.isa == Isa::X86_64

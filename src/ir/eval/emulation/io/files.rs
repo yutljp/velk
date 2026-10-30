@@ -132,6 +132,9 @@ impl Runner<'_> {
                 Ok(Some(token))
             }
             Fflush => {
+                if self.windows.is_some() {
+                    self.windows_flush_crt(token)?;
+                }
                 if !standard {
                     self.files.flush(token).map_err(error)?;
                 }
@@ -143,6 +146,11 @@ impl Runner<'_> {
                     return Err(error("setbuf with a caller-owned buffer is unsupported"));
                 }
                 let mode = crate::ir::eval::stdio::default_buffering_mode(self.image.format);
+                if standard && self.windows.is_some() {
+                    let Some(true) = self.windows_set_crt_buffering(token, mode) else {
+                        return Ok(Some(u64::from(u32::MAX)));
+                    };
+                }
                 self.files
                     .set_buffering(token, standard, mode, self.image.format)
                     .map_err(error)?;
@@ -152,6 +160,11 @@ impl Runner<'_> {
                 let _buffer = args.next(self, width)?;
                 let mode = args.next(self, 4)? as u32;
                 let _size = args.next(self, width)?;
+                if standard && self.windows.is_some() {
+                    let Some(true) = self.windows_set_crt_buffering(token, mode) else {
+                        return Ok(Some(u64::from(u32::MAX)));
+                    };
+                }
                 self.files
                     .set_buffering(token, standard, mode, self.image.format)
                     .map(Some)

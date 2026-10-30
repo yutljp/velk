@@ -41,7 +41,10 @@ pub(crate) struct Memory<'a> {
     writes: RefCell<BTreeMap<u64, Box<[u64; PAGE_WORDS]>>>,
     written_count: Cell<usize>,
     pub(crate) fault: RefCell<Option<String>>,
+    pub(crate) fault_access: RefCell<Option<(u64, bool)>>,
     regions: Vec<Region>,
+    restricted_reads: Vec<(u64, u64)>,
+    restricted_writes: Vec<(u64, u64)>,
     watched_reads: Vec<(u64, u64, String)>,
     pub(crate) observed_reads: RefCell<BTreeSet<String>>,
 }
@@ -155,7 +158,10 @@ impl<'a> Memory<'a> {
             writes: RefCell::new(BTreeMap::new()),
             written_count: Cell::new(0),
             fault: RefCell::new(None),
+            fault_access: RefCell::new(None),
             regions: Vec::new(),
+            restricted_reads: Vec::new(),
+            restricted_writes: Vec::new(),
             watched_reads: Vec::new(),
             observed_reads: RefCell::new(BTreeSet::new()),
         })
@@ -267,6 +273,16 @@ impl<'a> Memory<'a> {
             .push((address, address.saturating_add(size), name.to_owned()));
     }
 
+    pub(crate) fn restrict_read(&mut self, address: u64, size: u64) {
+        self.restricted_reads
+            .push((address, address.saturating_add(size)));
+    }
+
+    pub(crate) fn restrict_write(&mut self, address: u64, size: u64) {
+        self.restricted_writes
+            .push((address, address.saturating_add(size)));
+    }
+
     fn zero_area(&self, address: u64) -> bool {
         (self.tls_base..self.tls_end).contains(&address)
             || (self.heap_base..self.heap_end).contains(&address)
@@ -292,7 +308,25 @@ impl<'a> Memory<'a> {
             self.fail(format!("memory range overflows at 0x{address:x}"));
             return false;
         };
+        if write && size != 0 {
+            for &(start, limit) in &self.restricted_writes {
+                if address < limit && end > start {
+                    self.fail(format!(
+                        "write to unsupported Windows CONTEXT field at 0x{address:x}"
+                    ));
+                    return false;
+                }
+            }
+        }
         if !write && size != 0 {
+            for &(start, limit) in &self.restricted_reads {
+                if address < limit && end > start {
+                    self.fail(format!(
+                        "unsupported Windows CONTEXT field at 0x{address:x}"
+                    ));
+                    return false;
+                }
+            }
             for (start, limit, name) in &self.watched_reads {
                 if address < *limit && end > *start {
                     self.observed_reads.borrow_mut().insert(name.clone());
@@ -314,6 +348,7 @@ impl<'a> Memory<'a> {
                     None => !write || !region.read_only,
                 };
                 if !permitted {
+                    self.access_failure(at, write);
                     self.fail(format!(
                         "{} protected mapping at 0x{at:x}",
                         if write { "write to" } else { "read from" }
@@ -340,6 +375,7 @@ impl<'a> Memory<'a> {
                 continue;
             }
             let Some(section) = self.mapping_at(at) else {
+                self.access_failure(at, write);
                 self.fail(format!(
                     "unmapped memory {} at 0x{at:x}",
                     if write { "write" } else { "read" }
@@ -351,6 +387,7 @@ impl<'a> Memory<'a> {
                 && (section.read_only
                     || (self.image.load_segments.is_empty() && section.executable))
             {
+                self.access_failure(at, write);
                 self.fail(format!(
                     "write to protected section {} at 0x{at:x}",
                     section.name
@@ -366,6 +403,12 @@ impl<'a> Memory<'a> {
             at = end.min(limit);
         }
         true
+    }
+
+    fn access_failure(&self, address: u64, write: bool) {
+        if self.fault.borrow().is_none() {
+            *self.fault_access.borrow_mut() = Some((address, write));
+        }
     }
 
     pub(crate) fn fail(&self, error: String) {
@@ -461,6 +504,10 @@ impl<'a> Memory<'a> {
         if !self.check(address, 1, /* write */ false) {
             return 0;
         }
+        self.initial_byte(address)
+    }
+
+    fn initial_byte(&self, address: u64) -> u8 {
         if self.zero_area(address)
             || self
                 .regions
@@ -500,7 +547,7 @@ impl<'a> Memory<'a> {
             let initial = before
                 .get(&address)
                 .copied()
-                .unwrap_or_else(|| self.byte(address));
+                .unwrap_or_else(|| self.initial_byte(address));
             if initial != byte {
                 changed.insert(address, byte);
             }

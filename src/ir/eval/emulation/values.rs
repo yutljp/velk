@@ -125,6 +125,7 @@ impl Runner<'_> {
                         Some(if index == 0 { left } else { right })
                     }) {
                         Some(value) => Ok(Fact::constant(value)),
+                        None if self.windows.is_some() => Err(self.windows_divide_fault()),
                         None => Err(Stop::Error("division by zero".to_owned())),
                     };
                 }

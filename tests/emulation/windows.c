@@ -35,6 +35,8 @@ API int CALL TlsFree(u32);
 API void *CALL TlsGetValue(u32);
 API int CALL TlsSetValue(u32, void *);
 API int printf(const char *, ...);
+API handle CALL GetStdHandle(u32);
+API int CALL WriteFile(handle, const void *, u32, u32 *, void *);
 
 static __inline __attribute__((always_inline)) word teb(void) {
     word value;
@@ -106,8 +108,17 @@ __declspec(allocate(".tls$ZZZ")) unsigned char tls_end;
 static unsigned callback_count;
 static unsigned callback_arguments;
 static unsigned callback_alignment;
+EXPORT u32 tls_events[4];
+EXPORT word tls_events_address(void) { return (word)tls_events; }
 static void CALL tls_callback(handle module, u32 reason, void *reserved) {
+    if (reason < 4) tls_events[reason]++;
     callback_count++;
+    if (reason == 0) {
+        u32 count;
+        int ok = module == GetModuleHandleA(0) && reserved != 0 && callback_count == 2 && tls_value == 12;
+        WriteFile(GetStdHandle((u32)-11), ok ? "detach:1\n" : "detach:0\n", 9, &count, 0);
+        return;
+    }
     callback_alignment = ((word)__builtin_frame_address(0) & (sizeof(word) == 8 ? 15 : 3)) == 0;
     callback_arguments = module == GetModuleHandleA(0) && reason == 1 && reserved == 0;
     tls_value += 5;
