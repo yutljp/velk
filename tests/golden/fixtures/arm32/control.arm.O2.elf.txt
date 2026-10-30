@@ -404,8 +404,7 @@ int find_pair(int *p, int n, int target) {
                     uint32_t v13 = *(uint32_t *)((uint32_t)v10);
                     v10 = (uint32_t)v10 + 4;
                     if (v13 + v9 == target) {
-                        int32_t v15 = v12;
-                        return v15;
+                        return v12;
                     }
                     v12 = (uint32_t)v12 + 1;
                     --v11;

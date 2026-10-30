@@ -243,14 +243,27 @@ fn lowered(ir: &FunctionIr, nodes: &[Node]) -> (FunctionIr, Vec<(usize, usize)>)
 }
 
 /// Splits independent values after all control-flow transformations have finished.
-pub(crate) fn split_variables(ir: &FunctionIr, nodes: &mut [Node]) -> FunctionIr {
+#[cfg(test)]
+pub(crate) fn split_variables(ir: &FunctionIr, nodes: &mut Vec<Node>) -> FunctionIr {
+    let Some((mut lowered, locations)) = split_variables_before_copy_coalescing(ir, nodes) else {
+        return ir.clone();
+    };
+    let types = crate::render::function::variable_types(&lowered);
+    coalesce_render_variables(&mut lowered, nodes, &locations, &types);
+    lowered
+}
+
+pub(crate) fn split_variables_before_copy_coalescing(
+    ir: &FunctionIr,
+    nodes: &mut Vec<Node>,
+) -> Option<(FunctionIr, Vec<(usize, usize)>)> {
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(
             stmt,
             Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
         )
     }) {
-        return ir.clone();
+        return None;
     }
     let (mut lowered, mut locations) = lowered(ir, nodes);
     exception_edges(ir, &mut lowered);
@@ -285,10 +298,37 @@ pub(crate) fn split_variables(ir: &FunctionIr, nodes: &mut [Node]) -> FunctionIr
         .collect();
     crate::ssa::split_render_variables(&mut lowered, &registers);
     let mut statements = locations
-        .into_iter()
-        .map(|(block, position)| lowered.blocks[block].stmts[position].clone());
+        .iter()
+        .map(|(block, position)| (lowered.blocks[*block].stmts[*position].clone(), false));
     rewrite(nodes, &mut statements);
-    lowered
+    Some((lowered, locations))
+}
+
+pub(crate) fn coalesce_render_variables(
+    lowered: &mut FunctionIr,
+    nodes: &mut Vec<Node>,
+    locations: &[(usize, usize)],
+    types: &std::collections::BTreeMap<u16, crate::ir::CType>,
+) {
+    let removable = crate::passes::coalesce::coalesce_render_copies(lowered, types);
+    let Some(removable) = removable else {
+        return;
+    };
+    let mut statements = locations.iter().map(|(block, position)| {
+        (
+            lowered.blocks[*block].stmts[*position].clone(),
+            removable[*block][*position],
+        )
+    });
+    rewrite(nodes, &mut statements);
+    for (block, remove) in lowered.blocks.iter_mut().zip(removable) {
+        let mut at = 0;
+        block.stmts.retain(|_| {
+            let keep = !remove[at];
+            at += 1;
+            keep
+        });
+    }
 }
 
 fn drop_empty_paths(ir: &mut FunctionIr, locations: &mut [(usize, usize)]) {
@@ -326,11 +366,16 @@ fn drop_empty_paths(ir: &mut FunctionIr, locations: &mut [(usize, usize)]) {
     });
 }
 
-fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
-    for node in nodes {
-        match node {
+fn rewrite(nodes: &mut Vec<Node>, statements: &mut impl Iterator<Item = (Stmt, bool)>) {
+    let mut index = 0;
+    while index < nodes.len() {
+        match &mut nodes[index] {
             Node::Stmt(stmt) => {
-                let mut renamed = statements.next().expect("recorded statement");
+                let (mut renamed, remove) = statements.next().expect("recorded statement");
+                if remove {
+                    nodes.remove(index);
+                    continue;
+                }
                 for (operand, value) in stmt.operands_mut().into_iter().zip(renamed.operands()) {
                     *operand = value.clone();
                 }
@@ -374,7 +419,7 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
                 default,
                 ..
             } => {
-                let Some(Stmt::Switch { index: renamed, .. }) = statements.next() else {
+                let Some((Stmt::Switch { index: renamed, .. }, false)) = statements.next() else {
                     unreachable!("recorded switch");
                 };
                 *index = renamed;
@@ -387,6 +432,7 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
             }
             Node::Label(_) | Node::Break { .. } | Node::Continue { .. } => {}
         }
+        index += 1;
     }
 }
 
@@ -476,8 +522,12 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
     lowered.landing_pads = sites.into_iter().collect();
 }
 
-fn rewrite_test(lhs: &mut Expr, rhs: &mut Expr, statements: &mut impl Iterator<Item = Stmt>) {
-    let Some(Stmt::Brif { lhs: a, rhs: b, .. }) = statements.next() else {
+fn rewrite_test(
+    lhs: &mut Expr,
+    rhs: &mut Expr,
+    statements: &mut impl Iterator<Item = (Stmt, bool)>,
+) {
+    let Some((Stmt::Brif { lhs: a, rhs: b, .. }, false)) = statements.next() else {
         unreachable!("recorded condition");
     };
     *lhs = a;

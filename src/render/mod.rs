@@ -10,7 +10,7 @@ mod cost;
 mod expr;
 mod forwarding;
 mod frame_registers;
-mod function;
+pub(crate) mod function;
 mod globals;
 mod go_values;
 mod initializers;

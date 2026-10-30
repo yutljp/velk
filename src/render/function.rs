@@ -244,22 +244,36 @@ fn render_prepared(
     locals.bind_register_tops(original);
     #[cfg(test)]
     let classification = (structured_ir.clone().into_owned(), nodes.clone());
-    let mut split = match variables {
-        Variables::Merged => folded.clone(),
-        Variables::Split => super::structure::lower::split_variables(&structured_ir, &mut nodes),
+    let (mut split, split_locations) = match variables {
+        Variables::Merged => (folded.clone(), None),
+        Variables::Split => match super::structure::lower::split_variables_before_copy_coalescing(
+            &structured_ir,
+            &mut nodes,
+        ) {
+            Some((split, locations)) => (split, Some(locations)),
+            None => (structured_ir.as_ref().clone(), None),
+        },
     };
     variables::call_pointer_types(&mut split, symbols);
     let placement = match variables {
         Variables::Merged => super::initializers::Placement::Assignments,
         Variables::Split => super::initializers::Placement::Scoped,
     };
-    let ir = &split;
     let variable_types = variables::variable_types(
-        ir,
-        &narrow_registers(ir),
-        float_return(&ir.ret_type),
+        &split,
+        &narrow_registers(&split),
+        float_return(&split.ret_type),
         variables::MixedAccess::Bytes,
     );
+    if let Some(locations) = split_locations {
+        super::structure::lower::coalesce_render_variables(
+            &mut split,
+            &mut nodes,
+            &locations,
+            &variable_types,
+        );
+    }
+    let ir = &split;
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     if let Some(logical) = &mut logical {
         let params: std::collections::HashSet<_> =

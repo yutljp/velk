@@ -7,7 +7,7 @@ use crate as velk;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::Write as _;
 
-use velk::ir::{Expr, FunctionIr, Stmt, VALUE_BASE, VARIABLE_BASE};
+use velk::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt, VALUE_BASE, VARIABLE_BASE};
 use velk::service::Binary;
 
 #[test]
@@ -40,6 +40,59 @@ fn instruction_origins_do_not_change_exception_site_matching() {
         std::slice::from_ref(&moved),
         &original
     ));
+}
+
+#[test]
+fn coalesced_copy_is_removed_from_the_rendered_statements() {
+    let source = VARIABLE_BASE;
+    let copy = source + 1;
+    let copy_next = source + 2;
+    let copy_last = source + 3;
+    let result = source + 4;
+    let assign = |index, value| Stmt::Assign {
+        dest: RegRef { index, width: 64 },
+        value,
+        at: None,
+    };
+    let ir = FunctionIr::single_block(
+        velk::loader::Isa::X86_64,
+        vec![
+            assign(source, Expr::Const(19)),
+            assign(copy, Expr::reg(source, 64)),
+            assign(copy_next, Expr::reg(copy, 64)),
+            assign(copy_last, Expr::reg(copy_next, 64)),
+            assign(
+                result,
+                Expr::bin(BinOp::Add, Expr::reg(copy_last, 64), Expr::Const(5)),
+            ),
+            Stmt::Ret {
+                value: Expr::reg(result, 64),
+                at: None,
+            },
+        ],
+    );
+    let mut nodes = crate::render::structure::structure_best(&ir);
+    let lowered = super::split_variables(&ir, &mut nodes);
+
+    for stmt in lowered.blocks.iter().flat_map(|block| &block.stmts) {
+        let (writes, reads) = velk::ir::visit::statement_registers(stmt);
+        assert!(
+            ![copy, copy_next, copy_last]
+                .iter()
+                .any(|value| writes.contains(value) || reads.contains(value))
+        );
+    }
+    for node in &nodes {
+        let crate::render::structure::Node::Stmt(stmt) = node else {
+            continue;
+        };
+        let (writes, reads) = velk::ir::visit::statement_registers(stmt);
+        assert!(
+            ![copy, copy_next, copy_last]
+                .iter()
+                .any(|value| writes.contains(value) || reads.contains(value))
+        );
+    }
 }
 
 fn root(parent: &mut [usize], mut value: usize) -> usize {

@@ -1,8 +1,8 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 145 -> 0; 822; 1; 0
 C/C++ stripped: 97 -> 0; 761; 0; 0
-Go: 6716 -> 0; 29858; 408; 2
-Rust: 8106 -> 0; 51021; 708; 189
+Go: 6716 -> 0; 29846; 408; 2
+Rust: 8106 -> 0; 50985; 708; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -162,10 +162,10 @@ Rust: 8106 -> 0; 51021; 708; 189
 # flattened_x86_64_O2.o | C/C++ stripped: 0 -> 0; 6; 0; 0
 # frame_bounds_a64.o | C/C++ stripped: 1 -> 0; 4; 0; 0
 # frame_bounds_x64.o | C/C++ stripped: 0 -> 0; 4; 0; 0
-# go_probe | Go: 1495 -> 0; 6588; 84; 0
-# go_probe_arm64 | Go: 1863 -> 0; 8343; 120; 1
-# go_stripped | Go: 1495 -> 0; 6586; 84; 0
-# go_stripped_arm64 | Go: 1863 -> 0; 8341; 120; 1
+# go_probe | Go: 1495 -> 0; 6584; 84; 0
+# go_probe_arm64 | Go: 1863 -> 0; 8341; 120; 1
+# go_stripped | Go: 1495 -> 0; 6582; 84; 0
+# go_stripped_arm64 | Go: 1863 -> 0; 8339; 120; 1
 # l0_arith_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_x64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l1_branch_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
@@ -514,12 +514,12 @@ Rust: 8106 -> 0; 51021; 708; 189
 # predicates_aarch64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # predicates_x86_64_O0.o | C/C++ stripped: 0 -> 0; 1; 0; 0
 # predicates_x86_64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
-# rust_demo | Rust: 1362 -> 0; 9557; 101; 0
-# rust_demo_arm64 | Rust: 1315 -> 0; 7420; 135; 63
-# rust_probe | Rust: 1362 -> 0; 9557; 101; 0
-# rust_probe_arm64 | Rust: 1315 -> 0; 7420; 135; 63
-# rust_probe_arm64_stripped | Rust: 1315 -> 0; 7420; 135; 63
-# rust_probe_stripped | Rust: 1437 -> 0; 9647; 101; 0
+# rust_demo | Rust: 1362 -> 0; 9556; 101; 0
+# rust_demo_arm64 | Rust: 1315 -> 0; 7409; 135; 63
+# rust_probe | Rust: 1362 -> 0; 9556; 101; 0
+# rust_probe_arm64 | Rust: 1315 -> 0; 7409; 135; 63
+# rust_probe_arm64_stripped | Rust: 1315 -> 0; 7409; 135; 63
+# rust_probe_stripped | Rust: 1437 -> 0; 9646; 101; 0
 # seh.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh.O2.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh_cpp.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0

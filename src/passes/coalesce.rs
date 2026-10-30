@@ -9,12 +9,88 @@ use crate::ir::cfg::{live_in, live_out, opaque};
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
+const MIN_RENDER_COPY_CANDIDATES: usize = 3;
+
 mod pointers;
 pub(crate) use pointers::reuse_pointers;
 
+#[derive(Clone, Copy)]
+enum CoalesceMode {
+    Analysis,
+    Rendering,
+}
+
 pub fn coalesce_copies(ir: &mut FunctionIr) {
+    let _ = coalesce(ir, CoalesceMode::Analysis, None);
+}
+
+/// Joins renderer-created values without moving or removing statements, whose
+/// positions still identify the structured nodes that came from them.
+pub(crate) fn coalesce_render_copies(
+    ir: &mut FunctionIr,
+    types: &std::collections::BTreeMap<u16, crate::ir::CType>,
+) -> Option<Vec<Vec<bool>>> {
+    if ir.blocks.iter().any(opaque) || !has_compatible_copy_candidate(ir, types) {
+        return None;
+    }
+    let removable = coalesce(ir, CoalesceMode::Rendering, Some(types));
+    removable
+        .iter()
+        .any(|block| block.iter().any(|remove| *remove))
+        .then_some(removable)
+}
+
+fn has_compatible_copy_candidate(
+    ir: &FunctionIr,
+    types: &std::collections::BTreeMap<u16, crate::ir::CType>,
+) -> bool {
+    let mut count = 0;
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let Stmt::Assign { dest, value, .. } = stmt else {
+            continue;
+        };
+        if dest.index < VARIABLE_BASE {
+            continue;
+        }
+        let source = match value {
+            Expr::Reg { index, .. } => Some(*index),
+            Expr::Bin {
+                op: crate::ir::BinOp::And,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, .. }, Expr::Const(_))
+                | (Expr::Const(_), Expr::Reg { index, .. }) => Some(*index),
+                _ => None,
+            },
+            _ => None,
+        };
+        let Some(source) = source else {
+            continue;
+        };
+        if source < VARIABLE_BASE
+            || source == dest.index
+            || !types
+                .get(&dest.index)
+                .is_some_and(|ty| types.get(&source) == Some(ty))
+        {
+            continue;
+        }
+        count += 1;
+        if count == MIN_RENDER_COPY_CANDIDATES {
+            return true;
+        }
+    }
+    false
+}
+
+fn coalesce(
+    ir: &mut FunctionIr,
+    mode: CoalesceMode,
+    types: Option<&std::collections::BTreeMap<u16, crate::ir::CType>>,
+) -> Vec<Vec<bool>> {
     if ir.blocks.iter().any(opaque) {
-        return;
+        return no_copies(ir);
     }
     // How many low bits each variable's values can have: a read of fewer
     // bits of another variable holds the same value only when it covers
@@ -61,16 +137,23 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
         .then_some((dest.index, index))
     };
 
-    for block in &mut ir.blocks {
-        sink_copied_definitions(&mut block.stmts, &same_value);
+    if matches!(mode, CoalesceMode::Analysis) {
+        for block in &mut ir.blocks {
+            sink_copied_definitions(&mut block.stmts, &same_value);
+        }
     }
 
     let (interferes, copies, entry) = interference(ir, &same_value);
+    let same_type = |a: u16, b: u16| {
+        types.is_none_or(|types| types.get(&a).is_some_and(|ty| types.get(&b) == Some(ty)))
+    };
 
     let mut groups = Groups::default();
     let mut joined = false;
     for (dest, source) in copies {
-        joined |= groups.join(dest, source, &interferes, &entry);
+        if same_type(dest, source) {
+            joined |= groups.join(dest, source, &interferes, &entry);
+        }
     }
     // Values a register held one after another, of one width, are one
     // variable too where their lives do not overlap, as the register is
@@ -86,38 +169,40 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     }
     // Only plain values: one that takes part in an address, as a base or
     // an index, would give its pointer type to the other's values.
-    let mut kinds: HashMap<(u16, bool), Vec<u16>> = HashMap::new();
-    for (variable, register) in &ir.variable_registers {
-        if !bits.contains_key(variable) || addresses.contains(variable) {
-            continue;
+    if matches!(mode, CoalesceMode::Analysis) {
+        let mut kinds: HashMap<(u16, bool), Vec<u16>> = HashMap::new();
+        for (variable, register) in &ir.variable_registers {
+            if !bits.contains_key(variable) || addresses.contains(variable) {
+                continue;
+            }
+            let wide = bits[variable] > 32;
+            kinds.entry((*register, wide)).or_default().push(*variable);
         }
-        let wide = bits.get(variable).copied().unwrap_or(64) > 32;
-        kinds.entry((*register, wide)).or_default().push(*variable);
-    }
-    let mut kinds: Vec<Vec<u16>> = kinds.into_values().collect();
-    kinds.sort();
-    for kind in kinds {
-        for (at, variable) in kind.iter().enumerate() {
-            for earlier in &kind[..at] {
-                // Nor through a copy already joined to one.
-                let addressed = |member: u16| {
-                    groups
-                        .group(member)
-                        .iter()
-                        .any(|other| addresses.contains(other))
-                };
-                if addressed(*earlier) || addressed(*variable) {
-                    continue;
-                }
-                if groups.join(*earlier, *variable, &interferes, &entry) {
-                    joined = true;
-                    break;
+        let mut kinds: Vec<Vec<u16>> = kinds.into_values().collect();
+        kinds.sort();
+        for kind in kinds {
+            for (at, variable) in kind.iter().enumerate() {
+                for earlier in &kind[..at] {
+                    // Nor through a copy already joined to one.
+                    let addressed = |member: u16| {
+                        groups
+                            .group(member)
+                            .iter()
+                            .any(|other| addresses.contains(other))
+                    };
+                    if addressed(*earlier) || addressed(*variable) {
+                        continue;
+                    }
+                    if groups.join(*earlier, *variable, &interferes, &entry) {
+                        joined = true;
+                        break;
+                    }
                 }
             }
         }
     }
     if !joined {
-        return;
+        return no_copies(ir);
     }
     let renamed: HashMap<u16, u16> = groups
         .leader
@@ -125,15 +210,41 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
         .map(|variable| (*variable, groups.find(*variable)))
         .collect();
     let class = |variable: u16| renamed.get(&variable).copied().unwrap_or(variable);
-    for block in &mut ir.blocks {
+    let removable: Vec<Vec<bool>> = ir
+        .blocks
+        .iter()
+        .map(|block| {
+            block
+                .stmts
+                .iter()
+                .map(|stmt| {
+                    same_value(stmt).is_some_and(|(dest, source)| class(dest) == class(source))
+                })
+                .collect()
+        })
+        .collect();
+    for (index, block) in ir.blocks.iter_mut().enumerate() {
         // A copy within one variable now moves nothing.
-        block.stmts.retain(|stmt| {
-            !same_value(stmt).is_some_and(|(dest, source)| class(dest) == class(source))
-        });
+        if matches!(mode, CoalesceMode::Analysis) {
+            let mut at = 0;
+            block.stmts.retain(|_| {
+                let keep = !removable[index][at];
+                at += 1;
+                keep
+            });
+        }
         for stmt in &mut block.stmts {
             rename(stmt, &renamed);
         }
     }
+    removable
+}
+
+fn no_copies(ir: &FunctionIr) -> Vec<Vec<bool>> {
+    ir.blocks
+        .iter()
+        .map(|block| vec![false; block.stmts.len()])
+        .collect()
 }
 
 type Interference = HashMap<u16, HashSet<u16>>;
@@ -301,9 +412,10 @@ fn load_free(expr: &Expr) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::coalesce_copies;
-    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt, VARIABLE_BASE};
+    use super::{coalesce_copies, coalesce_render_copies};
+    use crate::ir::{BinOp, Block, CType, Cond, Expr, FunctionIr, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
+    use std::collections::BTreeMap;
 
     fn assign(index: u16, value: Expr) -> Stmt {
         Stmt::Assign {
@@ -419,6 +531,108 @@ mod tests {
             "{}",
             ir.render()
         );
+    }
+
+    #[test]
+    fn renderer_copy_coalescing_preserves_the_returned_value_smt() {
+        if !crate::ir::smt::Proofs::available() {
+            return;
+        }
+        let (source, copy, next, last, result) = (
+            VARIABLE_BASE,
+            VARIABLE_BASE + 1,
+            VARIABLE_BASE + 2,
+            VARIABLE_BASE + 3,
+            VARIABLE_BASE + 4,
+        );
+        let before = [
+            assign(source, Expr::reg(7, 64)),
+            assign(copy, Expr::reg(source, 64)),
+            assign(next, Expr::reg(copy, 64)),
+            assign(last, Expr::reg(next, 64)),
+            assign(
+                result,
+                Expr::bin(BinOp::Add, Expr::reg(last, 64), Expr::Const(0x101)),
+            ),
+            Stmt::Ret {
+                value: Expr::reg(result, 64),
+                at: None,
+            },
+        ];
+        let mut after = FunctionIr::single_block(Isa::X86_64, before.to_vec());
+        let types = BTreeMap::from([
+            (source, CType::U64),
+            (copy, CType::U64),
+            (next, CType::U64),
+            (last, CType::U64),
+            (result, CType::U64),
+        ]);
+        let Some(removable) = coalesce_render_copies(&mut after, &types) else {
+            panic!("the copy must be a renderer candidate");
+        };
+        assert!(
+            removable[0].iter().any(|remove| *remove),
+            "the copies must be coalesced"
+        );
+        let after = after.blocks[0]
+            .stmts
+            .iter()
+            .zip(&removable[0])
+            .filter_map(|(stmt, remove)| (!remove).then_some(stmt.clone()))
+            .collect::<Vec<_>>();
+        let mut proofs = crate::ir::smt::Proofs::default();
+        proofs.program("renderer copy coalescing".to_owned(), &before, &after);
+        for bits in [8, 16, 32, 64] {
+            let mask = if bits == 64 {
+                u64::MAX
+            } else {
+                (1u64 << bits) - 1
+            };
+            let before = [
+                assign(source, Expr::reg(7, bits)),
+                assign(
+                    copy,
+                    Expr::bin(BinOp::And, Expr::reg(source, 64), Expr::Const(mask)),
+                ),
+                assign(next, Expr::reg(copy, 64)),
+                assign(last, Expr::reg(next, 64)),
+                assign(
+                    result,
+                    Expr::bin(BinOp::Add, Expr::reg(last, 64), Expr::Const(0x101)),
+                ),
+                Stmt::Ret {
+                    value: Expr::reg(result, 64),
+                    at: None,
+                },
+            ];
+            let mut after = FunctionIr::single_block(Isa::X86_64, before.to_vec());
+            let types = BTreeMap::from([
+                (source, CType::U64),
+                (copy, CType::U64),
+                (next, CType::U64),
+                (last, CType::U64),
+                (result, CType::U64),
+            ]);
+            let Some(removable) = coalesce_render_copies(&mut after, &types) else {
+                panic!("the masked copies must be renderer candidates");
+            };
+            assert!(
+                removable[0].iter().any(|remove| *remove),
+                "the masked copies must be coalesced at {bits} bits"
+            );
+            let after = after.blocks[0]
+                .stmts
+                .iter()
+                .zip(&removable[0])
+                .filter_map(|(stmt, remove)| (!remove).then_some(stmt.clone()))
+                .collect::<Vec<_>>();
+            proofs.program(
+                format!("renderer masked copy coalescing at {bits} bits"),
+                &before,
+                &after,
+            );
+        }
+        proofs.check();
     }
 
     #[test]

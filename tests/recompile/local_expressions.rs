@@ -2,6 +2,86 @@ use super::*;
 use velk::ir::{CallKind, CallOutput, RegRef, VARIABLE_BASE};
 
 #[test]
+fn renderer_coalesces_copy_values() {
+    let inputs: Vec<Vec<u64>> = [0, 1, 0x7fff_ffff_ffff_ffff, 0x8000_0000_0000_0000, u64::MAX]
+        .into_iter()
+        .map(|value| vec![value])
+        .collect();
+    let mut candidates = Vec::new();
+    for (isa, convention, parameter) in [
+        (Isa::X86_64, Convention::SysV, 7),
+        (Isa::AArch64, Convention::Aapcs64, 0),
+    ] {
+        let source = VARIABLE_BASE;
+        let copy = source + 1;
+        let copy_next = source + 2;
+        let copy_last = source + 3;
+        let result = source + 4;
+        let mut ir = synthetic_ir(
+            &format!("renderer_copy_{isa:?}"),
+            vec![Param {
+                index: parameter,
+                name: "value".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: source,
+                        width: 64,
+                    },
+                    value: Expr::reg(parameter, 64),
+                    at: None,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: copy,
+                        width: 64,
+                    },
+                    value: Expr::reg(source, 64),
+                    at: None,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: copy_next,
+                        width: 64,
+                    },
+                    value: Expr::reg(copy, 64),
+                    at: None,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: copy_last,
+                        width: 64,
+                    },
+                    value: Expr::reg(copy_next, 64),
+                    at: None,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: result,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::Add, Expr::reg(copy_last, 64), Expr::Const(0x101)),
+                    at: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(result, 64),
+                    at: None,
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = convention;
+        let candidate = printed_candidate(ir, inputs.clone());
+        assert!(!candidate.code.contains("v1"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    check_candidates("renderer_copy", candidates, Mode::Registers, &[]);
+}
+
+#[test]
 fn adjacent_call_arguments_keep_output_dependencies() {
     let temporary = VARIABLE_BASE;
     let result = VARIABLE_BASE + 1;
