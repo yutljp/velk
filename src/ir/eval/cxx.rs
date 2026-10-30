@@ -731,9 +731,20 @@ fn address<M: Machine>(machine: &M, base: u64, offset: u64) -> Result<u64, M::Er
 fn text<M: Machine>(machine: &mut M, pointer: u64) -> Result<Vec<M::Byte>, M::Error> {
     let mut bytes = Vec::new();
     for offset in 0..machine.bound() {
-        let location = address(machine, pointer, offset as u64)?;
-        let byte = machine.read(location, 1)?.remove(0);
-        if machine.equal(&byte, 0)? {
+        let location = match address(machine, pointer, offset as u64) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let mut read_bytes = match machine.read(location, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let byte = read_bytes.remove(0);
+        let is_terminator = match machine.equal(&byte, 0) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if is_terminator {
             return Ok(bytes);
         }
         bytes.push(byte);
@@ -752,46 +763,107 @@ fn string_parts<M: Machine>(
         layout
     };
     let (pointer, length) = match layout {
-        Layout::Gnu => (
-            machine.word(object)?,
-            machine.word(address(machine, object, 8)?)?,
-        ),
+        Layout::Gnu => {
+            let data_pointer = match machine.word(object) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let length_address = match address(machine, object, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let string_length = match machine.word(length_address) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            (data_pointer, string_length)
+        }
         Layout::GnuCow => {
-            let pointer = machine.word(object)?;
+            let pointer = match machine.word(object) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let Some(header) = pointer.checked_sub(24) else {
                 return Err(machine.error("invalid old GNU string pointer"));
             };
-            (pointer, machine.word(header)?)
+            let string_length = match machine.word(header) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            (pointer, string_length)
         }
         Layout::LlvmAlternate => {
-            let header_address = address(machine, object, 23)?;
-            let byte = machine.read(header_address, 1)?.remove(0);
-            let header = machine.byte_value(byte)?;
+            let header_address = match address(machine, object, 23) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let mut header_bytes = match machine.read(header_address, 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let byte = header_bytes.remove(0);
+            let header = match machine.byte_value(byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if header & 128 == 0 {
                 if header > 22 {
                     return Err(machine.error("invalid libc++ short string size"));
                 }
                 (object, u64::from(header))
             } else {
-                (
-                    machine.word(object)?,
-                    machine.word(address(machine, object, 8)?)?,
-                )
+                let data_pointer = match machine.word(object) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let length_address = match address(machine, object, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let string_length = match machine.word(length_address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                (data_pointer, string_length)
             }
         }
         Layout::Llvm => {
-            let byte = machine.read(object, 1)?.remove(0);
-            let header = machine.byte_value(byte)?;
+            let mut bytes = match machine.read(object, 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let byte = bytes.remove(0);
+            let header = match machine.byte_value(byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if header & 1 == 0 {
                 if header >> 1 > 22 {
                     return Err(machine.error("invalid libc++ short string size"));
                 }
-                (address(machine, object, 1)?, u64::from(header >> 1))
+                let inline_data = match address(machine, object, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                (inline_data, u64::from(header >> 1))
             } else {
-                (
-                    machine.word(address(machine, object, 16)?)?,
-                    machine.word(address(machine, object, 8)?)?,
-                )
+                let data_pointer_address = match address(machine, object, 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let data_pointer = match machine.word(data_pointer_address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let length_address = match address(machine, object, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let length = match machine.word(length_address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                (data_pointer, length)
             }
         }
     };
@@ -806,7 +878,10 @@ fn string<M: Machine>(
     object: u64,
     layout: Layout,
 ) -> Result<Vec<M::Byte>, M::Error> {
-    let (pointer, length) = string_parts(machine, object, layout)?;
+    let (pointer, length) = match string_parts(machine, object, layout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     machine.read(pointer, length)
 }
 
@@ -829,14 +904,34 @@ fn assign<M: Machine>(
     let pointer = match layout {
         Layout::Gnu => {
             let pointer = if length <= 15 {
-                address(machine, object, 16)?
+                match address(machine, object, 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             } else {
-                machine.allocate(bytes.len())?
+                match machine.allocate(bytes.len()) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             };
-            machine.store_word(object, pointer)?;
-            machine.store_word(address(machine, object, 8)?, length as u64)?;
+            if let Err(error) = machine.store_word(object, pointer) {
+                return Err(error);
+            }
+            let length_address = match address(machine, object, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(length_address, length as u64) {
+                return Err(error);
+            }
             if length > 15 {
-                machine.store_word(address(machine, object, 16)?, length as u64)?;
+                let field_address = match address(machine, object, 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, length as u64) {
+                    return Err(error);
+                }
             }
             pointer
         }
@@ -844,41 +939,102 @@ fn assign<M: Machine>(
             let Some(allocation_size) = length.checked_add(25) else {
                 return Err(machine.error("C++ string allocation size overflows"));
             };
-            let allocation = machine.allocate(allocation_size)?;
-            let pointer = address(machine, allocation, 24)?;
-            machine.store_word(allocation, length as u64)?;
-            machine.store_word(address(machine, allocation, 8)?, length as u64)?;
-            machine.store_word(address(machine, allocation, 16)?, 0)?;
-            machine.store_word(object, pointer)?;
+            let allocation = match machine.allocate(allocation_size) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let pointer = match address(machine, allocation, 24) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(allocation, length as u64) {
+                return Err(error);
+            }
+            let field_address = match address(machine, allocation, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, length as u64) {
+                return Err(error);
+            }
+            let field_address = match address(machine, allocation, 16) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, 0) {
+                return Err(error);
+            }
+            if let Err(error) = machine.store_word(object, pointer) {
+                return Err(error);
+            }
             pointer
         }
         Layout::LlvmAlternate if length <= 22 => {
-            machine.write(
-                address(machine, object, 23)?,
-                &[machine.constant(length as u8)],
-            )?;
+            let field_address = match address(machine, object, 23) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.write(field_address, &[machine.constant(length as u8)]) {
+                return Err(error);
+            }
             object
         }
         Layout::LlvmAlternate => {
-            let pointer = machine.allocate(bytes.len())?;
-            machine.store_word(object, pointer)?;
-            machine.store_word(address(machine, object, 8)?, length as u64)?;
-            machine.store_word(
-                address(machine, object, 16)?,
-                bytes.len() as u64 | (1 << 63),
-            )?;
+            let pointer = match machine.allocate(bytes.len()) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(object, pointer) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, length as u64) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, 16) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, bytes.len() as u64 | (1 << 63)) {
+                return Err(error);
+            }
             pointer
         }
         Layout::Llvm if length <= 22 => {
-            machine.write(object, &[machine.constant((length * 2) as u8)])?;
-            address(machine, object, 1)?
+            if let Err(error) = machine.write(object, &[machine.constant((length * 2) as u8)]) {
+                return Err(error);
+            }
+            match address(machine, object, 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         }
         Layout::Llvm => {
             let capacity = bytes.len().saturating_add(1) & !1;
-            let pointer = machine.allocate(capacity)?;
-            machine.store_word(object, (capacity as u64) | 1)?;
-            machine.store_word(address(machine, object, 8)?, length as u64)?;
-            machine.store_word(address(machine, object, 16)?, pointer)?;
+            let pointer = match machine.allocate(capacity) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(object, (capacity as u64) | 1) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, length as u64) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, 16) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, pointer) {
+                return Err(error);
+            }
             pointer
         }
     };
@@ -905,7 +1061,10 @@ fn append<M: Machine>(
     layout: Layout,
     addition: Vec<M::Byte>,
 ) -> Result<(), M::Error> {
-    let mut bytes = string(machine, object, layout)?;
+    let mut bytes = match string(machine, object, layout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let Some(length) = bytes.len().checked_add(addition.len()) else {
         return Err(machine.error("C++ string length overflows"));
     };
@@ -935,7 +1094,11 @@ fn find_bytes<M: Machine>(
     while start <= last {
         let mut matched = true;
         for (offset, byte) in needle.iter().enumerate() {
-            if !machine.same_byte(&haystack[start + offset], byte)? {
+            let same_byte = match machine.same_byte(&haystack[start + offset], byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if !same_byte {
                 matched = false;
                 break;
             }
@@ -956,15 +1119,24 @@ fn string_operation<M: Machine>(
 ) -> Result<M::Value, M::Error> {
     match operation {
         StringOperation::Size => {
-            let (_, length) = string_parts(machine, object, layout)?;
+            let (_, length) = match string_parts(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(machine.result(length as u64))
         }
         StringOperation::Data | StringOperation::Index | StringOperation::At => {
-            let (pointer, length) = string_parts(machine, object, layout)?;
+            let (pointer, length) = match string_parts(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let position = if matches!(operation, StringOperation::Data) {
                 0
             } else {
-                machine.argument(1)?
+                match machine.argument(1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             };
             if matches!(operation, StringOperation::At) && position >= length as u64 {
                 return Err(machine.error("C++ string index out of range"));
@@ -972,250 +1144,593 @@ fn string_operation<M: Machine>(
             if matches!(operation, StringOperation::Index) && position > length as u64 {
                 return Err(machine.error("C++ string index out of range"));
             }
-            Ok(machine.result(address(machine, pointer, position)?))
+            let element_address = match address(machine, pointer, position) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(machine.result(element_address))
         }
         StringOperation::End => {
-            let (pointer, length) = string_parts(machine, object, layout)?;
-            Ok(machine.result(address(machine, pointer, length as u64)?))
+            let (pointer, length) = match string_parts(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let field_address = match address(machine, pointer, length as u64) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(machine.result(field_address))
         }
         StringOperation::AssignText
         | StringOperation::AssignString
         | StringOperation::AssignMove => {
-            let source = machine.argument(1)?;
-            let bytes = if matches!(operation, StringOperation::AssignText) {
-                text(machine, source)?
-            } else {
-                string(machine, source, layout)?
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
             };
-            assign(machine, object, layout, bytes)?;
-            if matches!(operation, StringOperation::AssignMove) && source != object {
-                assign(machine, source, layout, Vec::new())?;
+            let bytes = if matches!(operation, StringOperation::AssignText) {
+                match text(machine, source) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
+            } else {
+                match string(machine, source, layout) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
+            };
+            if let Err(error) = assign(machine, object, layout, bytes) {
+                return Err(error);
+            }
+            if matches!(operation, StringOperation::AssignMove)
+                && source != object
+                && let Err(error) = assign(machine, source, layout, Vec::new())
+            {
+                return Err(error);
             }
             Ok(machine.result(object))
         }
         StringOperation::Reserve => {
-            let requested = machine.argument(1)?;
+            let requested = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if requested > machine.bound() as u64 {
                 return Err(machine.error("C++ string capacity exceeds model bound"));
             }
-            let (pointer, length) = string_parts(machine, object, layout)?;
+            let (pointer, length) = match string_parts(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let current_capacity = match layout {
                 Layout::Gnu => {
-                    if pointer == address(machine, object, 16)? {
+                    let field_address = match address(machine, object, 16) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if pointer == field_address {
                         15
                     } else {
-                        machine.word(address(machine, object, 16)?)?
+                        let field_address = match address(machine, object, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        match machine.word(field_address) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     }
                 }
                 Layout::GnuCow => {
-                    let header = pointer
+                    let header = match pointer
                         .checked_sub(24)
-                        .ok_or_else(|| machine.error("invalid old GNU string pointer"))?;
-                    machine.word(address(machine, header, 8)?)?
+                        .ok_or_else(|| machine.error("invalid old GNU string pointer"))
+                    {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let field_address = match address(machine, header, 8) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    match machine.word(field_address) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 }
                 Layout::LlvmAlternate => {
-                    let byte = machine.read(address(machine, object, 23)?, 1)?.remove(0);
-                    if machine.byte_value(byte)? & 128 == 0 {
+                    let field_address = match address(machine, object, 23) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let mut bytes = match machine.read(field_address, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let byte = bytes.remove(0);
+                    let header = match machine.byte_value(byte) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if header & 128 == 0 {
                         22
                     } else {
-                        machine.word(address(machine, object, 16)?)? & !(1 << 63)
+                        let field_address = match address(machine, object, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let capacity_word = match machine.word(field_address) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        capacity_word & !(1 << 63)
                     }
                 }
                 Layout::Llvm => {
-                    let byte = machine.read(object, 1)?.remove(0);
-                    if machine.byte_value(byte)? & 1 == 0 {
+                    let mut header_bytes = match machine.read(object, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let byte = header_bytes.remove(0);
+                    let header = match machine.byte_value(byte) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if header & 1 == 0 {
                         22
                     } else {
-                        machine.word(object)? & !1
+                        let capacity_word = match machine.word(object) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        capacity_word & !1
                     }
                 }
             };
             if requested > current_capacity {
-                let mut bytes = machine.read(pointer, length)?;
+                let mut bytes = match machine.read(pointer, length) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 bytes.push(machine.constant(0));
                 let capacity = requested.max(length as u64);
                 match layout {
                     Layout::Gnu => {
-                        let allocation = machine.allocate(capacity as usize + 1)?;
-                        machine.store_word(object, allocation)?;
-                        machine.store_word(address(machine, object, 8)?, length as u64)?;
-                        machine.store_word(address(machine, object, 16)?, capacity)?;
-                        machine.write(allocation, &bytes)?;
+                        let allocation = match machine.allocate(capacity as usize + 1) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(object, allocation) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 8) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, length as u64) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, capacity) {
+                            return Err(error);
+                        }
+                        if let Err(error) = machine.write(allocation, &bytes) {
+                            return Err(error);
+                        }
                     }
                     Layout::GnuCow => {
-                        let allocation = machine.allocate(capacity as usize + 25)?;
-                        machine.store_word(allocation, length as u64)?;
-                        machine.store_word(address(machine, allocation, 8)?, capacity)?;
-                        machine.store_word(address(machine, allocation, 16)?, 0)?;
-                        let data = address(machine, allocation, 24)?;
-                        machine.store_word(object, data)?;
-                        machine.write(data, &bytes)?;
+                        let allocation = match machine.allocate(capacity as usize + 25) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(allocation, length as u64) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, allocation, 8) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, capacity) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, allocation, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, 0) {
+                            return Err(error);
+                        }
+                        let data = match address(machine, allocation, 24) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(object, data) {
+                            return Err(error);
+                        }
+                        if let Err(error) = machine.write(data, &bytes) {
+                            return Err(error);
+                        }
                     }
                     Layout::LlvmAlternate => {
                         let allocation =
-                            machine.allocate(bytes.len().max(capacity as usize + 1))?;
-                        machine.store_word(object, allocation)?;
-                        machine.store_word(address(machine, object, 8)?, length as u64)?;
-                        machine.store_word(
-                            address(machine, object, 16)?,
+                            match machine.allocate(bytes.len().max(capacity as usize + 1)) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                        if let Err(error) = machine.store_word(object, allocation) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 8) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, length as u64) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(
+                            field_address,
                             (bytes.len().max(capacity as usize + 1) as u64) | (1 << 63),
-                        )?;
-                        machine.write(allocation, &bytes)?;
+                        ) {
+                            return Err(error);
+                        }
+                        if let Err(error) = machine.write(allocation, &bytes) {
+                            return Err(error);
+                        }
                     }
                     Layout::Llvm => {
                         let allocation =
-                            machine.allocate(bytes.len().max(capacity as usize + 1))?;
-                        machine.store_word(object, (capacity + 1) | 1)?;
-                        machine.store_word(address(machine, object, 8)?, length as u64)?;
-                        machine.store_word(address(machine, object, 16)?, allocation)?;
-                        machine.write(allocation, &bytes)?;
+                            match machine.allocate(bytes.len().max(capacity as usize + 1)) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                        if let Err(error) = machine.store_word(object, (capacity + 1) | 1) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 8) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, length as u64) {
+                            return Err(error);
+                        }
+                        let field_address = match address(machine, object, 16) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = machine.store_word(field_address, allocation) {
+                            return Err(error);
+                        }
+                        if let Err(error) = machine.write(allocation, &bytes) {
+                            return Err(error);
+                        }
                     }
                 }
             }
             Ok(machine.result(0))
         }
         StringOperation::Mutate => {
-            let position = machine.argument(1)?;
-            let removed = machine.argument(2)?;
-            let source = machine.argument(3)?;
-            let replacement_length = machine.argument(4)?;
+            let position = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let removed = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let source = match machine.argument(3) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let replacement_length = match machine.argument(4) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if replacement_length > machine.bound() as u64 {
                 return Err(machine.error("C++ string mutation exceeds model bound"));
             }
-            let mut bytes = string(machine, object, layout)?;
+            let mut bytes = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if position > bytes.len() as u64 {
                 return Err(machine.error("C++ string position out of range"));
             }
             let start = position as usize;
             let end = start + removed.min((bytes.len() - start) as u64) as usize;
-            let replacement = machine.read(source, replacement_length as usize)?;
+            let replacement = match machine.read(source, replacement_length as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             bytes.splice(start..end, replacement);
             if bytes.len() > machine.bound() {
                 return Err(machine.error("C++ string mutation exceeds model bound"));
             }
-            assign(machine, object, layout, bytes)?;
+            if let Err(error) = assign(machine, object, layout, bytes) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::AppendText => {
-            let source = machine.argument(1)?;
-            let addition = text(machine, source)?;
-            append(machine, object, layout, addition)?;
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let addition = match text(machine, source) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(machine, object, layout, addition) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::AppendTextRange => {
-            let source = machine.argument(1)?;
-            let count = machine.argument(2)?;
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if count > machine.bound() as u64 {
                 return Err(machine.error("C++ append exceeds model bound"));
             }
-            let addition = machine.read(source, count as usize)?;
-            append(machine, object, layout, addition)?;
+            let addition = match machine.read(source, count as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(machine, object, layout, addition) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::AppendString => {
-            let source = machine.argument(1)?;
-            let addition = string(machine, source, layout)?;
-            append(machine, object, layout, addition)?;
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let addition = match string(machine, source, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(machine, object, layout, addition) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::AppendStringRange => {
-            let source = machine.argument(1)?;
-            let position = machine.argument(2)?;
-            let count = machine.argument(3)?;
-            let source = string(machine, source, layout)?;
-            append(
-                machine,
-                object,
-                layout,
-                slice(machine, &source, position, count)?.to_vec(),
-            )?;
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let position = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match machine.argument(3) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let source = match string(machine, source, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let piece = match slice(machine, &source, position, count) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(machine, object, layout, piece.to_vec()) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::AppendRepeated => {
-            let count = machine.argument(1)?;
+            let count = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if count > machine.bound() as u64 {
                 return Err(machine.error("C++ append exceeds model bound"));
             }
-            let byte = machine.character(2)?;
-            append(
+            let byte = match machine.character(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(
                 machine,
                 object,
                 layout,
                 (0..count).map(|_| byte.clone()).collect(),
-            )?;
+            ) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::PushBack => {
-            let byte = machine.character(1)?;
-            append(machine, object, layout, vec![byte])?;
+            let byte = match machine.character(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = append(machine, object, layout, vec![byte]) {
+                return Err(error);
+            }
             Ok(machine.result(object))
         }
         StringOperation::FindText
         | StringOperation::FindTextRange
         | StringOperation::FindString
         | StringOperation::FindCharacter => {
-            let haystack = string(machine, object, layout)?;
-            let source = machine.argument(1)?;
+            let haystack = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let source = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let (needle, position) = match operation {
                 StringOperation::FindText => {
-                    let position = machine.argument(2)?;
-                    (text(machine, source)?, position)
+                    let position = match machine.argument(2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let pattern = match text(machine, source) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (pattern, position)
                 }
                 StringOperation::FindTextRange => {
-                    let position = machine.argument(2)?;
-                    let count = machine.argument(3)?;
+                    let position = match machine.argument(2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let count = match machine.argument(3) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if count > machine.bound() as u64 {
                         return Err(machine.error("C++ search exceeds model bound"));
                     }
-                    (machine.read(source, count as usize)?, position)
+                    let bytes = match machine.read(source, count as usize) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (bytes, position)
                 }
                 StringOperation::FindString => {
-                    let position = machine.argument(2)?;
-                    (string(machine, source, layout)?, position)
+                    let position = match machine.argument(2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let pattern = match string(machine, source, layout) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (pattern, position)
                 }
                 StringOperation::FindCharacter => {
-                    let position = machine.argument(2)?;
+                    let position = match machine.argument(2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     (vec![machine.character(1)?], position)
                 }
                 _ => return Err(machine.error("invalid C++ string search")),
             };
-            let found = find_bytes(machine, &haystack, &needle, position)?;
+            let found = match find_bytes(machine, &haystack, &needle, position) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(machine.result(found))
         }
         StringOperation::Substr => {
-            let source = string(machine, object, layout)?;
-            let position = machine.argument(1)?;
-            let count = machine.argument(2)?;
-            let destination = machine.indirect_result()?;
-            let bytes = slice(machine, &source, position, count)?.to_vec();
-            assign(machine, destination, layout, bytes)?;
+            let source = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let position = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let destination = match machine.indirect_result() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let source_bytes = match slice(machine, &source, position, count) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let bytes = source_bytes.to_vec();
+            if let Err(error) = assign(machine, destination, layout, bytes) {
+                return Err(error);
+            }
             Ok(machine.result(destination))
         }
         StringOperation::CompareString => {
-            let left = string(machine, object, layout)?;
-            let other = machine.argument(1)?;
-            let right = string(machine, other, layout)?;
+            let left = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let other = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let right = match string(machine, other, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             machine.compare(&left, &right, layout)
         }
         StringOperation::CompareStringRange | StringOperation::CompareStringRanges => {
-            let left = string(machine, object, layout)?;
-            let position = machine.argument(1)?;
-            let count = machine.argument(2)?;
-            let left = slice(machine, &left, position, count)?.to_vec();
-            let other = machine.argument(3)?;
-            let right = string(machine, other, layout)?;
+            let left = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let position = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let bytes = match slice(machine, &left, position, count) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let left = bytes.to_vec();
+            let other = match machine.argument(3) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let right = match string(machine, other, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if matches!(operation, StringOperation::CompareStringRanges) {
-                let right_position = machine.argument(4)?;
-                let right_count = machine.argument(5)?;
-                let right = slice(machine, &right, right_position, right_count)?.to_vec();
+                let right_position = match machine.argument(4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let right_count = match machine.argument(5) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let bytes = match slice(machine, &right, right_position, right_count) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let right = bytes.to_vec();
                 return machine.compare(&left, &right, layout);
             }
             machine.compare(&left, &right, layout)
         }
         StringOperation::Equal => {
-            let left = string(machine, object, layout)?;
-            let other = machine.argument(1)?;
-            let right = string(machine, other, layout)?;
+            let left = match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let other = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let right = match string(machine, other, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             machine.string_equal(&left, &right)
         }
     }
@@ -1228,26 +1743,43 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
     if matches!(call, Call::Unsupported) {
         return Err(machine.error("unsupported C++ import"));
     }
-    let first = machine.argument(0)?;
+    let first = match machine.argument(0) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if matches!(
         call,
         Call::GuardAcquire | Call::GuardRelease | Call::GuardAbort
     ) {
         let value = match call {
             Call::GuardAcquire => {
-                let byte = machine.read(first, 1)?.remove(0);
-                if machine.byte_value(byte)? != 0 {
+                let mut header_bytes = match machine.read(first, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let byte = header_bytes.remove(0);
+                let header = match machine.byte_value(byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if header != 0 {
                     return Ok(machine.result(0));
                 }
-                machine.write(first, &[machine.constant(1)])?;
+                if let Err(error) = machine.write(first, &[machine.constant(1)]) {
+                    return Err(error);
+                }
                 1
             }
             Call::GuardRelease => {
-                machine.write(first, &[machine.constant(1)])?;
+                if let Err(error) = machine.write(first, &[machine.constant(1)]) {
+                    return Err(error);
+                }
                 0
             }
             Call::GuardAbort => {
-                machine.write(first, &[machine.constant(0)])?;
+                if let Err(error) = machine.write(first, &[machine.constant(0)]) {
+                    return Err(error);
+                }
                 0
             }
             _ => unreachable!(),
@@ -1255,9 +1787,18 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
         return Ok(machine.result(value));
     }
     if matches!(call, Call::StringAllocate) {
-        let capacity_pointer = machine.argument(1)?;
-        let capacity = machine.word(capacity_pointer)?;
-        let old_capacity = machine.argument(2)?;
+        let capacity_pointer = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let capacity = match machine.word(capacity_pointer) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let old_capacity = match machine.argument(2) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let Some(double) = old_capacity.checked_mul(2) else {
             return Err(machine.error("C++ string capacity overflows"));
         };
@@ -1269,13 +1810,21 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
         if capacity > machine.bound() as u64 {
             return Err(machine.error("C++ string capacity exceeds model bound"));
         }
-        machine.store_word(capacity_pointer, capacity)?;
-        let pointer = machine.allocate(capacity as usize + 1)?;
+        if let Err(error) = machine.store_word(capacity_pointer, capacity) {
+            return Err(error);
+        }
+        let pointer = match machine.allocate(capacity as usize + 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         return Ok(machine.result(pointer));
     }
     if matches!(call, Call::CowStringAllocate) {
         let requested = first;
-        let old_capacity = machine.argument(1)?;
+        let old_capacity = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let capacity = requested.max(old_capacity);
         if capacity > machine.bound() as u64 {
             return Err(machine.error("C++ string capacity exceeds model bound"));
@@ -1283,72 +1832,176 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
         let Some(allocation_size) = capacity.checked_add(25) else {
             return Err(machine.error("C++ string allocation size overflows"));
         };
-        let allocation = machine.allocate(allocation_size as usize)?;
-        machine.store_word(allocation, 0)?;
-        machine.store_word(address(machine, allocation, 8)?, capacity)?;
-        machine.store_word(address(machine, allocation, 16)?, 0)?;
+        let allocation = match machine.allocate(allocation_size as usize) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = machine.store_word(allocation, 0) {
+            return Err(error);
+        }
+        let capacity_address = match address(machine, allocation, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = machine.store_word(capacity_address, capacity) {
+            return Err(error);
+        }
+        let field_address = match address(machine, allocation, 16) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = machine.store_word(field_address, 0) {
+            return Err(error);
+        }
         return Ok(machine.result(allocation));
     }
     if matches!(call, Call::CowStringLeak) {
-        let pointer = machine.word(first)?;
-        let header = pointer
+        let pointer = match machine.word(first) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let header = match pointer
             .checked_sub(24)
-            .ok_or_else(|| machine.error("invalid old GNU string pointer"))?;
-        machine.store_word(address(machine, header, 16)?, u64::MAX)?;
+            .ok_or_else(|| machine.error("invalid old GNU string pointer"))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let field_address = match address(machine, header, 16) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = machine.store_word(field_address, u64::MAX) {
+            return Err(error);
+        }
         return Ok(machine.result(pointer));
     }
     if matches!(call, Call::Allocate) {
         if first > machine.bound() as u64 {
             return Err(machine.error("C++ allocation exceeds model bound"));
         }
-        let pointer = machine.allocate(first as usize)?;
+        let pointer = match machine.allocate(first as usize) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         return Ok(machine.result(pointer));
     }
     if let Call::ConstructText(layout) | Call::ConstructRange(layout) = call {
-        let pointer = machine.argument(1)?;
+        let pointer = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let bytes = if matches!(call, Call::ConstructRange(_)) {
-            let length = machine.argument(2)?;
+            let length = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if length > machine.bound() as u64 {
                 return Err(machine.error("C++ string initialization exceeds model bound"));
             }
-            machine.read(pointer, length as usize)?
+            match machine.read(pointer, length as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else {
-            text(machine, pointer)?
+            match text(machine, pointer) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         };
-        assign(machine, first, layout, bytes)?;
+        if let Err(error) = assign(machine, first, layout, bytes) {
+            return Err(error);
+        }
         return Ok(machine.result(first));
     }
     if let Call::ConstructCopy(layout) | Call::ConstructMove(layout) = call {
-        let source = machine.argument(1)?;
-        let bytes = string(machine, source, layout)?;
-        assign(machine, first, layout, bytes)?;
-        if matches!(call, Call::ConstructMove(_)) && source != first {
-            assign(machine, source, layout, Vec::new())?;
+        let source = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let bytes = match string(machine, source, layout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = assign(machine, first, layout, bytes) {
+            return Err(error);
+        }
+        if matches!(call, Call::ConstructMove(_))
+            && source != first
+            && let Err(error) = assign(machine, source, layout, Vec::new())
+        {
+            return Err(error);
         }
         return Ok(machine.result(first));
     }
     if let Call::ConstructSubstring(layout) = call {
-        let source = machine.argument(1)?;
-        let position = machine.argument(2)?;
-        let count = machine.argument(3)?;
-        let bytes = string(machine, source, layout)?;
-        let bytes = slice(machine, &bytes, position, count)?.to_vec();
-        assign(machine, first, layout, bytes)?;
+        let source = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let position = match machine.argument(2) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let count = match machine.argument(3) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let bytes = match string(machine, source, layout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let selected = match slice(machine, &bytes, position, count) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let bytes = selected.to_vec();
+        if let Err(error) = assign(machine, first, layout, bytes) {
+            return Err(error);
+        }
         return Ok(machine.result(first));
     }
     if let Call::StringOperation(layout, StringOperation::Substr) = call {
-        let destination = machine.indirect_result()?;
-        let source = machine.argument(machine.indirect_result_argument_offset())?;
-        let bytes = string(machine, source, layout)?;
-        let position = machine.argument(machine.indirect_result_argument_offset() + 1)?;
-        let count = machine.argument(machine.indirect_result_argument_offset() + 2)?;
-        let bytes = slice(machine, &bytes, position, count)?.to_vec();
-        assign(machine, destination, layout, bytes)?;
+        let destination = match machine.indirect_result() {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let source = match machine.argument(machine.indirect_result_argument_offset()) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let bytes = match string(machine, source, layout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let position = match machine.argument(machine.indirect_result_argument_offset() + 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let count = match machine.argument(machine.indirect_result_argument_offset() + 2) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let piece = match slice(machine, &bytes, position, count) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let bytes = piece.to_vec();
+        if let Err(error) = assign(machine, destination, layout, bytes) {
+            return Err(error);
+        }
         return Ok(machine.result(destination));
     }
     match call {
         Call::StreamStatus(status) => {
-            let flags = machine.word(address(machine, first, 32)?)?;
+            let field_address = match address(machine, first, 32) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let flags = match machine.word(field_address) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let value = match status {
                 StreamStatus::Good => flags == 0,
                 StreamStatus::Eof => flags & 2 != 0,
@@ -1361,47 +2014,92 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             let Some(locale) = machine.locale() else {
                 return Err(machine.error("unsupported C++ locale ABI"));
             };
-            let destination = machine.indirect_result()?;
-            machine.store_word(destination, locale.facet)?;
+            let destination = match machine.indirect_result() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(destination, locale.facet) {
+                return Err(error);
+            }
             return Ok(machine.result(destination));
         }
         Call::UseFacet => {
             let Some(locale) = machine.locale() else {
                 return Err(machine.error("unsupported C++ locale ABI"));
             };
-            let id = machine.argument(1)?;
-            if machine.word(first)? != locale.facet || id != locale.id {
+            let id = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let stored_facet = match machine.word(first) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if stored_facet != locale.facet || id != locale.id {
                 return Err(machine.error("unsupported C++ locale facet"));
             }
             return Ok(machine.result(locale.facet));
         }
         Call::Widen | Call::Narrow => {
-            let mut byte = machine.character(1)?;
-            if matches!(call, Call::Narrow) && !machine.ascii(&byte)? {
-                byte = machine.character(2)?;
+            let mut byte = match machine.character(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if matches!(call, Call::Narrow) {
+                let ascii = match machine.ascii(&byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !ascii {
+                    byte = match machine.character(2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                }
             }
             return machine.character_result(byte);
         }
         Call::Construct(layout) => {
-            assign(machine, first, layout, Vec::new())?;
+            if let Err(error) = assign(machine, first, layout, Vec::new()) {
+                return Err(error);
+            }
             return Ok(machine.result(first));
         }
         Call::GnuStringAccess(operation) => {
-            let pointer = machine.word(first)?;
-            let length = machine.word(address(machine, first, 8)?)?;
+            let pointer = match machine.word(first) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let field_address = match address(machine, first, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let length = match machine.word(field_address) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if length > machine.bound() as u64 {
                 return Err(machine.error("C++ string exceeds model bound"));
             }
             let value = match operation {
                 GnuStringAccess::Size => length,
                 GnuStringAccess::Begin => pointer,
-                GnuStringAccess::End => address(machine, pointer, length)?,
+                GnuStringAccess::End => match address(machine, pointer, length) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                },
                 GnuStringAccess::Index => {
-                    let index = machine.argument(1)?;
+                    let index = match machine.argument(1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if index > length {
                         return Err(machine.error("C++ string index out of range"));
                     }
-                    address(machine, pointer, index)?
+                    match address(machine, pointer, index) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 }
             };
             return Ok(machine.result(value));
@@ -1410,26 +2108,53 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             return string_operation(machine, first, layout, operation);
         }
         Call::Compare(layout) => {
-            let left = string(machine, first, layout)?;
-            let pointer = machine.argument(1)?;
-            let right = text(machine, pointer)?;
+            let left = match string(machine, first, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let pointer = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let right = match text(machine, pointer) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             return machine.compare(&left, &right, layout);
         }
         Call::CompareRange(layout) => {
-            let left = string(machine, first, layout)?;
-            let offset = machine.argument(1)?;
-            let count = machine.argument(2)?;
+            let left = match string(machine, first, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let offset = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if offset > left.len() as u64 {
                 return Err(machine.error("C++ string comparison offset out of range"));
             }
             let offset = offset as usize;
             let length = count.min((left.len() - offset) as u64) as usize;
-            let pointer = machine.argument(3)?;
-            let right_length = machine.argument(4)?;
+            let pointer = match machine.argument(3) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let right_length = match machine.argument(4) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if right_length > machine.bound() as u64 {
                 return Err(machine.error("C++ string comparison exceeds model bound"));
             }
-            let right = machine.read(pointer, right_length as usize)?;
+            let right = match machine.read(pointer, right_length as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             return machine.compare(&left[offset..offset + length], &right, layout);
         }
         _ => {}
@@ -1464,33 +2189,66 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             | Call::InputCString
             | Call::InputCStringWidth
     );
-    machine.stream(first, input)?;
+    if let Err(error) = machine.stream(first, input) {
+        return Err(error);
+    }
     let call = if matches!(call, Call::Manipulator) {
-        let pointer = machine.argument(1)?;
-        machine.manipulator(pointer)?
+        let pointer = match machine.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        match machine.manipulator(pointer) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        }
     } else {
         call
     };
-    if machine.stream_failed(first, input)? {
+    let failed = match machine.stream_failed(first, input) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if failed {
         return Ok(machine.result(first));
     }
     let mut eof = false;
     let bytes = match call {
         Call::Text => {
-            let pointer = machine.argument(1)?;
-            text(machine, pointer)?
+            let pointer = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            match text(machine, pointer) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         }
         Call::String(layout) => {
-            let object = machine.argument(1)?;
-            string(machine, object, layout)?
+            let object = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            match string(machine, object, layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         }
         Call::Write => {
-            let pointer = machine.argument(1)?;
-            let length = machine.argument(2)?;
+            let pointer = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let length = match machine.argument(2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if length > machine.bound() as u64 {
                 return Err(machine.error("C++ output exceeds model bound"));
             }
-            machine.read(pointer, length as usize)?
+            match machine.read(pointer, length as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         }
         Call::Character => {
             vec![machine.character(1)?]
@@ -1503,38 +2261,88 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             } else {
                 Direction::Output
             };
-            machine.integer(signed, bits, direction)?;
-            eof = input && machine.input(false)?.is_none();
+            if let Err(error) = machine.integer(signed, bits, direction) {
+                return Err(error);
+            }
+            eof = if input {
+                let next_input = match machine.input(false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                next_input.is_none()
+            } else {
+                false
+            };
             Vec::new()
         }
         Call::InputCharacter => {
-            while let Some(byte) = machine.input(false)? {
-                if !machine.whitespace(&byte)? {
+            loop {
+                let byte = match machine.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
+                let is_whitespace = match machine.whitespace(&byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !is_whitespace {
                     break;
                 }
-                machine.input(true)?;
+                if let Err(error) = machine.input(true) {
+                    return Err(error);
+                }
             }
-            let destination = machine.argument(1)?;
-            let Some(byte) = machine.input(true)? else {
-                machine.set_stream_state(first, true, 6)?;
+            let destination = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let next_byte = match machine.input(true) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let Some(byte) = next_byte else {
+                if let Err(error) = machine.set_stream_state(first, true, 6) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             };
-            machine.write(destination, &[byte])?;
+            if let Err(error) = machine.write(destination, &[byte]) {
+                return Err(error);
+            }
             Vec::new()
         }
         Call::InputRawCharacter => {
-            let destination = machine.argument(1)?;
-            let Some(byte) = machine.input(true)? else {
-                machine.set_stream_state(first, true, 6)?;
+            let destination = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let next_byte = match machine.input(true) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let Some(byte) = next_byte else {
+                if let Err(error) = machine.set_stream_state(first, true, 6) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             };
-            machine.write(destination, &[byte])?;
+            if let Err(error) = machine.write(destination, &[byte]) {
+                return Err(error);
+            }
             Vec::new()
         }
         Call::InputCString | Call::InputCStringWidth => {
-            let destination = machine.argument(1)?;
+            let destination = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let width = if matches!(call, Call::InputCStringWidth) {
-                machine.argument(2)?
+                match machine.argument(2) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             } else {
                 0
             };
@@ -1543,100 +2351,196 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             } else {
                 width.saturating_sub(1).min(machine.bound() as u64) as usize
             };
-            while let Some(byte) = machine.input(false)? {
-                if !machine.whitespace(&byte)? {
+            loop {
+                let byte = match machine.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
+                let is_whitespace = match machine.whitespace(&byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !is_whitespace {
                     break;
                 }
-                machine.input(true)?;
+                if let Err(error) = machine.input(true) {
+                    return Err(error);
+                }
             }
             let mut bytes = Vec::new();
             while bytes.len() < maximum {
-                let Some(byte) = machine.input(false)? else {
-                    break;
+                let byte = match machine.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
                 };
-                if machine.whitespace(&byte)? {
+                let is_whitespace = match machine.whitespace(&byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if is_whitespace {
                     break;
                 }
-                machine.input(true)?;
+                if let Err(error) = machine.input(true) {
+                    return Err(error);
+                }
                 bytes.push(byte);
             }
             if bytes.is_empty() {
-                let flags = if machine.input(false)?.is_none() {
-                    6
-                } else {
-                    4
+                let next_byte = match machine.input(false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
                 };
-                machine.set_stream_state(first, true, flags)?;
+                let flags = if next_byte.is_none() { 6 } else { 4 };
+                if let Err(error) = machine.set_stream_state(first, true, flags) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             }
             bytes.push(machine.constant(0));
-            machine.write(destination, &bytes)?;
-            eof = machine.input(false)?.is_none();
+            if let Err(error) = machine.write(destination, &bytes) {
+                return Err(error);
+            }
+            let next_byte = match machine.input(false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            eof = next_byte.is_none();
             Vec::new()
         }
         Call::Input(layout, kind) => {
             let line = !matches!(kind, Input::Word);
             let delimiter = if matches!(kind, Input::Delimited) {
-                machine.argument(2)? as u8
+                let delimiter_argument = match machine.argument(2) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                delimiter_argument as u8
             } else {
                 10
             };
-            let destination = machine.argument(1)?;
+            let destination = match machine.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let mut bytes = Vec::new();
-            if machine.input(false)?.is_none() {
-                machine.set_stream_state(first, true, 6)?;
-                assign(machine, destination, layout, bytes)?;
+            let next_byte = match machine.input(false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if next_byte.is_none() {
+                if let Err(error) = machine.set_stream_state(first, true, 6) {
+                    return Err(error);
+                }
+                if let Err(error) = assign(machine, destination, layout, bytes) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             }
             if !line {
-                while let Some(byte) = machine.input(false)? {
-                    if !machine.whitespace(&byte)? {
+                loop {
+                    let byte = match machine.input(false) {
+                        Ok(Some(byte)) => byte,
+                        Ok(None) => break,
+                        Err(error) => return Err(error),
+                    };
+
+                    let is_whitespace = match machine.whitespace(&byte) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if !is_whitespace {
                         break;
                     }
-                    machine.input(true)?;
+                    if let Err(error) = machine.input(true) {
+                        return Err(error);
+                    }
                 }
             }
             let mut delimited = false;
-            while let Some(byte) = machine.input(false)? {
-                if line && machine.equal(&byte, delimiter)? {
-                    machine.input(true)?;
-                    delimited = true;
-                    break;
+            loop {
+                let byte = match machine.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
+                if line {
+                    let equal = match machine.equal(&byte, delimiter) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if equal {
+                        if let Err(error) = machine.input(true) {
+                            return Err(error);
+                        }
+                        delimited = true;
+                        break;
+                    }
+                } else {
+                    let whitespace = match machine.whitespace(&byte) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if whitespace {
+                        break;
+                    }
                 }
-                if !line && machine.whitespace(&byte)? {
-                    break;
+                if let Err(error) = machine.input(true) {
+                    return Err(error);
                 }
-                machine.input(true)?;
                 bytes.push(byte);
                 if bytes.len() > machine.bound() {
                     return Err(machine.error("C++ input exceeds model bound"));
                 }
             }
             if !line && bytes.is_empty() {
-                let flags = if machine.input(false)?.is_none() {
-                    6
-                } else {
-                    4
+                let next_byte = match machine.input(false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
                 };
-                machine.set_stream_state(first, true, flags)?;
-                assign(machine, destination, layout, Vec::new())?;
+                let flags = if next_byte.is_none() { 6 } else { 4 };
+                if let Err(error) = machine.set_stream_state(first, true, flags) {
+                    return Err(error);
+                }
+                if let Err(error) = assign(machine, destination, layout, Vec::new()) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             }
             if line && bytes.is_empty() && !delimited {
-                machine.set_stream_state(first, true, 6)?;
-                assign(machine, destination, layout, Vec::new())?;
+                if let Err(error) = machine.set_stream_state(first, true, 6) {
+                    return Err(error);
+                }
+                if let Err(error) = assign(machine, destination, layout, Vec::new()) {
+                    return Err(error);
+                }
                 return Ok(machine.result(first));
             }
-            eof = !delimited && machine.input(false)?.is_none();
-            assign(machine, destination, layout, bytes)?;
+            eof = if delimited {
+                false
+            } else {
+                let next_input = match machine.input(false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                next_input.is_none()
+            };
+            if let Err(error) = assign(machine, destination, layout, bytes) {
+                return Err(error);
+            }
             Vec::new()
         }
         _ => return Err(machine.error("unsupported C++ stream operation")),
     };
-    if eof {
-        machine.end_input(first)?;
+    if eof && let Err(error) = machine.end_input(first) {
+        return Err(error);
     }
-    machine.output(bytes)?;
+    if let Err(error) = machine.output(bytes) {
+        return Err(error);
+    }
     Ok(machine.result(first))
 }
 
@@ -1682,8 +2586,10 @@ pub(super) fn initialize<M: Machine>(
         return Err(machine.error("unsupported C++ ABI: requires 64-bit pointers"));
     }
     for (&slot, symbol) in &image.imports {
-        if matches!(find(symbol), Some(Call::Endl | Call::Flush)) {
-            machine.relocate(slot, slot)?;
+        if matches!(find(symbol), Some(Call::Endl | Call::Flush))
+            && let Err(error) = machine.relocate(slot, slot)
+        {
+            return Err(error);
         }
     }
     for input in [true, false] {
@@ -1704,49 +2610,151 @@ pub(super) fn initialize<M: Machine>(
             {
                 continue;
             }
-            let object = machine.allocate(512)?;
-            machine.relocate(slot, object)?;
+            let object = match machine.allocate(512) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.relocate(slot, object) {
+                return Err(error);
+            }
             objects.push((object, name(symbol).starts_with("_ZSt")));
         }
         for (object, gnu) in objects {
-            let vtable = machine.allocate(64)?;
+            let vtable = match machine.allocate(64) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let base = if input { 16 } else { 8 };
-            machine.store_word(vtable, base)?;
-            machine.store_word(object, address(machine, vtable, 24)?)?;
+            if let Err(error) = machine.store_word(vtable, base) {
+                return Err(error);
+            }
+            let vtable_address = match address(machine, vtable, 24) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(object, vtable_address) {
+                return Err(error);
+            }
             if !gnu {
-                machine.store_word(address(machine, object, base + 8)?, 0x1002)?;
-                machine.store_word(address(machine, object, base + 16)?, 6)?;
-                machine.store_word(address(machine, object, base + 24)?, 0)?;
-                machine.store_word(address(machine, object, base + 32)?, 0)?;
+                let field_address = match address(machine, object, base + 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, 0x1002) {
+                    return Err(error);
+                }
+                let field_address = match address(machine, object, base + 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, 6) {
+                    return Err(error);
+                }
+                let field_address = match address(machine, object, base + 24) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, 0) {
+                    return Err(error);
+                }
+                let field_address = match address(machine, object, base + 32) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, 0) {
+                    return Err(error);
+                }
                 continue;
             }
-            let facet = machine.allocate(320)?;
+            let facet = match machine.allocate(320) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if input {
                 // GNU's inline stream sentry checks the streambuf get area
                 // after extraction. Keep a valid nonempty area so it can
                 // observe modeled input state without calling the real
                 // streambuf's underflow implementation.
-                let streambuf = machine.allocate(32)?;
-                machine.store_word(address(machine, object, base + 232)?, streambuf)?;
-                machine.store_word(
-                    address(machine, streambuf, 16)?,
-                    address(machine, streambuf, 32)?,
-                )?;
-                machine.store_word(
-                    address(machine, streambuf, 24)?,
-                    address(machine, streambuf, 33)?,
-                )?;
+                let streambuf = match machine.allocate(32) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let field_address = match address(machine, object, base + 232) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, streambuf) {
+                    return Err(error);
+                }
+                let field_address = match address(machine, streambuf, 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let streambuf_field_address = match address(machine, streambuf, 32) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, streambuf_field_address) {
+                    return Err(error);
+                }
+                let field_address = match address(machine, streambuf, 24) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let streambuf_field_address = match address(machine, streambuf, 33) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = machine.store_word(field_address, streambuf_field_address) {
+                    return Err(error);
+                }
             }
-            machine.store_word(address(machine, object, base + 8)?, 6)?;
-            machine.store_word(address(machine, object, base + 16)?, 0)?;
-            machine.store_word(address(machine, object, base + 24)?, 0x1002)?;
-            machine.store_word(address(machine, object, base + 32)?, 0)?;
-            machine.store_word(address(machine, object, base + 240)?, facet)?;
+            let field_address = match address(machine, object, base + 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, 6) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, base + 16) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, 0) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, base + 24) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, 0x1002) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, base + 32) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, 0) {
+                return Err(error);
+            }
+            let field_address = match address(machine, object, base + 240) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.store_word(field_address, facet) {
+                return Err(error);
+            }
             let mut cache = vec![machine.constant(1)];
             for byte in 0..=255 {
                 cache.push(machine.constant(byte));
             }
-            machine.write(address(machine, facet, 56)?, &cache)?;
+            let field_address = match address(machine, facet, 56) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = machine.write(field_address, &cache) {
+                return Err(error);
+            }
         }
     }
     if image.format != crate::loader::Format::MachO
@@ -1757,18 +2765,40 @@ pub(super) fn initialize<M: Machine>(
     {
         return Ok(None);
     }
-    let id = machine.allocate(8)?;
+    let id = match machine.allocate(8) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     for (&slot, symbol) in &image.imports {
-        if name(symbol) == "_ZNSt3__15ctypeIcE2idE" {
-            machine.relocate(slot, id)?;
+        if name(symbol) == "_ZNSt3__15ctypeIcE2idE"
+            && let Err(error) = machine.relocate(slot, id)
+        {
+            return Err(error);
         }
     }
-    let facet = machine.allocate(32)?;
-    let vtable = machine.allocate(80)?;
-    machine.store_word(facet, vtable)?;
+    let facet = match machine.allocate(32) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let vtable = match machine.allocate(80) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = machine.store_word(facet, vtable) {
+        return Err(error);
+    }
     // Darwin's ctype<char> stores a uint32_t classification table after locale::facet.
-    let table = machine.allocate(256 * 4)?;
-    machine.store_word(address(machine, facet, 16)?, table)?;
+    let table = match machine.allocate(256 * 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let field_address = match address(machine, facet, 16) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = machine.store_word(field_address, table) {
+        return Err(error);
+    }
     let mut bytes = Vec::new();
     for byte in 0u8..=255 {
         let classes = [
@@ -1792,11 +2822,31 @@ pub(super) fn initialize<M: Machine>(
         }
         bytes.extend(mask.to_le_bytes().map(|byte| machine.constant(byte)));
     }
-    machine.write(table, &bytes)?;
-    let widen = machine.allocate(1)?;
-    let narrow = machine.allocate(1)?;
-    machine.store_word(address(machine, vtable, 56)?, widen)?;
-    machine.store_word(address(machine, vtable, 72)?, narrow)?;
+    if let Err(error) = machine.write(table, &bytes) {
+        return Err(error);
+    }
+    let widen = match machine.allocate(1) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let narrow = match machine.allocate(1) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let field_address = match address(machine, vtable, 56) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = machine.store_word(field_address, widen) {
+        return Err(error);
+    }
+    let field_address = match address(machine, vtable, 72) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = machine.store_word(field_address, narrow) {
+        return Err(error);
+    }
     Ok(Some(Locale {
         id,
         facet,
@@ -1880,8 +2930,22 @@ pub(super) fn validate_stream<M: Machine>(
     } else {
         (8, 24)
     };
-    let flags = machine.word(address(machine, object, base + flags_offset)?)?;
-    let width = machine.word(address(machine, object, base + width_offset)?)?;
+    let flags_address = match address(machine, object, base + flags_offset) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let flags = match machine.word(flags_address) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let field_address = match address(machine, object, base + width_offset) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let width = match machine.word(field_address) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if flags != 0x1002 || width != 0 {
         return Err(machine.error("unsupported C++ stream formatting"));
     }

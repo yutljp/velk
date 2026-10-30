@@ -46,7 +46,9 @@ impl Runner<'_> {
             let pending: Vec<u8> = self.windows_state_mut().crt_output[index]
                 .drain(..flush_length)
                 .collect();
-            self.emit(stream, &pending)?;
+            if let Err(error) = self.emit(stream, &pending) {
+                return Err(error);
+            }
         }
         Ok(())
     }
@@ -65,7 +67,9 @@ impl Runner<'_> {
         };
         for stream in indices {
             let pending = std::mem::take(&mut self.windows_state_mut().crt_output[stream - 1]);
-            self.emit(stream, &pending)?;
+            if let Err(error) = self.emit(stream, &pending) {
+                return Err(error);
+            }
         }
         Ok(())
     }
@@ -75,10 +79,13 @@ impl Runner<'_> {
         token: u64,
         mode: u32,
     ) -> Option<bool> {
-        let index = self
+        let Some(index) = self
             .streams
             .iter()
-            .position(|&stream| stream != 0 && stream == token)?;
+            .position(|&stream| stream != 0 && stream == token)
+        else {
+            return None;
+        };
         if !matches!(index, 1 | 2) {
             return Some(false);
         }
@@ -172,7 +179,9 @@ impl Runner<'_> {
         {
             return Ok(());
         }
-        self.windows_flush_crt(0)?;
+        if let Err(error) = self.windows_flush_crt(0) {
+            return Err(error);
+        }
         let tokens: Vec<u64> = self.files.streams.keys().copied().collect();
         for token in tokens {
             if self.windows_state().file_handles.contains_key(&token) {

@@ -2,7 +2,8 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use super::{Symbols, function::vacant_name};
+use super::Symbols;
+use super::function::vacant_name;
 use crate::ir::{CType, Convention, Expr, FunctionIr, Stmt};
 
 pub(super) struct Group {

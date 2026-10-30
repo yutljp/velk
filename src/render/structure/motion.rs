@@ -95,7 +95,8 @@ pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
             incoming[*to].push(from);
         }
     }
-    for (join, predecessors) in incoming.iter().enumerate().skip(1) {
+    let later_incoming = incoming.iter().enumerate().skip(1);
+    for (join, predecessors) in later_incoming {
         if predecessors.len() < 2
             || predecessors.contains(&join)
             || !predecessors.iter().all(|from| edges[*from] == [join])

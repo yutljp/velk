@@ -543,17 +543,26 @@ fn field_of<'c>(
 /// An address inside an element of an array of structures, as the field
 /// there, `p[i].f_8` or `p->f_8`, and the field's width.
 fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(Place, u64)> {
-    let (name, _, index, offset, base) = element_terms(addr, ctx)?;
-    let structure = pointee_of(base, ctx)?;
-    ctx.arrays.get(&structure)?;
-    let member = ctx
+    let Some((name, _, index, offset, base)) = element_terms(addr, ctx) else {
+        return None;
+    };
+    let Some(structure) = pointee_of(base, ctx) else {
+        return None;
+    };
+    if !ctx.arrays.contains_key(&structure) {
+        return None;
+    }
+    let Some(member) = ctx
         .members
         .get(&(structure.clone(), offset as i64))
         .or_else(|| {
             ctx.member_views
                 .get(&(structure, offset as i64))
                 .and_then(|views| views.first())
-        })?;
+        })
+    else {
+        return None;
+    };
     Some((
         Place {
             text: match index {
@@ -576,14 +585,19 @@ pub(crate) fn field_address(addr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if element_index(addr, ctx).is_some() {
         return None;
     }
-    let (field, _) = array_field(addr, ctx)?;
+    let Some((field, _)) = array_field(addr, ctx) else {
+        return None;
+    };
     Some(format!("&{}", field.text))
 }
 
 /// The structure the pointer `expr` points at: a register's, or a local's
 /// the frame holds it in.
 fn pointee_of(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
-    let CType::Named(name) = pointer_target(expr, ctx)? else {
+    let Some(target) = pointer_target(expr, ctx) else {
+        return None;
+    };
+    let CType::Named(name) = target else {
         return None;
     };
     name.strip_prefix("struct ").map(str::to_owned)
@@ -694,10 +708,12 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
 fn size_of(ty: &CType, ctx: &Ctx<'_>) -> Option<u64> {
     match ty {
         CType::Pointer(_) => Some(8),
-        CType::Named(name) if name.starts_with("struct ") => ctx
-            .arrays
-            .get(name.strip_prefix("struct ")?)
-            .map(|layout| layout.size),
+        CType::Named(name) if name.starts_with("struct ") => {
+            let Some(type_name) = name.strip_prefix("struct ") else {
+                return None;
+            };
+            ctx.arrays.get(type_name).map(|layout| layout.size)
+        }
         _ => CType::pointer_to(ty.clone()).pointee_size().map(u64::from),
     }
 }
@@ -760,7 +776,10 @@ pub(crate) fn element_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64
 /// the pointer, the size of its elements, and the element index `i + k`,
 /// which C scales by itself.
 pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr)> {
-    match element_terms(addr, ctx)? {
+    let Some(terms) = element_terms(addr, ctx) else {
+        return None;
+    };
+    match terms {
         (name, size, index, 0, _) => Some((name, size, index)),
         _ => None,
     }

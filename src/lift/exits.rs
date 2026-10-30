@@ -137,7 +137,12 @@ fn leaving(image: &Image, function: u64, target: u64, at_entry: Option<bool>) ->
         .range(..target)
         .next_back()
         .filter(|(start, _)| **start != function)
-        .and_then(|(start, function)| Some(start + function.size?))
+        .and_then(|(start, function)| {
+            let Some(size) = function.size else {
+                return None;
+            };
+            Some(start + size)
+        })
         .filter(|end| target < *end)
         .map_or(Leaving::TailCall, |end| {
             Leaving::Continues(target, end - target)
@@ -221,7 +226,9 @@ fn offset_of(value: &Expr, state: &HashMap<u16, i64>) -> Option<i64> {
             let Expr::Const(by) = rhs.as_ref() else {
                 return None;
             };
-            let base = offset_of(lhs, state)?;
+            let Some(base) = offset_of(lhs, state) else {
+                return None;
+            };
             match op {
                 BinOp::Add => Some(base.wrapping_add(*by as i64)),
                 BinOp::Sub => Some(base.wrapping_sub(*by as i64)),

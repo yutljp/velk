@@ -115,8 +115,10 @@ impl Solver {
             satisfiability: HashMap::new(),
             satisfiability_bytes: 0,
         };
-        solver.send("(set-option :print-success false)\n(set-option :produce-models true)\n(set-logic QF_BV)")?;
-        solver.query(&[], None)?;
+        if let Err(error) = solver.send("(set-option :print-success false)\n(set-option :produce-models true)\n(set-logic QF_BV)") { return Err(error); }
+        if let Err(error) = solver.query(&[], None) {
+            return Err(error);
+        }
         Ok(solver)
     }
 
@@ -296,7 +298,8 @@ impl Solver {
             .split(['(', ')', ' ', '\n', '\r', '\t'])
             .filter(|s| !s.is_empty())
             .collect();
-        for (index, token) in tokens.iter().enumerate().rev() {
+        let reversed_tokens = tokens.iter().enumerate().rev();
+        for (index, token) in reversed_tokens {
             let value = if let Some(hex) = token.strip_prefix("#x") {
                 u64::from_str_radix(hex, 16).ok()
             } else if let Some(binary) = token.strip_prefix("#b") {

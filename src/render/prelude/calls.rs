@@ -87,7 +87,8 @@ fn closing(tokens: &[Token<'_>], open: usize) -> Option<usize> {
         _ => return None,
     };
     let mut depth = 0usize;
-    for (index, token) in tokens.iter().enumerate().skip(open) {
+    let later_tokens = tokens.iter().enumerate().skip(open);
+    for (index, token) in later_tokens {
         if token.text == tokens[open].text {
             depth += 1;
         } else if token.text == end {

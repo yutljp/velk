@@ -105,19 +105,33 @@ impl Machine for Adapter<'_, '_> {
         Ok(u64::from(byte))
     }
     fn read(&mut self, address: u64, length: usize) -> Result<Vec<u8>, Stop> {
-        self.runner
-            .check_memory_range(address, length as u64, /* write */ false)?;
+        if let Err(error) =
+            self.runner
+                .check_memory_range(address, length as u64, /* write */ false)
+        {
+            return Err(error);
+        }
         let mut bytes = Vec::new();
         for offset in 0..length {
-            bytes.push(self.runner.read_byte(address + offset as u64)?);
+            let byte = match self.runner.read_byte(address + offset as u64) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            bytes.push(byte);
         }
         Ok(bytes)
     }
     fn write(&mut self, address: u64, bytes: &[u8]) -> Result<(), Stop> {
-        self.runner
-            .check_memory_range(address, bytes.len() as u64, /* write */ true)?;
+        if let Err(error) =
+            self.runner
+                .check_memory_range(address, bytes.len() as u64, /* write */ true)
+        {
+            return Err(error);
+        }
         for (offset, &byte) in bytes.iter().enumerate() {
-            self.runner.write_byte(address + offset as u64, byte)?;
+            if let Err(error) = self.runner.write_byte(address + offset as u64, byte) {
+                return Err(error);
+            }
         }
         Ok(())
     }
@@ -125,7 +139,11 @@ impl Machine for Adapter<'_, '_> {
         self.runner.image.format == crate::loader::Format::MachO
     }
     fn character(&mut self, index: usize) -> Result<u8, Stop> {
-        Ok(self.argument(index)? as u8)
+        let argument = match self.argument(index) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Ok(argument as u8)
     }
     fn ascii(&mut self, byte: &u8) -> Result<bool, Stop> {
         Ok(byte.is_ascii())
@@ -134,14 +152,21 @@ impl Machine for Adapter<'_, '_> {
         Ok(byte)
     }
     fn word(&mut self, address: u64) -> Result<u64, Stop> {
-        let bytes = self.read(address, 8)?;
+        let bytes = match self.read(address, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         Ok(u64::from_le_bytes(
             bytes.try_into().expect("eight-byte read"),
         ))
     }
     fn relocate(&mut self, address: u64, value: u64) -> Result<(), Stop> {
-        self.runner
-            .check_memory_range(address, 8, /* write */ false)?;
+        if let Err(error) = self
+            .runner
+            .check_memory_range(address, 8, /* write */ false)
+        {
+            return Err(error);
+        }
         for (offset, byte) in value.to_le_bytes().into_iter().enumerate() {
             self.runner
                 .machine
@@ -170,7 +195,9 @@ impl Machine for Adapter<'_, '_> {
         Ok(byte.is_ascii_whitespace())
     }
     fn input(&mut self, consume: bool) -> Result<Option<u8>, Stop> {
-        self.runner.tick()?;
+        if let Err(error) = self.runner.tick() {
+            return Err(error);
+        }
         let byte = self.runner.input.get(self.runner.input_position).copied();
         if consume && byte.is_some() {
             self.runner.input_position += 1;
@@ -182,7 +209,10 @@ impl Machine for Adapter<'_, '_> {
     }
     fn integer(&mut self, signed: bool, bits: u8, direction: Direction) -> Result<(), Stop> {
         if matches!(direction, Direction::Output) {
-            let value = self.argument(1)?;
+            let value = match self.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let shift = 64 - bits;
             let text = if signed {
                 ((value.wrapping_shl(shift.into()) as i64) >> shift).to_string()
@@ -191,21 +221,42 @@ impl Machine for Adapter<'_, '_> {
             };
             return self.output(text.into_bytes());
         }
-        let stream = self.argument(0)?;
-        let destination = self.argument(1)?;
-        while self
-            .input(false)?
-            .is_some_and(|byte| byte.is_ascii_whitespace())
-        {
-            self.input(true)?;
+        let stream = match self.argument(0) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let destination = match self.argument(1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        loop {
+            let next_byte = match self.input(false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if !next_byte.is_some_and(|byte| byte.is_ascii_whitespace()) {
+                break;
+            }
+
+            if let Err(error) = self.input(true) {
+                return Err(error);
+            }
         }
-        let Some(first) = self.input(false)? else {
-            self.set_stream_state(stream, true, 4)?;
+        let next_byte = match self.input(false) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let Some(first) = next_byte else {
+            if let Err(error) = self.set_stream_state(stream, true, 4) {
+                return Err(error);
+            }
             return Ok(());
         };
         let negative = first == b'-';
-        if negative || first == b'+' {
-            self.input(true)?;
+        if (negative || first == b'+')
+            && let Err(error) = self.input(true)
+        {
+            return Err(error);
         }
         let limit = if signed {
             (1u64 << (bits - 1)) - u64::from(!negative)
@@ -215,7 +266,13 @@ impl Machine for Adapter<'_, '_> {
         let mut value = 0u64;
         let mut count = 0;
         let mut overflow = false;
-        while let Some(byte) = self.input(false)? {
+        loop {
+            let byte = match self.input(false) {
+                Ok(Some(byte)) => byte,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             if !byte.is_ascii_digit() {
                 break;
             }
@@ -227,15 +284,23 @@ impl Machine for Adapter<'_, '_> {
                 value = value * 10 + digit;
             }
             count += 1;
-            self.input(true)?;
+            if let Err(error) = self.input(true) {
+                return Err(error);
+            }
         }
         if count == 0 {
-            self.set_stream_state(stream, true, 4)?;
-            self.write(destination, &0u64.to_le_bytes()[..usize::from(bits / 8)])?;
+            if let Err(error) = self.set_stream_state(stream, true, 4) {
+                return Err(error);
+            }
+            if let Err(error) =
+                self.write(destination, &0u64.to_le_bytes()[..usize::from(bits / 8)])
+            {
+                return Err(error);
+            }
             return Ok(());
         }
-        if overflow {
-            self.set_stream_state(stream, true, 4)?;
+        if overflow && let Err(error) = self.set_stream_state(stream, true, 4) {
+            return Err(error);
         }
         if negative {
             value = if overflow && !signed {
@@ -269,14 +334,22 @@ impl Machine for Adapter<'_, '_> {
             return cxx::validate_stream(self, address, input, layout);
         }
         for (&slot, symbol) in &self.runner.image.imports {
-            if cxx::stream_symbol(symbol) == Some(input) && self.word(slot)? == address {
-                self.runner.memory_error()?;
-                let layout = if cxx::name(symbol).starts_with("_ZSt") {
-                    Layout::Gnu
-                } else {
-                    Layout::Llvm
+            if cxx::stream_symbol(symbol) == Some(input) {
+                let word = match self.word(slot) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
                 };
-                return cxx::validate_stream(self, address, input, layout);
+                if word == address {
+                    if let Err(error) = self.runner.memory_error() {
+                        return Err(error);
+                    }
+                    let layout = if cxx::name(symbol).starts_with("_ZSt") {
+                        Layout::Gnu
+                    } else {
+                        Layout::Llvm
+                    };
+                    return cxx::validate_stream(self, address, input, layout);
+                }
             }
         }
         Err(self.error("unsupported C++ stream: expected std::cin or std::cout"))
@@ -286,9 +359,14 @@ impl Machine for Adapter<'_, '_> {
         let Some(location) = address.checked_add(offset) else {
             return Err(self.error("C++ stream state address overflows"));
         };
-        let flags = self.word(location)?;
-        if flags & 2 != 0 {
-            self.set_stream_state(address, input, 4)?;
+        let flags = match self.word(location) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if flags & 2 != 0
+            && let Err(error) = self.set_stream_state(address, input, 4)
+        {
+            return Err(error);
         }
         Ok(flags != 0)
     }
@@ -297,7 +375,10 @@ impl Machine for Adapter<'_, '_> {
         let Some(location) = address.checked_add(offset) else {
             return Err(self.error("C++ stream state address overflows"));
         };
-        let current = self.word(location)?;
+        let current = match self.word(location) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.store_word(location, current | flags)
     }
     fn end_input(&mut self, address: u64) -> Result<(), Stop> {

@@ -200,13 +200,17 @@ impl Structurer<'_> {
     }
 
     fn terminal_edge(&self, from: usize, limit: usize) -> Option<usize> {
-        let block = self.blocks.get(from)?;
+        let Some(block) = self.blocks.get(from) else {
+            return None;
+        };
         match block.stmts.last() {
             Some(Stmt::Br {
                 target: Some(target),
                 ..
             }) => {
-                let target = self.block_index(*target)?;
+                let Some(target) = self.block_index(*target) else {
+                    return None;
+                };
                 (target > from && target <= limit).then_some(target)
             }
             _ => None,

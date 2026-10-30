@@ -356,14 +356,19 @@ impl Fact {
 /// when it reads a value no path has defined yet.
 pub fn expression(expr: &Expr, read: &dyn Fn(u16, u32) -> Option<Fact>) -> Option<Fact> {
     Some(match expr {
-        Expr::Reg { index, width } => read(*index, u32::from(*width))?,
+        Expr::Reg { index, width } => match read(*index, u32::from(*width)) {
+            Some(value) => value,
+            None => return None,
+        },
         Expr::Const(value) => Fact::constant(*value),
         Expr::Load {
             addr,
             width,
             signed,
         } => {
-            expression(addr, read)?;
+            if expression(addr, read).is_none() {
+                return None;
+            }
             let bits = u32::from(*width) * 8;
             if *signed {
                 Fact::TOP.sign_extend(bits)
@@ -372,7 +377,10 @@ pub fn expression(expr: &Expr, read: &dyn Fn(u16, u32) -> Option<Fact>) -> Optio
             }
         }
         Expr::SignExtend { value, width } => {
-            expression(value, read)?.sign_extend(u32::from(*width) * 8)
+            let Some(inner) = expression(value, read) else {
+                return None;
+            };
+            inner.sign_extend(u32::from(*width) * 8)
         }
         Expr::Select {
             cond,
@@ -382,12 +390,23 @@ pub fn expression(expr: &Expr, read: &dyn Fn(u16, u32) -> Option<Fact>) -> Optio
             els,
         } => {
             let bits = operand_width(lhs, rhs);
-            let decided = decide(*cond, expression(lhs, read)?, expression(rhs, read)?, bits);
-            let (then, els) = (expression(then, read)?, expression(els, read)?);
+            let Some(left) = expression(lhs, read) else {
+                return None;
+            };
+            let Some(right) = expression(rhs, read) else {
+                return None;
+            };
+            let decided = decide(*cond, left, right, bits);
+            let Some(then_range) = expression(then, read) else {
+                return None;
+            };
+            let Some(else_range) = expression(els, read) else {
+                return None;
+            };
             match decided {
-                Some(true) => then,
-                Some(false) => els,
-                None => then.join(els),
+                Some(true) => then_range,
+                Some(false) => else_range,
+                None => then_range.join(else_range),
             }
         }
         Expr::Apply { op, args } => {
@@ -399,7 +418,12 @@ pub fn expression(expr: &Expr, read: &dyn Fn(u16, u32) -> Option<Fact>) -> Optio
             applied(*op)
         }
         Expr::Bin { op, lhs, rhs } => {
-            let (a, b) = (expression(lhs, read)?, expression(rhs, read)?);
+            let Some(a) = expression(lhs, read) else {
+                return None;
+            };
+            let Some(b) = expression(rhs, read) else {
+                return None;
+            };
             let bits = operand_width(lhs, rhs);
             match op {
                 BinOp::Add => a.plus(b),
@@ -503,27 +527,76 @@ pub fn refine(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<Fact> {
         Cond::Eq => a.meet(b),
         Cond::Ne => match b.singleton() {
             Some(value) if a.singleton() == Some(value) => None,
-            Some(value) if a.lo == value => a.meet(Fact::range(value + 1, top)?),
-            Some(value) if a.hi == value => a.meet(Fact::range(0, value - 1)?),
+            Some(value) if a.lo == value => {
+                let Some(above_range) = Fact::range(value + 1, top) else {
+                    return None;
+                };
+                a.meet(above_range)
+            }
+            Some(value) if a.hi == value => {
+                let Some(below_range) = Fact::range(0, value - 1) else {
+                    return None;
+                };
+                a.meet(below_range)
+            }
             _ => Some(a),
         },
-        Cond::Cc => a.meet(Fact::range(0, b.hi.checked_sub(1)?)?),
-        Cond::Ls => a.meet(Fact::range(0, b.hi)?),
-        Cond::Hi => a.meet(Fact::range(b.lo.checked_add(1)?, top)?),
-        Cond::Cs => a.meet(Fact::range(b.lo, top)?),
+        Cond::Cc => {
+            let Some(limit) = b.hi.checked_sub(1) else {
+                return None;
+            };
+            let Some(below_limit) = Fact::range(0, limit) else {
+                return None;
+            };
+            a.meet(below_limit)
+        }
+        Cond::Ls => {
+            let Some(up_to) = Fact::range(0, b.hi) else {
+                return None;
+            };
+            a.meet(up_to)
+        }
+        Cond::Hi => {
+            let Some(first_above) = b.lo.checked_add(1) else {
+                return None;
+            };
+            let Some(above_range) = Fact::range(first_above, top) else {
+                return None;
+            };
+            a.meet(above_range)
+        }
+        Cond::Cs => {
+            let Some(from_lo) = Fact::range(b.lo, top) else {
+                return None;
+            };
+            a.meet(from_lo)
+        }
         Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge => {
             let ((mut lo, mut hi), (blo, bhi)) = (a.signed_bounds(bits), b.signed_bounds(bits));
             match cond {
-                Cond::Lt => hi = hi.min(bhi.checked_sub(1)?),
+                Cond::Lt => {
+                    let Some(new_hi) = bhi.checked_sub(1) else {
+                        return None;
+                    };
+                    hi = hi.min(new_hi)
+                }
                 Cond::Le => hi = hi.min(bhi),
-                Cond::Gt => lo = lo.max(blo.checked_add(1)?),
+                Cond::Gt => {
+                    let Some(new_lo) = blo.checked_add(1) else {
+                        return None;
+                    };
+                    lo = lo.max(new_lo)
+                }
                 _ => lo = lo.max(blo),
             }
             if lo > hi {
                 return None;
             }
             if lo >= 0 || hi < 0 {
-                a.meet(Fact::range(lo as u64 & top, hi as u64 & top)?)
+                let Some(signed_range) = Fact::range(lo as u64 & top, hi as u64 & top) else {
+                    return None;
+                };
+                a.meet(signed_range)
             } else {
                 Some(a)
             }
@@ -556,10 +629,12 @@ fn constrained(fact: Fact, bits: u32, low: u32, constraint: Fact) -> Option<Fact
     } else if fact.hi <= mask(low) {
         fact.meet(constraint)
     } else {
-        fact.meet(Fact::bits(
-            constraint.zeros & mask(low),
-            constraint.ones & mask(low),
-        )?)
+        let Some(constrained) =
+            Fact::bits(constraint.zeros & mask(low), constraint.ones & mask(low))
+        else {
+            return None;
+        };
+        fact.meet(constrained)
     }
 }
 

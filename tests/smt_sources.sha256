@@ -7,7 +7,7 @@ c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/i
 19954210ca7952d10273993b9a1f77057a22914ce61858178488a189ea81e06c  src/analysis/structures/pointers.rs	pub(super) fn normalize(
 c2ad1e69020a818c202168d6574bd3aa662bf7b10da60e7705cd33c8c35362d9  src/analysis/typing.rs	pub(crate) fn apply_width_types(
 7e6a214c97a5cda4a23524bb41e5ac94a66d0d40aee000aa3d41c931e2668b58  src/ir/eval/emulation/io/formatting.rs	fn signed_magnitude(
-44cc931d9519a290c3af061d11e29ab9ff3a30628b9af28ab6d3ee203bf47688  src/ir/eval/emulation/io/ucrt.rs	let count = (bytes.len() as u64).min(capacity - 1)
+a4fd7ba79ef304d376d2f0c03e0ede88aca67de61d75c485930a8b6b521e85cf  src/ir/eval/emulation/io/ucrt.rs	let count = (bytes.len() as u64).min(capacity - 1)
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
 af135f3ca4f9a3bb3831804430165589ad4ce7949388945f9f05ad51d1dee7f6  src/ir/eval/emulation/windows/memory.rs	fn page_range(
 5837f8cec59d7dbaf1ea4dca77f137470a684ab24a13b4bab66b146ba3030406  src/ir/eval/stdio.rs	pub(super) fn complete_elements(
@@ -83,7 +83,7 @@ ec90cb733e966d300da6d3b2ba91f7efa16a1b5d8960749aaf7384d0939676fe  src/passes/div
 57108d20bdde1b39c1a231fe45bad3640653bdadf8d0307741c8dc60a0f9d96c  src/passes/division/select.rs	pub(crate) fn conditional_negation_chain(
 8de0c759679ac8a4f06156c9690184d028532076064b948f60ab7fe624492be6  src/passes/division/select.rs	pub(crate) fn signed_select_chain(
 0f6f6760af877f03023c0d759d946b0f2f96bff8ac005a93acdca834e03e8d64  src/passes/division/select.rs	pub(crate) fn signed_select_mod_chain(
-cebcebf50cbe9fc2e1ee321195cc73a2f676ff927c5be1fc3ca9ee23a5c966dd  src/passes/division/widened.rs	pub(crate) fn widened_signed_site(
+52ff54a35102c27db2c7eefc6582be1c00f08c55034d3243563d8558bf7f7c94  src/passes/division/widened.rs	pub(crate) fn widened_signed_site(
 b6271328b4abe57c6133c9a39311569b563c09e257c0be7844ac820792d9ebfa  src/passes/frame.rs	pub fn drop_dead_frame_stores(
 3e52b15819b80cbd7560f6c23f178eb5dad489200d2e432e44da628306dafa82  src/passes/frame_slots.rs	fn rewrite_expr_frame(
 6c7adb5da97efe6a7e5b55e7ccc558bd6a16427d4417e16bcb70ff76763177a3  src/passes/frame_slots.rs	fn substitute_frame_pointer(
@@ -164,7 +164,7 @@ ab8b1e138b056bf4cfdd2960342015ced772750e01c0342576432723a8cdb451  src/render/str
 a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/string_functions/loops.rs	fn induction(
 add4d6a4fa3528d2f5db4b56c666f840daed6f3ddf406cd75d7584acf90deb6c  src/render/string_functions/loops.rs	pub(super) fn render(
 097258273fdea508e122db4b4a78bec9aaab62503391d8770defe1c4feb163b2  src/render/structure/cleanup.rs	fn fold_forward_exits_to(
-8bbd453159b763cca6bdfe01f8d9f0991cca868c142e7037b70e3afc7a997eec  src/render/structure/cleanup/returns.rs	pub(crate) fn inline_return_tails(
+966ce8be87390c932740fd312dd7e6a0230560772b0b59219b32d57ee5867879  src/render/structure/cleanup/returns.rs	pub(crate) fn inline_return_tails(
 4d1dcd1c7365b725f12661f7788ecd999341a6d8ba7862318181926616de3356  src/render/structure/dominance.rs	root_order: RootOrder,
 4bac2bfe2867398d7ab7a8105d49f44e8415617fa102e2857a715410c3db8fdb  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(

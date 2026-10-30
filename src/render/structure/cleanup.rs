@@ -825,7 +825,8 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
         // The counter set to zero before the loop, with what comes between
         // leaving it alone.
         let mut start = None;
-        for (at, before) in nodes[..index].iter().enumerate().rev() {
+        let reversed_nodes = nodes[..index].iter().enumerate().rev();
+        for (at, before) in reversed_nodes {
             match before {
                 Node::Stmt(Stmt::Assign { dest, value, .. }) if dest.index == counter => {
                     if matches!(value, Expr::Const(0)) {

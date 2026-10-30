@@ -21,7 +21,9 @@ pub(super) fn optimize(
     lifted: Lifted,
     deadline: Option<Instant>,
 ) -> Result<Analysis, Error> {
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     let Lifted {
         mut ir,
         has_jump_tables,
@@ -41,15 +43,22 @@ pub(super) fn optimize(
     });
     // Before the stack adjustments a call reads unseen, such as the push
     // of an argument, are dropped as dead.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     if ir.isa != crate::loader::Isa::I386 {
         crate::ssa::count_variadic_arguments(&mut ir, image);
     }
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::undefine_clobbered_reads(&mut ir);
     let reached = crate::ir::cfg::reached(&ir);
     let mut simplification =
-        cleanup_before_split(&mut ir, image, has_jump_tables, &reached, deadline)?;
+        match cleanup_before_split(&mut ir, image, has_jump_tables, &reached, deadline) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
     // Guessed register arguments do not bound a callee's stack arguments.
     // Calls that save execution state can also reach the frame implicitly.
     let promote_slots = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
@@ -90,9 +99,13 @@ pub(super) fn optimize(
             )
         })
     });
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     set_up_arguments(&mut ir, types.as_ref());
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
     // stack pointer, and the frame pointer while it addresses the frame.
@@ -135,29 +148,51 @@ pub(super) fn optimize(
     .collect();
     // Bits no read looks at go first, so the variables they tied split apart;
     // a narrow return reads fewer of them.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     typing::apply_partial_return(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::narrow_partial_writes(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     drop_unread_indirect_result(&mut ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::split_variables(&mut ir, &general);
     let frame_slot_promotion = if promote_slots {
         FrameSlotPromotion::Allowed
     } else {
         FrameSlotPromotion::Blocked
     };
-    cleanup_after_split(&mut ir, has_jump_tables, frame_slot_promotion, deadline)?;
-    passed(deadline)?;
+    if let Err(error) =
+        cleanup_after_split(&mut ir, has_jump_tables, frame_slot_promotion, deadline)
+    {
+        return Err(error);
+    }
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     typing::apply_width_types(&mut ir, &uniform_32);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     typing::apply_void_return(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     typing::apply_partial_return(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     apply_call_return(&mut ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     let inferred = if types.is_none() {
         crate::lift::pairs32::definition_types(image, ir.addr)
     } else {
@@ -175,12 +210,20 @@ pub(super) fn optimize(
     } else if let Some(params) = inferred_parameters {
         super::pairs32::place_inferred_parameters(params, &mut ir);
     }
-    cleanup_after_types(&mut ir, deadline)?;
-    passed(deadline)?;
+    if let Err(error) = cleanup_after_types(&mut ir, deadline) {
+        return Err(error);
+    }
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     name_indirect_result(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     structures::recover(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     if !declared_return {
         typing::apply_pointer_return_with(&mut ir, &|stmt| prototypes::called(image, stmt));
     }
@@ -191,19 +234,31 @@ pub(super) fn optimize(
     {
         ir.ret_type = result.ty.clone();
     }
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::lift::fold_literals(&mut ir, image);
     let mut references = refs::collect(&ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::frame_slots::settle(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     drop_stack_protector(&mut ir, image);
     // Settling simplifies again, which can leave a table read unused.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     drop_dead_constant_reads(&mut ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::take_results_directly(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::read_once::fold_values_read_once(&mut ir);
     // Folding the last frame loads can leave their stores unused.
     let plain_frame_stores = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
@@ -240,7 +295,8 @@ pub(super) fn optimize(
         } = stmt
         {
             let pointers = summary::summary(image, *target).pointers;
-            for (position, arg) in args.iter().enumerate().take(32) {
+            let first_arguments = args.iter().enumerate().take(32);
+            for (position, arg) in first_arguments {
                 if pointers & 1 << position != 0
                     && let crate::ir::Expr::Reg { index, width: 64 } = arg
                     && *index >= crate::ir::VARIABLE_BASE
@@ -251,15 +307,23 @@ pub(super) fn optimize(
         }
     }
     ir.pointer_values = pointer_values;
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     typing::apply_prototypes(&mut ir, image);
     super::pairs32::type_temporaries(&mut ir);
     prototypes::apply_records(&mut ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     variadic::mark_variadic(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::coalesce::reuse_pointers(&mut ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     go_types::apply(&mut ir, image);
     let changes = passes::deobfuscation::simplify(&mut ir);
     if changes.simplified {
@@ -284,10 +348,14 @@ fn cleanup_before_split(
     reached: &HashSet<u64>,
     deadline: Option<Instant>,
 ) -> Result<passes::deobfuscation::Simplification, Error> {
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     let changes = passes::optimize(ir, has_jump_tables);
     constant_spills::forward(ir, image);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     drop_folded_away(ir, reached);
     Ok(changes)
 }
@@ -305,18 +373,26 @@ fn cleanup_after_split(
 ) -> Result<(), Error> {
     // The new variables leave copies between them to fold away, and values
     // spilled across calls that now survive them in their variables.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::copies::copy_propagate_guarded(ir);
     if !has_jump_tables {
-        passed(deadline)?;
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         passes::memory::forward_stored_values(ir);
-        passed(deadline)?;
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         passes::memory::forward_spilled_variables(ir);
         if matches!(frame_slot_promotion, FrameSlotPromotion::Allowed) {
             passes::memory::promote_frame_slots(ir);
         }
     }
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::dce::dce(ir);
     Ok(())
 }
@@ -324,19 +400,31 @@ fn cleanup_after_split(
 fn cleanup_after_types(ir: &mut FunctionIr, deadline: Option<Instant>) -> Result<(), Error> {
     // A narrower return reads fewer bits, which may leave more of a
     // partial write unread.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::narrow_partial_writes(ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::copies::copy_propagate_guarded(ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::simplify::simplify(ir);
     // With the variables split, what they hold narrows again.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     crate::ssa::ranges::simplify(ir);
     // Simplifying can fold a variable's value into its readers.
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::dce::dce(ir);
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     passes::coalesce::coalesce_copies(ir);
     Ok(())
 }

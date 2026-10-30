@@ -114,7 +114,11 @@ impl State {
         convention: Convention,
         index: usize,
     ) -> Evaluation<u64> {
-        self.resolve(self.argument(binary, convention, index)?)
+        let argument = match self.argument(binary, convention, index) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        self.resolve(argument)
     }
 
     pub(super) fn tick(&mut self) -> Evaluation<()> {
@@ -126,11 +130,17 @@ impl State {
     }
 
     pub(super) fn byte(&mut self, binary: &Binary, base: u64, offset: usize) -> Evaluation<Term> {
-        self.tick()?;
+        if let Err(error) = self.tick() {
+            return Err(error);
+        }
         let Some(address) = base.checked_add(offset as u64) else {
             return Err(invalid("libc memory address overflows").into());
         };
-        Ok(self.read_memory(binary, address, 1)?.remove(0))
+        let mut bytes = match self.read_memory(binary, address, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        Ok(bytes.remove(0))
     }
 
     pub(super) fn test(&self, condition: String) -> Evaluation<bool> {
@@ -209,8 +219,15 @@ impl State {
     ) -> Evaluation<Vec<Term>> {
         let mut bytes = Vec::new();
         for offset in 0..maximum {
-            let byte = self.byte(binary, address, offset)?;
-            if self.zero(&byte)? {
+            let byte = match self.byte(binary, address, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let is_zero = match self.zero(&byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if is_zero {
                 return Ok(bytes);
             }
             bytes.push(byte);
@@ -233,10 +250,17 @@ impl State {
     }
 
     pub(super) fn concrete_format(&mut self, binary: &Binary, address: u64) -> Evaluation<Vec<u8>> {
-        let terms = self.string(binary, address, self.model_bound())?;
+        let terms = match self.string(binary, address, self.model_bound()) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut bytes = Vec::new();
         for term in terms {
-            bytes.push(self.resolve(term)? as u8);
+            let concrete = match self.resolve(term) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            bytes.push(concrete as u8);
         }
         Ok(bytes)
     }
@@ -264,16 +288,32 @@ impl State {
             return Ok(Term::constant(address));
         }
         if let Hook::Io(operation) = hook {
-            if let Some(result) = self.file_hook(binary, convention, operation)? {
+            let handled = match self.file_hook(binary, convention, operation) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Some(result) = handled {
                 return Ok(result);
             }
             return self.input_output(binary, convention, operation);
         }
         if matches!(hook, Hook::Upper | Hook::Lower) {
-            let term = self.argument(binary, convention, 0)?;
-            let value = self.low(&term, 32)?;
-            self.require_defined(&value, 32)?;
-            return Ok(self.bind(case_conversion(&value.text, hook))?);
+            let term = match self.argument(binary, convention, 0) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let value = match self.low(&term, 32) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            if let Err(error) = self.require_defined(&value, 32) {
+                return Err(error.into());
+            }
+            let converted = match self.bind(case_conversion(&value.text, hook)) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            return Ok(converted);
         }
         if matches!(hook, Hook::Getline) {
             return self.getline(binary, convention);
@@ -352,7 +392,10 @@ impl State {
                 )));
             }
             Hook::Ptrace => {
-                let request = self.number(binary, convention, 0)?;
+                let request = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if request != 0 {
                     return Err(invalid(format!("unsupported ptrace request {request}")).into());
                 }
@@ -365,7 +408,11 @@ impl State {
                 return Ok(Term::constant(u64::MAX));
             }
             Hook::Dumpable => {
-                let operation = self.number(binary, convention, 0)? as u32;
+                let operation_number = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let operation = operation_number as u32;
                 if operation != 4 {
                     return Err(invalid(format!("unsupported prctl operation {operation}")).into());
                 }
@@ -376,7 +423,10 @@ impl State {
                 }));
             }
             Hook::SystemCall => {
-                let number = self.number(binary, convention, 0)?;
+                let number = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let (ptrace_number, parent_number, prctl_number) = match self.isa {
                     crate::loader::Isa::X86_64 => (101, 110, 157),
                     crate::loader::Isa::I386 => (26, 64, 172),
@@ -384,7 +434,10 @@ impl State {
                     _ => return Err(invalid("unsupported syscall architecture").into()),
                 };
                 if number == ptrace_number {
-                    let request = self.number(binary, convention, 1)?;
+                    let request = match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if request != 0 {
                         return Err(invalid(format!("unsupported ptrace request {request}")).into());
                     }
@@ -402,7 +455,11 @@ impl State {
                     )));
                 }
                 if number == prctl_number {
-                    let operation = self.number(binary, convention, 1)? as u32;
+                    let convention_number = match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let operation = convention_number as u32;
                     if operation != 4 {
                         return Err(
                             invalid(format!("unsupported prctl operation {operation}")).into()
@@ -418,7 +475,10 @@ impl State {
             }
             _ => {}
         }
-        let first = self.number(binary, convention, 0)?;
+        let first = match self.number(binary, convention, 0) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if matches!(hook, Hook::MemorySearch | Hook::FindByteReverse) {
             return self.find_byte(binary, convention, first, hook);
         }
@@ -513,13 +573,19 @@ impl State {
             Hook::Length | Hook::LengthN | Hook::StringCopy | Hook::StringCopyN => {
                 let copying = matches!(hook, Hook::StringCopy | Hook::StringCopyN);
                 let source = if copying {
-                    self.number(binary, convention, 1)?
+                    match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     first
                 };
                 let limited = matches!(hook, Hook::LengthN | Hook::StringCopyN);
                 let maximum = if limited {
-                    self.number(binary, convention, if copying { 2 } else { 1 })?
+                    match self.number(binary, convention, if copying { 2 } else { 1 }) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     self.model_bound() as u64
                 };
@@ -532,9 +598,19 @@ impl State {
                     let byte = if ended {
                         Term::constant(0)
                     } else {
-                        self.byte(binary, source, offset)?
+                        match self.byte(binary, source, offset) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     };
-                    let zero = ended || self.zero(&byte)?;
+                    let zero = if ended {
+                        true
+                    } else {
+                        match self.zero(&byte) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
+                    };
                     if copying {
                         bytes.push(byte);
                     }
@@ -551,8 +627,8 @@ impl State {
                 if !limited && !ended {
                     return Err(invalid("string exceeds symbolic model bound").into());
                 }
-                if copying {
-                    self.write_memory(binary, first, &bytes)?;
+                if copying && let Err(error) = self.write_memory(binary, first, &bytes) {
+                    return Err(error.into());
                 }
                 Ok(Term::constant(if copying { first } else { maximum }))
             }
@@ -561,30 +637,62 @@ impl State {
             | Hook::MemoryCompare
             | Hook::CompareCase
             | Hook::CompareCaseN => {
-                let second = self.number(binary, convention, 1)?;
+                let second = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let maximum = if matches!(hook, Hook::Compare | Hook::CompareCase) {
                     self.model_bound() as u64
                 } else {
-                    self.number(binary, convention, 2)?
+                    match self.number(binary, convention, 2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 };
                 if maximum > 65536 {
                     return Err(invalid("comparison exceeds model bound").into());
                 }
                 for offset in 0..maximum as usize {
-                    let mut a = self.byte(binary, first, offset)?;
-                    let mut b = self.byte(binary, second, offset)?;
+                    let mut a = match self.byte(binary, first, offset) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let mut b = match self.byte(binary, second, offset) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if matches!(hook, Hook::CompareCase | Hook::CompareCaseN) {
-                        a = self.ascii_lower_byte(&a)?;
-                        b = self.ascii_lower_byte(&b)?;
+                        a = match self.ascii_lower_byte(&a) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        b = match self.ascii_lower_byte(&b) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
                     }
-                    if self.test(format!("(not (= {} {}))", a.text, b.text))? {
+                    let differs = match self.test(format!("(not (= {} {}))", a.text, b.text)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if differs {
                         // C only specifies the sign of a nonzero comparison result.
-                        return Ok(
-                            self.bind(smt::low(&format!("(bvsub {} {})", a.text, b.text), 32))?
-                        );
+                        let sign_result = match self
+                            .bind(smt::low(&format!("(bvsub {} {})", a.text, b.text), 32))
+                        {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        };
+                        return Ok(sign_result);
                     }
-                    if !matches!(hook, Hook::MemoryCompare) && self.zero(&a)? {
-                        return Ok(Term::constant(0));
+                    if !matches!(hook, Hook::MemoryCompare) {
+                        let zero = match self.zero(&a) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if zero {
+                            return Ok(Term::constant(0));
+                        }
                     }
                 }
                 if matches!(hook, Hook::Compare | Hook::CompareCase) {
@@ -593,19 +701,34 @@ impl State {
                 Ok(Term::constant(0))
             }
             Hook::Copy | Hook::Move | Hook::Set => {
-                let second = self.argument(binary, convention, 1)?;
-                let count = self.number(binary, convention, 2)?;
+                let second = match self.argument(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let count = match self.number(binary, convention, 2) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if count > 65536 {
                     return Err(invalid("memory operation exceeds model bound").into());
                 }
                 let mut bytes = Vec::new();
                 if matches!(hook, Hook::Set) {
                     for _ in 0..count {
-                        self.tick()?;
-                        bytes.push(self.low(&second, 8)?);
+                        if let Err(error) = self.tick() {
+                            return Err(error);
+                        }
+                        let low_byte = match self.low(&second, 8) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        };
+                        bytes.push(low_byte);
                     }
                 } else {
-                    let source = self.resolve(second)?;
+                    let source = match self.resolve(second) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if matches!(hook, Hook::Copy)
                         && count != 0
                         && first < source.saturating_add(count)
@@ -614,17 +737,26 @@ impl State {
                         return Err(invalid("overlapping memcpy").into());
                     }
                     for offset in 0..count as usize {
-                        bytes.push(self.byte(binary, source, offset)?);
+                        let byte = match self.byte(binary, source, offset) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        bytes.push(byte);
                     }
                 }
-                self.write_memory(binary, first, &bytes)?;
+                if let Err(error) = self.write_memory(binary, first, &bytes) {
+                    return Err(error.into());
+                }
                 Ok(Term::constant(first))
             }
             Hook::Duplicate | Hook::DuplicateN => {
                 let mut bytes = Vec::new();
                 let mut ended = false;
                 let maximum = if matches!(hook, Hook::DuplicateN) {
-                    self.number(binary, convention, 1)?
+                    match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     self.model_bound() as u64
                 };
@@ -632,8 +764,14 @@ impl State {
                     return Err(invalid("string duplication exceeds model bound").into());
                 }
                 for offset in 0..maximum as usize {
-                    let byte = self.byte(binary, first, offset)?;
-                    let zero = self.zero(&byte)?;
+                    let byte = match self.byte(binary, first, offset) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let zero = match self.zero(&byte) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if zero {
                         ended = true;
                         break;
@@ -644,14 +782,22 @@ impl State {
                     return Err(invalid("string exceeds symbolic model bound").into());
                 }
                 bytes.push(Term::constant(0));
-                match self.allocate_bytes(binary, bytes.len() as u64, Some(&bytes), false)? {
+                let allocation =
+                    match self.allocate_bytes(binary, bytes.len() as u64, Some(&bytes), false) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                match allocation {
                     Some(address) => Ok(Term::constant(address)),
                     None => Ok(Term::constant(0)),
                 }
             }
             Hook::Allocate | Hook::AllocateZero => {
                 let size = if matches!(hook, Hook::AllocateZero) {
-                    let count = self.number(binary, convention, 1)?;
+                    let count = match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     match first.checked_mul(count) {
                         Some(size) => size,
                         None => return Ok(Term::constant(0)),
@@ -663,18 +809,29 @@ impl State {
                     return Ok(Term::constant(0));
                 }
                 let zeroed = matches!(hook, Hook::AllocateZero);
-                match self.allocate_bytes(binary, size, None, zeroed)? {
+                let allocation = match self.allocate_bytes(binary, size, None, zeroed) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                match allocation {
                     Some(address) => Ok(Term::constant(address)),
                     None => Ok(Term::constant(0)),
                 }
             }
             Hook::Reallocate => {
-                let size = self.number(binary, convention, 1)?;
+                let size = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if first == 0 {
                     if size > 65536 {
                         return Ok(Term::constant(0));
                     }
-                    return match self.allocate_bytes(binary, size, None, false)? {
+                    let allocation = match self.allocate_bytes(binary, size, None, false) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    return match allocation {
                         Some(address) => Ok(Term::constant(address)),
                         None => Ok(Term::constant(0)),
                     };
@@ -690,11 +847,20 @@ impl State {
                     return Ok(Term::constant(0));
                 }
                 let copy_size = old_size.min(size) as usize;
-                let old_bytes = self.read_memory(binary, first, copy_size)?;
-                let Some(address) = self.allocate_bytes(binary, size, None, false)? else {
+                let old_bytes = match self.read_memory(binary, first, copy_size) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                let allocation = match self.allocate_bytes(binary, size, None, false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let Some(address) = allocation else {
                     return Ok(Term::constant(0));
                 };
-                self.write_memory(binary, address, &old_bytes)?;
+                if let Err(error) = self.write_memory(binary, address, &old_bytes) {
+                    return Err(error.into());
+                }
                 self.allocations.remove(&first);
                 Ok(Term::constant(address))
             }
@@ -710,7 +876,10 @@ impl State {
             | Hook::LongLongIntegerEnd
             | Hook::UnsignedIntegerEnd
             | Hook::UnsignedLongLongIntegerEnd => {
-                let text = self.string(binary, first, self.model_bound())?;
+                let text = match self.string(binary, first, self.model_bound()) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let end_pointer = matches!(
                     hook,
                     Hook::IntegerEnd
@@ -719,7 +888,10 @@ impl State {
                         | Hook::UnsignedLongLongIntegerEnd
                 );
                 let base = if end_pointer {
-                    self.number(binary, convention, 2)?
+                    match self.number(binary, convention, 2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     10
                 };
@@ -756,7 +928,10 @@ impl State {
                     if let Err(error) = self.set_symbolic_errno(binary, &parsed.overflow) {
                         return Err(error);
                     }
-                    let end = self.number(binary, convention, 1)?;
+                    let end = match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if end != 0 {
                         let Some(address) = first.checked_add(if parsed.matched {
                             parsed.consumed as u64
@@ -765,12 +940,14 @@ impl State {
                         }) else {
                             return Err(invalid("strtol end pointer overflows").into());
                         };
-                        self.store(
+                        if let Err(error) = self.store(
                             binary.image(),
                             end,
                             &Term::constant(address),
                             crate::arch::pointer_bytes(self.isa),
-                        )?;
+                        ) {
+                            return Err(error.into());
+                        }
                     }
                 }
                 let return_bits = match hook {
@@ -830,7 +1007,10 @@ impl State {
             } else if zeroed {
                 Term::constant(0)
             } else {
-                self.symbolic_byte().map_err(Failure::Error)?
+                match self.symbolic_byte().map_err(Failure::Error) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             };
             self.memory.insert(at, value);
         }
@@ -838,8 +1018,11 @@ impl State {
     }
 
     fn ascii_lower_byte(&mut self, byte: &Term) -> Evaluation<Term> {
-        let byte = self.low(byte, 8)?;
-        Ok(self.bind(format!(
+        let byte = match self.low(byte, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        let converted = match self.bind(format!(
             "(ite (and (bvuge {} {}) (bvule {} {})) (bvadd {} {}) {})",
             byte.text,
             smt::constant(65),
@@ -848,7 +1031,11 @@ impl State {
             byte.text,
             smt::constant(32),
             byte.text
-        ))?)
+        )) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        Ok(converted)
     }
 
     fn find_byte(
@@ -858,8 +1045,18 @@ impl State {
         base: u64,
         hook: Hook,
     ) -> Evaluation<Term> {
-        let character = self.low(&self.argument(binary, convention, 1)?, 8)?;
-        let count = self.number(binary, convention, 2)?;
+        let argument = match self.argument(binary, convention, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let character = match self.low(&argument, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        let count = match self.number(binary, convention, 2) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if count > 65536 {
             return Err(invalid("memory search exceeds model bound").into());
         }
@@ -873,15 +1070,24 @@ impl State {
             let Some(address) = base.checked_add(offset as u64) else {
                 return Err(invalid("memory search address overflows").into());
             };
-            let byte = self.byte(binary, base, offset)?;
-            let byte = self.low(&byte, 8)?;
-            result = self.bind(format!(
+            let byte = match self.byte(binary, base, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let byte = match self.low(&byte, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            result = match self.bind(format!(
                 "(ite (= {} {}) {} {})",
                 byte.text,
                 character.text,
                 smt::constant(address),
                 result.text
-            ))?;
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
         }
         Ok(result)
     }
@@ -893,13 +1099,26 @@ impl State {
         base: u64,
         hook: Hook,
     ) -> Evaluation<Term> {
-        let character = self.low(&self.argument(binary, convention, 1)?, 8)?;
+        let argument = match self.argument(binary, convention, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let character = match self.low(&argument, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         let mut active = Term::constant(1);
         let mut candidates = Vec::new();
         let mut terminated = false;
         for offset in 0..self.model_bound() {
-            let byte = self.byte(binary, base, offset)?;
-            let byte = self.low(&byte, 8)?;
+            let byte = match self.byte(binary, base, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let byte = match self.low(&byte, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             let Some(address) = base.checked_add(offset as u64) else {
                 return Err(invalid("string search address overflows").into());
             };
@@ -914,12 +1133,18 @@ impl State {
                 address,
             ));
             let zero_condition = format!("(= {} {})", byte.text, smt::constant(0));
-            let zero = self.zero(&byte)?;
-            active = self.bind(format!(
+            let zero = match self.zero(&byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            active = match self.bind(format!(
                 "(ite {zero_condition} {} {})",
                 smt::constant(0),
                 active.text
-            ))?;
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             if zero {
                 terminated = true;
                 break;
@@ -931,19 +1156,25 @@ impl State {
         let mut result = Term::constant(0);
         if matches!(hook, Hook::ReverseCharacter) {
             for (condition, address) in candidates {
-                result = self.bind(format!(
+                result = match self.bind(format!(
                     "(ite {condition} {} {})",
                     smt::constant(address),
                     result.text
-                ))?;
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
             }
         } else {
             for (condition, address) in candidates.into_iter().rev() {
-                result = self.bind(format!(
+                result = match self.bind(format!(
                     "(ite {condition} {} {})",
                     smt::constant(address),
                     result.text
-                ))?;
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
             }
         }
         Ok(result)
@@ -955,13 +1186,22 @@ impl State {
         convention: Convention,
         base: u64,
     ) -> Evaluation<Term> {
-        let needle_address = self.number(binary, convention, 1)?;
+        let needle_address = match self.number(binary, convention, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let bound = self.model_bound();
-        let needle = self.string(binary, needle_address, bound)?;
+        let needle = match self.string(binary, needle_address, bound) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if needle.is_empty() {
             return Ok(Term::constant(base));
         }
-        let haystack = self.string(binary, base, bound)?;
+        let haystack = match self.string(binary, base, bound) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let Some(work) = haystack.len().checked_mul(needle.len()) else {
             return Err(invalid("substring search size overflows").into());
         };
@@ -973,8 +1213,14 @@ impl State {
             for start in (0..=haystack.len() - needle.len()).rev() {
                 let mut equal = "true".to_owned();
                 for (offset, needle_byte) in needle.iter().enumerate() {
-                    let haystack_byte = self.low(&haystack[start + offset], 8)?;
-                    let needle_byte = self.low(needle_byte, 8)?;
+                    let haystack_byte = match self.low(&haystack[start + offset], 8) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    let needle_byte = match self.low(needle_byte, 8) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     equal = format!(
                         "(and {equal} (= {} {}))",
                         haystack_byte.text, needle_byte.text
@@ -983,11 +1229,14 @@ impl State {
                 let Some(address) = base.checked_add(start as u64) else {
                     return Err(invalid("substring result address overflows").into());
                 };
-                result = self.bind(format!(
+                result = match self.bind(format!(
                     "(ite {equal} {} {})",
                     smt::constant(address),
                     result.text
-                ))?;
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
             }
         }
         Ok(result)
@@ -1005,17 +1254,30 @@ impl State {
     }
 
     fn set_symbolic_errno(&mut self, binary: &Binary, condition: &str) -> Evaluation<()> {
-        let address = self.errno_address(binary)?;
-        let previous = self.read_memory(binary, address, 4)?;
+        let address = match self.errno_address(binary) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let previous = match self.read_memory(binary, address, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         let mut bytes = Vec::new();
         for (index, old) in previous.iter().enumerate() {
-            let old = self.low(old, 8)?;
+            let old = match self.low(old, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             let value = if index == 0 { 34 } else { 0 };
-            bytes.push(self.bind(format!(
+            let merged = match self.bind(format!(
                 "(ite {condition} {} {})",
                 smt::constant(value),
                 old.text
-            ))?);
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            bytes.push(merged);
         }
         match self.write_memory(binary, address, &bytes) {
             Ok(()) => Ok(()),
@@ -1038,7 +1300,7 @@ impl State {
         let Some(letter) = input.get(x_position) else {
             return Ok(false);
         };
-        let prefix = self.test(format!(
+        let prefix = match self.test(format!(
             "(and (= {} {}) (or (= {} {}) (= {} {})))",
             zero.text,
             smt::constant(48),
@@ -1046,7 +1308,10 @@ impl State {
             smt::constant(120),
             letter.text,
             smt::constant(88)
-        ))?;
+        )) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if !prefix {
             return Ok(false);
         }
@@ -1200,14 +1465,25 @@ impl State {
                 false
             };
             base = if leading_zero { 8 } else { 10 };
-            if leading_zero && self.hex_prefix(input, position, false)? {
-                base = 16;
+            if leading_zero {
+                let hex_prefix = match self.hex_prefix(input, position, false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if hex_prefix {
+                    base = 16;
+                    position += 2;
+                }
+            }
+        } else if base == 16 {
+            let hex_prefix =
+                match self.hex_prefix(input, position, matches!(kind, IntegerKind::Scan)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+            if hex_prefix {
                 position += 2;
             }
-        } else if base == 16
-            && self.hex_prefix(input, position, matches!(kind, IntegerKind::Scan))?
-        {
-            position += 2;
         }
         let start = position;
         let mut digit_bytes = Vec::new();
@@ -1445,7 +1721,10 @@ impl State {
 impl State {
     pub(super) fn initialize_streams(&mut self, binary: &Binary) -> crate::error::Result<()> {
         let width = crate::arch::pointer_bytes(self.isa);
-        let memory = self.mapped_memory(binary.image())?;
+        let memory = match self.mapped_memory(binary.image()) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut next = memory.heap_base;
         for &address in self.memory.keys() {
             if (memory.heap_base..memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE))
@@ -1489,7 +1768,9 @@ impl State {
                 self.stdin_stream = token;
             }
             let object = token + 8;
-            self.store(binary.image(), object, &Term::constant(token), width)?;
+            if let Err(error) = self.store(binary.image(), object, &Term::constant(token), width) {
+                return Err(error);
+            }
             for slot in imports {
                 if !memory.check(slot, u64::from(width), false) {
                     return Err(invalid("invalid stream import slot"));
@@ -1505,7 +1786,10 @@ impl State {
                 }
             }
             for slot in objects {
-                self.store(binary.image(), slot, &Term::constant(token), width)?;
+                if let Err(error) = self.store(binary.image(), slot, &Term::constant(token), width)
+                {
+                    return Err(error);
+                }
             }
         }
         self.heap_next = next;
@@ -1515,15 +1799,35 @@ impl State {
 
 impl State {
     fn getline(&mut self, binary: &Binary, convention: Convention) -> Evaluation<Term> {
-        let pointer = self.number(binary, convention, 0)?;
-        let capacity_pointer = self.number(binary, convention, 1)?;
-        if self.stdin_stream == 0 || self.number(binary, convention, 2)? != self.stdin_stream {
+        let pointer = match self.number(binary, convention, 0) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let capacity_pointer = match self.number(binary, convention, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let unsupported_stream = if self.stdin_stream == 0 {
+            true
+        } else {
+            let stream = match self.number(binary, convention, 2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            stream != self.stdin_stream
+        };
+        if unsupported_stream {
             return Err(invalid("unsupported getline stream").into());
         }
         let mut bytes = Vec::new();
         while let Some(byte) = io::next_input(&self.stdin, &mut self.input_position) {
-            self.tick()?;
-            let newline = self.test(format!("(= {} {})", byte.text, smt::constant(10)))?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
+            let newline = match self.test(format!("(= {} {})", byte.text, smt::constant(10))) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             bytes.push(byte);
             if newline {
                 break;
@@ -1540,27 +1844,52 @@ impl State {
             width,
             signed: false,
         };
-        let mut destination = self.resolve(self.eval(binary, &load(pointer))?)?;
-        let capacity = self.resolve(self.eval(binary, &load(capacity_pointer))?)?;
+        let pointer_term = match self.eval(binary, &load(pointer)) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let mut destination = match self.resolve(pointer_term) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let evaluated = match self.eval(binary, &load(capacity_pointer)) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let capacity = match self.resolve(evaluated) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if destination == 0 || capacity < bytes.len() as u64 {
             destination = self.heap_next;
             let Some(end) = destination.checked_add(bytes.len() as u64) else {
                 return Err(invalid("getline allocation overflows").into());
             };
-            let memory = self.mapped_memory(binary.image())?;
+            let memory = match self.mapped_memory(binary.image()) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             if end > memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE) {
                 return Err(invalid("getline exceeds heap").into());
             }
             self.heap_next = end;
-            self.store(binary.image(), pointer, &Term::constant(destination), width)?;
-            self.store(
+            if let Err(error) =
+                self.store(binary.image(), pointer, &Term::constant(destination), width)
+            {
+                return Err(error.into());
+            }
+            if let Err(error) = self.store(
                 binary.image(),
                 capacity_pointer,
                 &Term::constant(bytes.len() as u64),
                 width,
-            )?;
+            ) {
+                return Err(error.into());
+            }
         }
-        self.write_memory(binary, destination, &bytes)?;
+        if let Err(error) = self.write_memory(binary, destination, &bytes) {
+            return Err(error.into());
+        }
         Ok(Term::constant(length as u64))
     }
 }

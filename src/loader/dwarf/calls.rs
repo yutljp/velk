@@ -43,15 +43,31 @@ fn call_entry<'a>(
     let explicit =
         attribute(entry, gimli::DW_AT_entry_pc).or_else(|| attribute(entry, gimli::DW_AT_low_pc));
     let address = match explicit {
-        Some(value) => Some(attribute_offset(dwarf, unit, value).ok_or(AbiIssue::UnknownLayout)?),
+        Some(value) => {
+            let offset = match attribute_offset(dwarf, unit, value).ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Some(offset)
+        }
         None => None,
     };
     let mut ranges = Vec::new();
     if attribute(entry, gimli::DW_AT_ranges).is_some() {
-        let mut entries = dwarf
+        let mut entries = match dwarf
             .die_ranges(unit, entry)
-            .map_err(|_| AbiIssue::UnknownLayout)?;
-        while let Some(range) = entries.next().map_err(|_| AbiIssue::UnknownLayout)? {
+            .map_err(|_| AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        loop {
+            let range = match entries.next().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(Some(range)) => range,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             if range.begin < range.end {
                 ranges.push(range.begin..range.end);
             }
@@ -81,31 +97,38 @@ pub(super) fn call_origins(
         }
         pending.push(offset);
         result.push(offset);
-        let entry = unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout)?;
+        let entry = match unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         for name in [gimli::DW_AT_abstract_origin, gimli::DW_AT_specification] {
             if let Some(value) = attribute(&entry, name) {
                 let AttributeValue::UnitRef(parent) = value else {
                     return Err(AbiIssue::UnknownLayout);
                 };
-                visit(unit, parent, pending, result)?;
+                if let Err(error) = visit(unit, parent, pending, result) {
+                    return Err(error);
+                }
             }
         }
         pending.pop();
         Ok(())
     }
     let mut result = Vec::new();
-    visit(unit, offset, &mut Vec::new(), &mut result)?;
-    let tag = unit
-        .entry(offset)
-        .map_err(|_| AbiIssue::UnknownLayout)?
-        .tag();
+    if let Err(error) = visit(unit, offset, &mut Vec::new(), &mut result) {
+        return Err(error);
+    }
+    let type_entry = match unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let tag = type_entry.tag();
     for parent in &result {
-        if unit
-            .entry(*parent)
-            .map_err(|_| AbiIssue::UnknownLayout)?
-            .tag()
-            != tag
-        {
+        let parent_entry = match unit.entry(*parent).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if parent_entry.tag() != tag {
             return Err(AbiIssue::UnknownLayout);
         }
     }
@@ -119,7 +142,10 @@ fn call_attribute<'a>(
 ) -> Result<Option<AttributeValue<EndianSlice<'a, LittleEndian>>>, AbiIssue> {
     let mut found = None;
     for offset in origins {
-        let entry = unit.entry(*offset).map_err(|_| AbiIssue::UnknownLayout)?;
+        let entry = match unit.entry(*offset).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if let Some(value) = attribute(&entry, name) {
             if found.as_ref().is_some_and(|before| *before != value) {
                 return Err(AbiIssue::UnknownLayout);
@@ -136,14 +162,27 @@ fn call_parameters(
 ) -> Result<(Vec<gimli::UnitOffset<usize>>, bool), AbiIssue> {
     let mut found: Option<(Vec<gimli::UnitOffset<usize>>, bool)> = None;
     for offset in origins {
-        let mut tree = unit
+        let mut tree = match unit
             .entries_tree(Some(*offset))
-            .map_err(|_| AbiIssue::UnknownLayout)?;
-        let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+            .map_err(|_| AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut children = root.children();
         let mut parameters = Vec::new();
         let mut variadic = false;
-        while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+        loop {
+            let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(Some(child)) => child,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             match child.entry().tag() {
                 gimli::DW_TAG_formal_parameter => parameters.push(child.entry().offset()),
                 gimli::DW_TAG_unspecified_parameters => variadic = true,
@@ -158,10 +197,22 @@ fn call_parameters(
                 return Err(AbiIssue::UnknownLayout);
             }
             for (before, parameter) in before.iter().zip(&parameters) {
-                let before =
-                    call_attribute(unit, &call_origins(unit, *before)?, gimli::DW_AT_type)?;
-                let parameter =
-                    call_attribute(unit, &call_origins(unit, *parameter)?, gimli::DW_AT_type)?;
+                let type_origins = match call_origins(unit, *before) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let before = match call_attribute(unit, &type_origins, gimli::DW_AT_type) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let origins = match call_origins(unit, *parameter) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let parameter = match call_attribute(unit, &origins, gimli::DW_AT_type) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if before != parameter {
                     return Err(AbiIssue::UnknownLayout);
                 }
@@ -179,16 +230,30 @@ fn call_function_types(
     entry: &gimli::DebuggingInformationEntry<EndianSlice<'_, LittleEndian>>,
     profile: AbiProfile,
 ) -> Result<FunctionTypes, AbiIssue> {
-    let origins = call_origins(unit, entry.offset())?;
-    if call_attribute(unit, &origins, gimli::DW_AT_prototyped)? != Some(AttributeValue::Flag(true))
-    {
+    let origins = match call_origins(unit, entry.offset()) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let prototyped = match call_attribute(unit, &origins, gimli::DW_AT_prototyped) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if prototyped != Some(AttributeValue::Flag(true)) {
         return Err(AbiIssue::UnsupportedProfile);
     }
-    match call_attribute(unit, &origins, gimli::DW_AT_calling_convention)? {
+    let type_attribute = match call_attribute(unit, &origins, gimli::DW_AT_calling_convention) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    match type_attribute {
         None | Some(AttributeValue::CallingConvention(gimli::DW_CC_normal)) => {}
         _ => return Err(AbiIssue::UnsupportedProfile),
     }
-    let result = match call_attribute(unit, &origins, gimli::DW_AT_type)? {
+    let type_attribute = match call_attribute(unit, &origins, gimli::DW_AT_type) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let result = match type_attribute {
         None => None,
         Some(AttributeValue::UnitRef(offset)) => Some(offset),
         _ => return Err(AbiIssue::UnknownLayout),
@@ -201,16 +266,24 @@ fn call_function_types(
         .map(|offset| layout::read(unit, offset, 16))
         .transpose();
     let ret_aggregate_size = result.and_then(|offset| aggregate_size(unit, offset, 16));
-    let (children, variadic) = call_parameters(unit, &origins)?;
+    let (children, variadic) = match call_parameters(unit, &origins) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut params = Vec::new();
     let mut parameters = Vec::new();
     let mut param_layouts = Vec::new();
     let mut param_aggregate_sizes = Vec::new();
     for offset in children {
-        let origins = call_origins(unit, offset)?;
-        let Some(AttributeValue::UnitRef(offset)) =
-            call_attribute(unit, &origins, gimli::DW_AT_type)?
-        else {
+        let origins = match call_origins(unit, offset) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let type_attribute = match call_attribute(unit, &origins, gimli::DW_AT_type) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let Some(AttributeValue::UnitRef(offset)) = type_attribute else {
             return Err(AbiIssue::UnknownLayout);
         };
         let name = origins.iter().find_map(|offset| {
@@ -227,6 +300,10 @@ fn call_function_types(
         param_layouts.push(layout::read(unit, offset, 16));
         param_aggregate_sizes.push(aggregate_size(unit, offset, 16));
     }
+    let function = match source_id(unit, entry.offset()).ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     Ok(FunctionTypes {
         globals: Vec::new(),
         params,
@@ -242,7 +319,7 @@ fn call_function_types(
         ret_layout,
         abi_profile: Ok(profile),
         source: FunctionSource {
-            function: source_id(unit, entry.offset()).ok_or(AbiIssue::UnknownLayout)?,
+            function,
             parameters,
             result: result.and_then(|offset| source_id(unit, offset)),
         },
@@ -263,13 +340,31 @@ pub(crate) fn call_index(image: &Image) -> Result<CallIndex, AbiIssue> {
 }
 
 fn dwarf_call_index(image: &Image) -> Result<CallIndex, AbiIssue> {
-    let dwarf = call_dwarf(image)?;
+    let dwarf = match call_dwarf(image) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut found = CallIndex::default();
     let mut units = dwarf.units();
-    while let Some(header) = units.next().map_err(|_| AbiIssue::UnknownLayout)? {
-        let unit = dwarf.unit(header).map_err(|_| AbiIssue::UnknownLayout)?;
+    loop {
+        let header = match units.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(header)) => header,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
+        let unit = match dwarf.unit(header).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut entries = unit.entries();
-        while let Some(entry) = entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout)? {
+        loop {
+            let entry = match entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(Some(entry)) => entry,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             if entry.tag() != gimli::DW_TAG_subprogram {
                 continue;
             }
@@ -323,14 +418,27 @@ fn call_dimensions(
     {
         return Err(AbiIssue::UnknownLayout);
     }
-    let mut tree = unit
+    let mut tree = match unit
         .entries_tree(Some(entry.offset()))
-        .map_err(|_| AbiIssue::UnknownLayout)?;
-    let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+        .map_err(|_| AbiIssue::UnknownLayout)
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut children = root.children();
     let mut dimensions = Vec::new();
     let mut product = 1u64;
-    while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+    loop {
+        let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(child)) => child,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
         let child = child.entry();
         if child.tag() != gimli::DW_TAG_subrange_type {
             continue;
@@ -343,29 +451,52 @@ fn call_dimensions(
         {
             return Err(AbiIssue::UnknownLayout);
         }
-        let lower = attribute(child, gimli::DW_AT_lower_bound)
+        let lower_bound = match attribute(child, gimli::DW_AT_lower_bound)
             .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
-            .transpose()?
-            .unwrap_or(0);
+            .transpose()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let lower = lower_bound.unwrap_or(0);
         if lower != 0 {
             return Err(AbiIssue::UnsupportedType);
         }
-        let count = attribute(child, gimli::DW_AT_count)
+        let count = match attribute(child, gimli::DW_AT_count)
             .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
-            .transpose()?;
-        let upper = attribute(child, gimli::DW_AT_upper_bound)
+            .transpose()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let upper_bound = match attribute(child, gimli::DW_AT_upper_bound)
             .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
-            .transpose()?
+            .transpose()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let upper = match upper_bound
             .map(|value| value.checked_add(1).ok_or(AbiIssue::UnknownLayout))
-            .transpose()?;
+            .transpose()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if count
             .zip(upper)
             .is_some_and(|(count, upper)| count != upper)
         {
             return Err(AbiIssue::UnknownLayout);
         }
-        let length = count.or(upper).ok_or(AbiIssue::UnknownLayout)?;
-        product = product.checked_mul(length).ok_or(AbiIssue::UnknownLayout)?;
+        let length = match count.or(upper).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        product = match product.checked_mul(length).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         dimensions.push(length);
     }
     if dimensions.is_empty() || product != *count {
@@ -379,13 +510,26 @@ fn call_enumerators(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     entry: &gimli::DebuggingInformationEntry<EndianSlice<'_, LittleEndian>>,
 ) -> Result<Vec<(String, i128)>, AbiIssue> {
-    let mut tree = unit
+    let mut tree = match unit
         .entries_tree(Some(entry.offset()))
-        .map_err(|_| AbiIssue::UnknownLayout)?;
-    let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+        .map_err(|_| AbiIssue::UnknownLayout)
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut children = root.children();
     let mut enumerators = Vec::new();
-    while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+    loop {
+        let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(child)) => child,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
         let child = child.entry();
         if child.tag() != gimli::DW_TAG_enumerator {
             continue;
@@ -396,12 +540,22 @@ fn call_enumerators(
         {
             return Err(AbiIssue::UnknownLayout);
         }
-        let name = attribute(child, gimli::DW_AT_name)
+        let name = match attribute(child, gimli::DW_AT_name)
             .and_then(|value| attribute_string(dwarf, unit, value))
-            .ok_or(AbiIssue::UnknownLayout)?;
+            .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let value = match attribute(child, gimli::DW_AT_const_value) {
             Some(AttributeValue::Sdata(value)) => i128::from(value),
-            Some(value) => i128::from(byte_count(value).ok_or(AbiIssue::UnknownLayout)?),
+            Some(value) => {
+                let size = match byte_count(value).ok_or(AbiIssue::UnknownLayout) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                i128::from(size)
+            }
             None => return Err(AbiIssue::UnknownLayout),
         };
         enumerators.push((name, value));
@@ -417,9 +571,18 @@ pub(crate) fn call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue
 }
 
 fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
-    let dwarf = call_dwarf(image)?;
+    let dwarf = match call_dwarf(image) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut units = dwarf.units();
-    while let Some(header) = units.next().map_err(|_| AbiIssue::UnknownLayout)? {
+    loop {
+        let header = match units.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(header)) => header,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
         if header
             .offset()
             .to_debug_info_offset(&header)
@@ -428,11 +591,20 @@ fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
         {
             continue;
         }
-        let unit = dwarf.unit(header).map_err(|_| AbiIssue::UnknownLayout)?;
+        let unit = match dwarf.unit(header).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut found = CallUnit::default();
         let mut supported = false;
         let mut entries = unit.entries();
-        while let Some(entry) = entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout)? {
+        loop {
+            let entry = match entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(Some(entry)) => entry,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             if entry.tag() != gimli::DW_TAG_subprogram {
                 continue;
             }
@@ -461,12 +633,21 @@ fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
         let mut graph = TypeGraph::default();
         let profile = crate::ir::abi::profile(image.isa, image.format).ok();
         for (offset, definition, members) in definitions_with_sources(&dwarf, &unit, profile) {
-            let id = source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout)?;
+            let id = match source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             graph.definitions.insert(id, definition);
             graph.generated_members.insert(id, members);
         }
         let mut entries = unit.entries();
-        while let Some(entry) = entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout)? {
+        loop {
+            let entry = match entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(Some(entry)) => entry,
+                Ok(None) => break,
+                Err(error) => return Err(error),
+            };
+
             if !matches!(
                 entry.tag(),
                 gimli::DW_TAG_base_type
@@ -492,7 +673,12 @@ fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
             if let Some(value) = attribute(entry, gimli::DW_AT_type) {
                 match value {
                     AttributeValue::UnitRef(offset) => {
-                        references.push(source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout)?)
+                        let reference =
+                            match source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                        references.push(reference)
                     }
                     _ => complete = false,
                 }
@@ -501,19 +687,36 @@ fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
                 entry.tag(),
                 gimli::DW_TAG_structure_type | gimli::DW_TAG_union_type
             ) {
-                let mut tree = unit
+                let mut tree = match unit
                     .entries_tree(Some(entry.offset()))
-                    .map_err(|_| AbiIssue::UnknownLayout)?;
-                let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+                    .map_err(|_| AbiIssue::UnknownLayout)
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let mut children = root.children();
-                while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+                loop {
+                    let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+                        Ok(Some(child)) => child,
+                        Ok(None) => break,
+                        Err(error) => return Err(error),
+                    };
+
                     let child = child.entry();
                     if child.tag() != gimli::DW_TAG_member {
                         continue;
                     }
                     match attribute(child, gimli::DW_AT_type) {
                         Some(AttributeValue::UnitRef(offset)) => {
-                            let source = source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout)?;
+                            let source =
+                                match source_id(&unit, offset).ok_or(AbiIssue::UnknownLayout) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error),
+                                };
                             references.push(source);
                             let name = attribute(child, gimli::DW_AT_name)
                                 .and_then(|value| attribute_string(&dwarf, &unit, value));

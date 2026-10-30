@@ -184,11 +184,15 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
     let halves = |index: u32| -> Option<(Expr, Expr)> {
         match ins.op_kind(index) {
             OpKind::Register => {
-                let slot = xmm(ins.op_register(index))?;
+                let Some(slot) = xmm(ins.op_register(index)) else {
+                    return None;
+                };
                 Some((Expr::reg(slot, 64), Expr::reg(slot + 1, 64)))
             }
             OpKind::Memory => {
-                let addr = memory_address(ins)?;
+                let Some(addr) = memory_address(ins) else {
+                    return None;
+                };
                 let high = Expr::bin(BinOp::Add, addr.clone(), Expr::constant(8));
                 Some((load_at(addr, 8), load_at(high, 8)))
             }
@@ -207,7 +211,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         _ => Expr::apply(Operation::Lanes(op, bits), vec![a, b]),
     };
     let write = |lifter: &mut Lifter, (low, high): (Expr, Expr)| -> Option<()> {
-        let slot = destination?;
+        let Some(slot) = destination else {
+            return None;
+        };
         // The high half may read the low one it replaces.
         let high = hold(lifter, high);
         lifter.assign(slot, 64, low);
@@ -286,12 +292,23 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             return Some(());
         }
         _ if lane_op.is_some() => {
-            let (op, bits) = lane_op?;
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(
+            let Some((op, bits)) = lane_op else {
+                return None;
+            };
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(
                 lifter,
                 (lanes(op, bits, a.0, b.0), lanes(op, bits, a.1, b.1)),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         // An AES round reads the whole state and key for each half.
         Aesenc | Aesenclast | Aesdec | Aesdeclast => {
@@ -301,7 +318,12 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                 Aesdec => crate::ir::AesRound::Decrypt,
                 _ => crate::ir::AesRound::DecryptLast,
             };
-            let (state, key) = (halves(0)?, halves(1)?);
+            let Some(state) = halves(0) else {
+                return None;
+            };
+            let Some(key) = halves(1) else {
+                return None;
+            };
             let half = |high| {
                 Expr::apply(
                     Operation::Aes { round, high },
@@ -313,7 +335,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     ],
                 )
             };
-            write(lifter, (half(false), half(true)))?;
+            if write(lifter, (half(false), half(true))).is_none() {
+                return None;
+            }
         }
         // Narrowing two sources' lanes into one register, the first's low.
         Packsswb | Packuswb | Packssdw | Packusdw => {
@@ -323,11 +347,18 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                 Packusdw => (32, true),
                 _ => (32, false),
             };
-            let (a, b) = (halves(0)?, halves(1)?);
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
             let pack = |(low, high): (Expr, Expr)| {
                 Expr::apply(Operation::Pack { from, unsigned }, vec![low, high])
             };
-            write(lifter, (pack(a), pack(b)))?;
+            if write(lifter, (pack(a), pack(b))).is_none() {
+                return None;
+            }
         }
         Pmaddwd | Psadbw => {
             let op = if ins.mnemonic() == Pmaddwd {
@@ -335,17 +366,31 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             } else {
                 Operation::SumAbsoluteDifferences
             };
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(
                 lifter,
                 (
                     Expr::apply(op, vec![a.0, b.0]),
                     Expr::apply(op, vec![a.1, b.1]),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         Paddq | Psubq | Pmuludq | Pandn => {
-            let (a, b) = (halves(0)?, halves(1)?);
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
             let combine = |x: Expr, y: Expr| match ins.mnemonic() {
                 Paddq => Expr::bin(BinOp::Add, x, y),
                 Psubq => Expr::bin(BinOp::Sub, x, y),
@@ -361,23 +406,38 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     y,
                 ),
             };
-            write(lifter, (combine(a.0, b.0), combine(a.1, b.1)))?;
+            if write(lifter, (combine(a.0, b.0), combine(a.1, b.1))).is_none() {
+                return None;
+            }
         }
         // Shifts of each lane by an immediate or by the low 64 bits of a
         // register.
         Psllw | Pslld | Psllq | Psrlw | Psrld | Psrlq | Psraw | Psrad => {
-            let (op, bits) = lane_shift(ins.mnemonic())?;
-            let a = halves(0)?;
+            let Some((op, bits)) = lane_shift(ins.mnemonic()) else {
+                return None;
+            };
+            let Some(a) = halves(0) else {
+                return None;
+            };
             let count = match ins.op1_kind() {
                 OpKind::Immediate8 => Expr::constant(u64::from(ins.immediate8())),
-                _ => halves(1)?.0,
+                _ => {
+                    let Some(second_halves) = halves(1) else {
+                        return None;
+                    };
+                    second_halves.0
+                }
             };
             let shifted = |half: Expr| lanes(op, bits, half, count.clone());
-            write(lifter, (shifted(a.0), shifted(a.1)))?;
+            if write(lifter, (shifted(a.0), shifted(a.1))).is_none() {
+                return None;
+            }
         }
         // Whole-register byte shifts.
         Pslldq | Psrldq => {
-            let (low, high) = halves(0)?;
+            let Some((low, high)) = halves(0) else {
+                return None;
+            };
             let shift_bits = u64::from(ins.immediate8()).min(16) * 8;
             let result = if ins.mnemonic() == Psrldq {
                 let parts = [low, high];
@@ -389,22 +449,32 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     window(&parts, 192 - shift_bits),
                 )
             };
-            write(lifter, result)?;
+            if write(lifter, result).is_none() {
+                return None;
+            }
         }
         Pshufd => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let order = u64::from(ins.immediate8());
             let pick = |index: u64| lane_of(&source, (order >> (2 * index)) & 3, 32);
-            write(
+            if write(
                 lifter,
                 (
                     pack(vec![pick(0), pick(1)], 32),
                     pack(vec![pick(2), pick(3)], 32),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         Pshuflw | Pshufhw => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let order = u64::from(ins.immediate8());
             let high_half = ins.mnemonic() == Pshufhw;
             let words = if high_half { &source.1 } else { &source.0 };
@@ -420,37 +490,73 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             } else {
                 (shuffled, source.1)
             };
-            write(lifter, result)?;
+            if write(lifter, result).is_none() {
+                return None;
+            }
         }
         Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq | Unpcklps
         | Unpckhps => {
-            let (a, b) = (halves(0)?, halves(1)?);
-            let (bits, high) = interleave_properties(ins.mnemonic())?;
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            let Some((bits, high)) = interleave_properties(ins.mnemonic()) else {
+                return None;
+            };
             let (x, y) = if high { (a.1, b.1) } else { (a.0, b.0) };
             let interleave = |op| Expr::apply(op, vec![x.clone(), y.clone()]);
-            write(
+            if write(
                 lifter,
                 (
                     interleave(Operation::InterleaveLow(bits)),
                     interleave(Operation::InterleaveHigh(bits)),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         Punpcklqdq | Unpcklpd | Movlhps => {
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(lifter, (a.0, b.0))?;
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(lifter, (a.0, b.0)).is_none() {
+                return None;
+            }
         }
         Punpckhqdq | Unpckhpd => {
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(lifter, (a.1, b.1))?;
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(lifter, (a.1, b.1)).is_none() {
+                return None;
+            }
         }
         Movhlps => {
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(lifter, (b.1, a.1))?;
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(lifter, (b.1, a.1)).is_none() {
+                return None;
+            }
         }
         // The VEX forms on an xmm register write a general one, as these do.
         Pmovmskb | Movmskpd | Movmskps | Vpmovmskb | Vmovmskpd | Vmovmskps => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let bits = match ins.mnemonic() {
                 Pmovmskb | Vpmovmskb => 8,
                 Movmskps | Vmovmskps => 32,
@@ -466,7 +572,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     Expr::constant(u64::from(64 / bits)),
                 ),
             );
-            let (index, width) = gpr(ins.op0_register())?;
+            let Some((index, width)) = gpr(ins.op0_register()) else {
+                return None;
+            };
             lifter.assign(index, width, mask);
         }
         // The first unless the comparison prefers the second, which a NaN
@@ -510,11 +618,23 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     choose(x.clone(), y.clone())
                 }
             };
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1)))?;
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1))).is_none() {
+                return None;
+            }
         }
         Andnpd | Andnps => {
-            let (a, b) = (halves(0)?, halves(1)?);
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
             let andn = |x: Expr, y: Expr| {
                 Expr::bin(
                     BinOp::And,
@@ -522,7 +642,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     y,
                 )
             };
-            write(lifter, (andn(a.0, b.0), andn(a.1, b.1)))?;
+            if write(lifter, (andn(a.0, b.0), andn(a.1, b.1))).is_none() {
+                return None;
+            }
         }
         // Each source's two doubles summed (or subtracted) into one.
         Haddpd | Hsubpd => {
@@ -531,29 +653,49 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             } else {
                 Operation::FloatSub(Precision::Double)
             };
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(
                 lifter,
                 (
                     Expr::apply(op, vec![a.0, a.1]),
                     Expr::apply(op, vec![b.0, b.1]),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         Addsubpd => {
-            let (a, b) = (halves(0)?, halves(1)?);
-            write(
+            let Some(a) = halves(0) else {
+                return None;
+            };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            if write(
                 lifter,
                 (
                     Expr::apply(Operation::FloatSub(Precision::Double), vec![a.0, b.0]),
                     Expr::apply(Operation::FloatAdd(Precision::Double), vec![a.1, b.1]),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         // Conversions lane by lane, widening from the low half or narrowing
         // into it.
         Cvtdq2pd | Cvtps2pd => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let convert = |index| {
                 let lane = lane_of(&source, index, 32);
                 if ins.mnemonic() == Cvtdq2pd {
@@ -575,10 +717,14 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     )
                 }
             };
-            write(lifter, (convert(0), convert(1)))?;
+            if write(lifter, (convert(0), convert(1))).is_none() {
+                return None;
+            }
         }
         Cvtpd2ps | Cvtpd2dq | Cvttpd2dq => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let convert = |half: Expr| match ins.mnemonic() {
                 Cvtpd2ps => Expr::apply(
                     Operation::FloatConvert {
@@ -602,16 +748,22 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     vec![half],
                 ),
             };
-            write(
+            if write(
                 lifter,
                 (
                     pack(vec![convert(source.0), convert(source.1)], 32),
                     Expr::constant(0),
                 ),
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         Cvtdq2ps | Cvtps2dq | Cvttps2dq => {
-            let source = halves(1)?;
+            let Some(source) = halves(1) else {
+                return None;
+            };
             let convert = |lane: Expr| match ins.mnemonic() {
                 Cvtdq2ps => Expr::apply(
                     Operation::IntToFloat {
@@ -645,7 +797,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     32,
                 )
             };
-            write(lifter, (half(0), half(2)))?;
+            if write(lifter, (half(0), half(2))).is_none() {
+                return None;
+            }
         }
         Addpd | Subpd | Mulpd | Divpd | Addps | Subps | Mulps | Divps | Sqrtpd | Sqrtps => {
             let single = matches!(ins.mnemonic(), Addps | Subps | Mulps | Divps | Sqrtps);
@@ -662,8 +816,17 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                 _ => Operation::FloatSqrt(precision),
             };
             let unary = matches!(ins.mnemonic(), Sqrtpd | Sqrtps);
-            let b = halves(1)?;
-            let a = if unary { b.clone() } else { halves(0)? };
+            let Some(b) = halves(1) else {
+                return None;
+            };
+            let a = if unary {
+                b.clone()
+            } else {
+                match halves(0) {
+                    Some(value) => value,
+                    None => return None,
+                }
+            };
             // A double fills a half; singles take its two 32-bit lanes.
             let each = |x: &Expr, y: &Expr| {
                 let args = |x: Expr, y: Expr| if unary { vec![y] } else { vec![x, y] };
@@ -680,7 +843,9 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     Expr::apply(op, args(x.clone(), y.clone()))
                 }
             };
-            write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1)))?;
+            if write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1))).is_none() {
+                return None;
+            }
         }
         _ => return None,
     }

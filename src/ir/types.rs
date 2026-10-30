@@ -255,7 +255,12 @@ impl CType {
                 }
                 let bits = match words.as_slice() {
                     ["size_t" | "ssize_t" | "uintptr_t" | "intptr_t" | "ptrdiff_t"] => 64,
-                    _ => u32::from(scalar_size(name)?) * 8,
+                    _ => {
+                        let Some(size) = scalar_size(name) else {
+                            return None;
+                        };
+                        u32::from(size) * 8
+                    }
                 };
                 Some((bits, !unsigned))
             }
@@ -354,12 +359,18 @@ fn scalar_size(name: &str) -> Option<u8> {
         ["long"] | ["long", "int"] | ["long", "long"] | ["long", "long", "int"] | ["double"] => 8,
         [] => 4,
         [other] => {
-            let bits: u8 = other
+            let Some(width_text) = other
                 .strip_prefix("uint")
-                .or_else(|| other.strip_prefix("int"))?
-                .strip_suffix("_t")?
-                .parse()
-                .ok()?;
+                .or_else(|| other.strip_prefix("int"))
+            else {
+                return None;
+            };
+            let Some(digits) = width_text.strip_suffix("_t") else {
+                return None;
+            };
+            let Some(bits): Option<u8> = digits.parse().ok() else {
+                return None;
+            };
             bits / 8
         }
         _ => return None,

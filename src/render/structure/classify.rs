@@ -142,7 +142,8 @@ fn collect_branch_sites(
                     header: None,
                     follow: after,
                 });
-                for body in arms.iter().map(|(_, body)| body).chain(default.iter()) {
+                let arm_bodies = arms.iter().map(|(_, body)| body).chain(default.iter());
+                for body in arm_bodies {
                     collect_branch_sites(body, None, frames, out);
                 }
                 frames.pop();

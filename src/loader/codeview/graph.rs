@@ -1,6 +1,7 @@
 //! Source identities for debug callee declarations.
 
-use super::{SOURCE, types::Types};
+use super::SOURCE;
+use super::types::Types;
 use crate::ir::calls::{CallMember, CallType, TypeGraph, TypeSource};
 use crate::ir::{AbiIssue, CType};
 
@@ -20,7 +21,8 @@ pub(super) fn read(types: &Types) -> TypeGraph {
         .map(|(_, bytes)| bytes.len() / 4)
         .sum::<usize>()
         .saturating_add(4096);
-    for index in (0..0x1000).chain(types.0.keys().copied()) {
+    let type_indices = (0..0x1000).chain(types.0.keys().copied());
+    for index in type_indices {
         let Some(spelling) = types.spelling(index, 16) else {
             continue;
         };

@@ -329,7 +329,9 @@ pub(super) fn body(
     addr: u64,
     summaries: crate::lift::Summaries<'_>,
 ) -> Option<Arc<Vec<Block>>> {
-    let function = image.functions.get(&addr)?;
+    let Some(function) = image.functions.get(&addr) else {
+        return None;
+    };
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let extent = addr..addr.saturating_add(size);
     let landing_pads = super::landing_pads(image, extent.clone());
@@ -768,7 +770,9 @@ fn settle_clobbers(
 /// it, lifted knowing of its callees what `summaries` says: none for a
 /// linkage stub, whose callee is in another module.
 fn own_body(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> Option<Vec<Block>> {
-    let function = image.functions.get(&addr)?;
+    let Some(function) = image.functions.get(&addr) else {
+        return None;
+    };
     if function.sources.contains(&NameSource::Plt) {
         return None;
     }

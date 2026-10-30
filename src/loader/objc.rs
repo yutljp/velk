@@ -20,16 +20,27 @@ fn word(image: &Image, address: u64, offset: u64, width: u64) -> Option<u64> {
 }
 
 fn string(image: &Image, address: u64, selector: bool) -> Option<String> {
-    let section = image.section_at(address)?;
+    let Some(section) = image.section_at(address) else {
+        return None;
+    };
     if selector && section.name != "__objc_methname" {
         return None;
     }
-    let remaining = section
-        .size
-        .checked_sub(address.checked_sub(section.vaddr)?)?;
-    let bytes = image.read_vaddr(address, remaining.min(4096))?;
-    let end = bytes.iter().position(|byte| *byte == 0)?;
-    let name = std::str::from_utf8(&bytes[..end]).ok()?;
+    let Some(section_offset) = address.checked_sub(section.vaddr) else {
+        return None;
+    };
+    let Some(remaining) = section.size.checked_sub(section_offset) else {
+        return None;
+    };
+    let Some(bytes) = image.read_vaddr(address, remaining.min(4096)) else {
+        return None;
+    };
+    let Some(end) = bytes.iter().position(|byte| *byte == 0) else {
+        return None;
+    };
+    let Some(name) = std::str::from_utf8(&bytes[..end]).ok() else {
+        return None;
+    };
     // Restrict annotations to runtime identifiers so metadata cannot end a C comment.
     if name.is_empty()
         || !name
@@ -42,8 +53,13 @@ fn string(image: &Image, address: u64, selector: bool) -> Option<String> {
 }
 
 fn relative(image: &Image, address: u64, offset: u64) -> Option<u64> {
-    let field = address.checked_add(offset)?;
-    let displacement = word(image, field, 0, 4)? as u32 as i32;
+    let Some(field) = address.checked_add(offset) else {
+        return None;
+    };
+    let Some(raw_displacement) = word(image, field, 0, 4) else {
+        return None;
+    };
+    let displacement = raw_displacement as u32 as i32;
     field.checked_add_signed(displacement as i64)
 }
 
@@ -53,8 +69,13 @@ fn class_ro(image: &Image, address: u64) -> Option<u64> {
 }
 
 fn class_name(image: &Image, address: u64) -> Option<String> {
-    let ro = class_ro(image, address)?;
-    string(image, word(image, ro, 24, 8)?, false)
+    let Some(ro) = class_ro(image, address) else {
+        return None;
+    };
+    let Some(string_address) = word(image, ro, 24, 8) else {
+        return None;
+    };
+    string(image, string_address, false)
 }
 
 fn methods(image: &mut Image, list: u64, owner: &str, kind: char) {

@@ -227,19 +227,28 @@ impl ChainWalk<'_> {
     }
 
     fn next_start(&self, at: u64) -> Option<u64> {
-        let index = *self.position.get(&at)?;
+        let Some(value) = self.position.get(&at) else {
+            return None;
+        };
+        let index = *value;
         self.ir.blocks.get(index + 1).map(|block| block.start)
     }
 
     fn compare_at(&self, at: u64) -> Option<(crate::ir::Cond, i64, u64)> {
-        let index = *self.position.get(&at)?;
+        let Some(position) = self.position.get(&at) else {
+            return None;
+        };
+        let index = *position;
+        let Some(last_statement) = self.ir.blocks[index].stmts.last() else {
+            return None;
+        };
         let Stmt::Brif {
             cond,
             lhs,
             rhs,
             target,
             ..
-        } = self.ir.blocks[index].stmts.last()?
+        } = last_statement
         else {
             return None;
         };
@@ -254,8 +263,14 @@ impl ChainWalk<'_> {
 
     /// The width of the value a chain block compares.
     fn width(&self, at: u64) -> Option<u32> {
-        let index = *self.position.get(&at)?;
-        match self.ir.blocks[index].stmts.last()? {
+        let Some(position) = self.position.get(&at) else {
+            return None;
+        };
+        let index = *position;
+        let Some(last_statement) = self.ir.blocks[index].stmts.last() else {
+            return None;
+        };
+        match last_statement {
             Stmt::Brif { lhs, .. } => Some(expr_width(lhs).map_or(64, u32::from)),
             _ => None,
         }

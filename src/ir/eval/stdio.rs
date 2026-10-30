@@ -141,7 +141,10 @@ impl<T: Clone> Files<T> {
             self.committed.insert(path.clone(), Vec::new());
         }
         let position = if append { bytes.len() } else { 0 };
-        let descriptor = self.reserve_descriptor()?;
+        let descriptor = match self.reserve_descriptor() {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.streams.insert(
             token,
             Stream {

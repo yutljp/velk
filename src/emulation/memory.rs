@@ -51,7 +51,10 @@ pub(crate) struct Memory<'a> {
 
 impl<'a> Memory<'a> {
     pub(crate) fn heap_range_for_unpack(image: &'a Image) -> Result<(u64, u64), String> {
-        let memory = Self::for_unpack(image, None, 0)?;
+        let memory = match Self::for_unpack(image, None, 0) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         Ok((memory.heap_base, memory.heap_end))
     }
 

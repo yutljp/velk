@@ -23,7 +23,11 @@ impl Bits<'_> {
         if self.remaining == 0 {
             self.word = 0;
             for index in 0..self.word_bytes {
-                self.word |= u32::from(self.byte()?) << (index * 8);
+                let byte = match self.byte() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                self.word |= u32::from(byte) << (index * 8);
             }
             self.remaining = self.word_bytes * 8;
         }
@@ -32,7 +36,10 @@ impl Bits<'_> {
     }
 
     fn extend(&mut self, value: usize, limit: usize) -> Result<usize, DecodeError> {
-        let bit = self.bit()?;
+        let bit = match self.bit() {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         match value
             .checked_mul(2)
             .and_then(|value| value.checked_add(bit))
@@ -65,28 +72,57 @@ pub(super) fn decode(input: &[u8], size: usize, method: u8) -> Result<Vec<u8>, D
     let mut output = Vec::new();
     let mut previous = 1;
     loop {
-        while bits.bit()? != 0 {
+        loop {
+            let bit = match bits.bit() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if bit == 0 {
+                break;
+            }
+
             if output.len() == size {
                 return Err(DecodeError::invalid(bits.position, "too many NRV literals"));
             }
-            output.push(bits.byte()?);
+            let literal = match bits.byte() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            output.push(literal);
         }
         let mut offset = 1;
         loop {
-            offset = bits.extend(offset, 0x1000002)?;
-            if bits.bit()? != 0 {
+            offset = match bits.extend(offset, 0x1000002) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let bit = match bits.bit() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if bit != 0 {
                 break;
             }
             if method != 2 {
-                offset = bits.extend(offset - 1, 0x1000002)?;
+                offset = match bits.extend(offset - 1, 0x1000002) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
             }
         }
         let mut length;
         if offset == 2 {
             offset = previous;
-            length = bits.bit()?;
+            length = match bits.bit() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
         } else {
-            offset = (offset - 3) * 256 + usize::from(bits.byte()?);
+            let byte = match bits.byte() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            offset = (offset - 3) * 256 + usize::from(byte);
             if offset == 0xffffffff {
                 break;
             }
@@ -94,33 +130,68 @@ pub(super) fn decode(input: &[u8], size: usize, method: u8) -> Result<Vec<u8>, D
                 length = (!offset) & 1;
                 offset >>= 1;
             } else {
-                length = bits.bit()?;
+                length = match bits.bit() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
             }
             offset += 1;
             previous = offset;
         }
         if method == 8 {
             if length != 0 {
-                length = 1 + bits.bit()?;
-            } else if bits.bit()? != 0 {
-                length = 3 + bits.bit()?;
+                let bit = match bits.bit() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                length = 1 + bit;
             } else {
-                length = 1;
-                loop {
-                    length = bits.extend(length, size)?;
-                    if bits.bit()? != 0 {
-                        break;
+                let flag = match bits.bit() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if flag != 0 {
+                    let bit = match bits.bit() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    length = 3 + bit;
+                } else {
+                    length = 1;
+                    loop {
+                        length = match bits.extend(length, size) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let bit = match bits.bit() {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if bit != 0 {
+                            break;
+                        }
                     }
+                    length += 3;
                 }
-                length += 3;
             }
         } else {
-            length = length * 2 + bits.bit()?;
+            let bit = match bits.bit() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            length = length * 2 + bit;
             if length == 0 {
                 length = 1;
                 loop {
-                    length = bits.extend(length, size)?;
-                    if bits.bit()? != 0 {
+                    length = match bits.extend(length, size) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let bit = match bits.bit() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if bit != 0 {
                         break;
                     }
                 }

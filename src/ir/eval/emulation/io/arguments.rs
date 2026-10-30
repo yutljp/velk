@@ -40,25 +40,65 @@ impl Arguments {
     pub(super) fn set_list(&mut self, runner: &Runner<'_>, base: u64) -> Result<(), Stop> {
         self.list = Some(match runner.image.isa {
             Isa::X86_64 if self.convention == Convention::SysV => {
-                let offset = load(runner, base, 4)? as u32;
+                let general_offset = match load(runner, base, 4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let offset = general_offset as u32;
                 if offset > 48 || !offset.is_multiple_of(8) {
                     return Err(error("invalid va_list general register offset"));
                 }
+                let stack_address = match address(base, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let loaded = match load(runner, stack_address, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let field_address = match address(base, 16) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let saved_area = match load(runner, field_address, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 Variadic::SysV {
                     offset,
-                    stack: load(runner, address(base, 8)?, 8)?,
-                    saved: load(runner, address(base, 16)?, 8)?,
+                    stack: loaded,
+                    saved: saved_area,
                 }
             }
             Isa::AArch64 if runner.image.format == Format::Elf => {
-                let offset = load(runner, address(base, 24)?, 4)? as u32 as i32;
+                let field_address = match address(base, 24) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let loaded = match load(runner, field_address, 4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let offset = loaded as u32 as i32;
                 if !(-64..=0).contains(&offset) || offset % 8 != 0 {
                     return Err(error("invalid va_list general register offset"));
                 }
+                let stack_pointer = match load(runner, base, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let field_address = match address(base, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let stack_top = match load(runner, field_address, 8) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 Variadic::Aapcs64 {
                     offset,
-                    stack: load(runner, base, 8)?,
-                    top: load(runner, address(base, 8)?, 8)?,
+                    stack: stack_pointer,
+                    top: stack_top,
                 }
             }
             Isa::X86_64 | Isa::AArch64 => Variadic::Linear {
@@ -103,7 +143,10 @@ impl Arguments {
                     location
                 }
                 Variadic::SysV { offset, saved, .. } if *offset < 48 => {
-                    let location = address(*saved, *offset as usize)?;
+                    let location = match address(*saved, *offset as usize) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     *offset += 8;
                     location
                 }

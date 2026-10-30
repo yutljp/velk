@@ -205,7 +205,8 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             | target.map_or(0, |target| {
                 u64::from(crate::analysis::summary::summary(image, target).pointers)
             });
-        for (position, arg) in args.iter().enumerate().take(64) {
+        let first_arguments = args.iter().enumerate().take(64);
+        for (position, arg) in first_arguments {
             let Expr::Const(addr) = arg else {
                 continue;
             };

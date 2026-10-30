@@ -65,7 +65,9 @@ impl Runner<'_> {
         let mut output = Vec::new();
         let mut position = 0;
         while position < format.len() {
-            self.tick()?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             if format[position] != b'%' {
                 output.push(format[position]);
                 position += 1;
@@ -91,23 +93,38 @@ impl Runner<'_> {
                 position += 1;
             }
             if format.get(position) == Some(&b'*') {
-                let width = args.next(self, 4)? as u32 as i32;
+                let argument = match args.next(self, 4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let width = argument as u32 as i32;
                 spec.left |= width < 0;
                 spec.width = width.unsigned_abs() as usize;
                 position += 1;
             } else {
-                spec.width = number(format, &mut position)?;
+                spec.width = match number(format, &mut position) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
             }
             if format.get(position) == Some(&b'.') {
                 position += 1;
                 if format.get(position) == Some(&b'*') {
-                    let precision = args.next(self, 4)? as u32 as i32;
+                    let argument = match args.next(self, 4) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let precision = argument as u32 as i32;
                     if precision >= 0 {
                         spec.precision = Some(precision as usize);
                     }
                     position += 1;
                 } else {
-                    spec.precision = Some(number(format, &mut position)?);
+                    let precision = match number(format, &mut position) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    spec.precision = Some(precision);
                 }
             }
             while let Some(byte @ (b'h' | b'l' | b'z' | b't' | b'j' | b'L')) = format.get(position)
@@ -140,27 +157,50 @@ impl Runner<'_> {
             let mut formatted_value = Vec::new();
             let numeric = !matches!(conversion, b's' | b'c');
             if conversion == b's' {
-                let base = args.next(self, pointer_bytes)?;
+                let base = match args.next(self, pointer_bytes) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if let Some(precision) = spec.precision {
                     for offset in 0..precision {
-                        let byte = self.read_byte(super::address(base, offset)?)?;
+                        let item_address = match super::address(base, offset) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let byte = match self.read_byte(item_address) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
                         if byte == 0 {
                             break;
                         }
                         formatted_value.push(byte);
                     }
                 } else {
-                    formatted_value = self.bytes_at(base, None)?;
+                    formatted_value = match self.bytes_at(base, None) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                 }
             } else if conversion == b'c' {
-                formatted_value.push(args.next(self, 4)? as u8);
+                let argument = match args.next(self, 4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                formatted_value.push(argument as u8);
             } else {
                 let width = if conversion == b'p' {
                     pointer_bytes
                 } else {
-                    integer_width(&spec.length, pointer_bytes, windows)?
+                    match integer_width(&spec.length, pointer_bytes, windows) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 };
-                let raw = args.next(self, width.max(4))?;
+                let raw = match args.next(self, width.max(4)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let bits = width * 8;
                 let value = if bits == 64 {
                     raw

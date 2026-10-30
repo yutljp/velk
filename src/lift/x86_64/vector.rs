@@ -37,7 +37,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
     }) {
         return lift_ymm(lifter, ins);
     }
-    lift_xmm(lifter, ins)?;
+    if lift_xmm(lifter, ins).is_none() {
+        return None;
+    }
     if ins.encoding() != EncodingKind::Legacy
         && ins.mnemonic() != Mnemonic::Vptest
         && ins.op0_kind() == OpKind::Register
@@ -65,10 +67,15 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     let quarters = |index: u32| -> Option<[Expr; 4]> {
         match ins.op_kind(index) {
             OpKind::Register => {
-                Some(ymm(ins.op_register(index))?.map(|slot| Lifter::read_reg(slot, 64)))
+                let Some(slots) = ymm(ins.op_register(index)) else {
+                    return None;
+                };
+                Some(slots.map(|slot| Lifter::read_reg(slot, 64)))
             }
             OpKind::Memory => {
-                let addr = memory_address(ins)?;
+                let Some(addr) = memory_address(ins) else {
+                    return None;
+                };
                 Some(std::array::from_fn(|quarter| {
                     load_at(
                         Expr::bin(BinOp::Add, addr.clone(), Expr::constant(8 * quarter as u64)),
@@ -80,7 +87,9 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         }
     };
     let write = |lifter: &mut Lifter, values: [Expr; 4]| -> Option<()> {
-        let slots = ymm(ins.op0_register())?;
+        let Some(slots) = ymm(ins.op0_register()) else {
+            return None;
+        };
         for (slot, value) in slots.into_iter().zip(values) {
             lifter.assign(slot, 64, value);
         }
@@ -100,8 +109,12 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         | Vmovdqa64 | Vmovntdq | Vmovups | Vmovaps | Vmovupd | Vmovapd | Vmovntps | Vmovntpd
         | Vlddqu => match ins.op0_kind() {
             OpKind::Memory => {
-                let addr = memory_address(ins)?;
-                let values = quarters(1)?;
+                let Some(addr) = memory_address(ins) else {
+                    return None;
+                };
+                let Some(values) = quarters(1) else {
+                    return None;
+                };
                 preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
                 for (quarter, value) in values.into_iter().enumerate() {
                     lifter.stmts.push(Stmt::Store {
@@ -116,14 +129,27 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                     });
                 }
             }
-            _ => write(lifter, quarters(1)?)?,
+            _ => {
+                let Some(source_quarters) = quarters(1) else {
+                    return None;
+                };
+                match write(lifter, source_quarters) {
+                    Some(value) => value,
+                    None => return None,
+                }
+            }
         },
         Vpxor | Vpand | Vpor | Vpandn | Vxorps | Vxorpd | Vandps | Vandpd | Vorps | Vorpd
         | Vpcmpeqb | Vpcmpeqw | Vpcmpeqd | Vpcmpeqq | Vpaddb | Vpaddw | Vpaddd | Vpaddq
         | Vpsubb | Vpsubw | Vpsubd | Vpsubq | Vpminub | Vpmaxub
             if ins.op_count() == 3 =>
         {
-            let (a, b) = (quarters(1)?, quarters(2)?);
+            let Some(a) = quarters(1) else {
+                return None;
+            };
+            let Some(b) = quarters(2) else {
+                return None;
+            };
             let mnemonic = ins.mnemonic();
             let combine = |x: Expr, y: Expr| match mnemonic {
                 Vpxor | Vxorps | Vxorpd => Expr::bin(BinOp::Xor, x, y),
@@ -156,7 +182,7 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             let [a0, a1, a2, a3] = a;
             let [b0, b1, b2, b3] = b;
-            write(
+            if write(
                 lifter,
                 [
                     combine(a0, b0),
@@ -164,12 +190,20 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                     combine(a2, b2),
                     combine(a3, b3),
                 ],
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         // The top bit of each byte, lowest byte first.
         Vpmovmskb => {
-            let (index, width) = gpr(ins.op0_register())?;
-            let [q0, q1, q2, q3] = quarters(1)?;
+            let Some((index, width)) = gpr(ins.op0_register()) else {
+                return None;
+            };
+            let Some([q0, q1, q2, q3]) = quarters(1) else {
+                return None;
+            };
             let mask = |quarter: Expr, shift: u64| {
                 Expr::bin(
                     BinOp::Shl,
@@ -186,8 +220,18 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // The low byte of the source in every byte.
         Vpbroadcastb => {
             let byte = match ins.op1_kind() {
-                OpKind::Register => Lifter::read_reg(xmm(ins.op1_register())?, 64),
-                OpKind::Memory => load_at(memory_address(ins)?, 1),
+                OpKind::Register => {
+                    let Some(slot) = xmm(ins.op1_register()) else {
+                        return None;
+                    };
+                    Lifter::read_reg(slot, 64)
+                }
+                OpKind::Memory => {
+                    let Some(operand_address) = memory_address(ins) else {
+                        return None;
+                    };
+                    load_at(operand_address, 1)
+                }
                 _ => return None,
             };
             let spread = Expr::bin(
@@ -195,7 +239,9 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 Expr::bin(BinOp::And, byte, Expr::constant(0xff)),
                 Expr::constant(0x0101_0101_0101_0101),
             );
-            write(lifter, std::array::from_fn(|_| spread.clone()))?;
+            if write(lifter, std::array::from_fn(|_| spread.clone())).is_none() {
+                return None;
+            }
         }
         _ => return None,
     }
@@ -290,14 +336,23 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             OpKind::Register,
             OpKind::Register,
         ) if ins.op_count() == 3 => {
-            let (to, first) = (destination?, source?);
+            let Some(to) = destination else {
+                return None;
+            };
+            let Some(first) = source else {
+                return None;
+            };
             let (second_low, second_high) = match ins.op2_kind() {
                 OpKind::Register => {
-                    let slot = xmm(ins.op2_register())?;
+                    let Some(slot) = xmm(ins.op2_register()) else {
+                        return None;
+                    };
                     (low(slot), low(slot + 1))
                 }
                 OpKind::Memory => {
-                    let addr = address()?;
+                    let Some(addr) = address() else {
+                        return None;
+                    };
                     (load_at(addr.clone(), 8), load_at(offset(addr), 8))
                 }
                 _ => return None,
@@ -320,16 +375,29 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // One 16-bit lane written from a general register or memory, or read
         // out to a general register.
         (Pinsrw | Vpinsrw, OpKind::Register, _) => {
-            let to = destination?;
+            let Some(to) = destination else {
+                return None;
+            };
             let value_index = if mnemonic == Vpinsrw { 2 } else { 1 };
             let value = match ins.op_kind(value_index) {
-                OpKind::Memory => load_at(address()?, 2),
-                _ => operand(lifter, ins, value_index)?,
+                OpKind::Memory => {
+                    let Some(operand_address) = address() else {
+                        return None;
+                    };
+                    load_at(operand_address, 2)
+                }
+                _ => match operand(lifter, ins, value_index) {
+                    Some(value) => value,
+                    None => return None,
+                },
             };
             let lane = u64::from(ins.immediate8()) & 7;
             let (slot, shift) = (to + (lane / 4) as u16, (lane % 4) * 16);
             let base = if mnemonic == Vpinsrw {
-                low(source? + (lane / 4) as u16)
+                let Some(source) = source else {
+                    return None;
+                };
+                low(source + (lane / 4) as u16)
             } else {
                 low(slot)
             };
@@ -343,7 +411,9 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 ),
             );
             if mnemonic == Vpinsrw {
-                let from = source?;
+                let Some(from) = source else {
+                    return None;
+                };
                 let other = hold(lifter, low(from + 1 - (lane / 4) as u16));
                 lifter.assign(slot, 64, merged);
                 lifter.assign(to + 1 - (lane / 4) as u16, 64, other);
@@ -393,17 +463,32 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             OpKind::Register,
             OpKind::Register,
         ) => {
-            let (to, from) = (destination?, source?);
+            let Some(to) = destination else {
+                return None;
+            };
+            let Some(from) = source else {
+                return None;
+            };
             lifter.assign(to, 64, low(from));
             lifter.assign(to + 1, 64, low(from + 1));
         }
         (Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa, OpKind::Register, OpKind::Memory) => {
-            let (to, addr) = (destination?, address()?);
+            let Some(to) = destination else {
+                return None;
+            };
+            let Some(addr) = address() else {
+                return None;
+            };
             lifter.assign(to, 64, load_at(addr.clone(), 8));
             lifter.assign(to + 1, 64, load_at(offset(addr), 8));
         }
         (Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa, OpKind::Memory, OpKind::Register) => {
-            let (from, addr) = (source?, address()?);
+            let Some(from) = source else {
+                return None;
+            };
+            let Some(addr) = address() else {
+                return None;
+            };
             store(lifter, addr.clone(), low(from), 8);
             store(lifter, offset(addr), low(from + 1), 8);
         }
@@ -422,7 +507,9 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             store(lifter, addr, low(from + high), 8);
         }
         (Xorps | Xorpd | Pxor | Andps | Andpd | Pand | Orps | Orpd | Por, OpKind::Register, _) => {
-            let to = destination?;
+            let Some(to) = destination else {
+                return None;
+            };
             let op = match ins.mnemonic() {
                 Xorps | Xorpd | Pxor => BinOp::Xor,
                 Andps | Andpd | Pand => BinOp::And,
@@ -430,11 +517,15 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             let (first, second) = match ins.op1_kind() {
                 OpKind::Register => {
-                    let from = source?;
+                    let Some(from) = source else {
+                        return None;
+                    };
                     (low(from), low(from + 1))
                 }
                 OpKind::Memory => {
-                    let addr = address()?;
+                    let Some(addr) = address() else {
+                        return None;
+                    };
                     (load_at(addr.clone(), 8), load_at(offset(addr), 8))
                 }
                 _ => return None,
@@ -457,15 +548,25 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         (Movq | Movd | Movsd | Movss, OpKind::Register, OpKind::Register | OpKind::Memory)
             if destination.is_some() =>
         {
-            let to = destination?;
+            let Some(to) = destination else {
+                return None;
+            };
             let width = match ins.mnemonic() {
                 Movd | Movss => 4,
                 _ => 8,
             };
             let value = match (ins.op1_kind(), source) {
-                (OpKind::Memory, _) => load_at(address()?, width),
+                (OpKind::Memory, _) => {
+                    let Some(operand_address) = address() else {
+                        return None;
+                    };
+                    load_at(operand_address, width)
+                }
                 (_, Some(from)) => Lifter::read_reg(from, width * 8),
-                (_, None) => operand(lifter, ins, 1)?,
+                (_, None) => match operand(lifter, ins, 1) {
+                    Some(value) => value,
+                    None => return None,
+                },
             };
             let keeps = source.is_some() && matches!(ins.mnemonic(), Movsd | Movss);
             let value = if keeps && width == 4 {
@@ -485,16 +586,25 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         (Movq | Movd | Movsd | Movss, OpKind::Register | OpKind::Memory, OpKind::Register)
             if source.is_some() =>
         {
-            let from = source?;
+            let Some(from) = source else {
+                return None;
+            };
             let width = match ins.mnemonic() {
                 Movd | Movss => 4,
                 _ => 8,
             };
             let value = Lifter::read_reg(from, width * 8);
             match ins.op0_kind() {
-                OpKind::Memory => store(lifter, address()?, value, width),
+                OpKind::Memory => {
+                    let Some(operand_address) = address() else {
+                        return None;
+                    };
+                    store(lifter, operand_address, value, width)
+                }
                 _ => {
-                    let (index, register_width) = gpr(ins.op0_register())?;
+                    let Some((index, register_width)) = gpr(ins.op0_register()) else {
+                        return None;
+                    };
                     lifter.assign(index, register_width, value);
                 }
             }

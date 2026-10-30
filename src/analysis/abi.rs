@@ -61,7 +61,10 @@ pub(crate) fn declaration(types: &FunctionTypes) -> Option<DeclaredSignature> {
 /// aggregate.
 pub(crate) fn callee_declaration(types: &FunctionTypes) -> DeclaredSignature {
     let abi = (|| {
-        let profile = types.abi_profile?;
+        let profile = match types.abi_profile {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if types.variadic {
             return Err(AbiIssue::UnsupportedProfile);
         }
@@ -71,11 +74,18 @@ pub(crate) fn callee_declaration(types: &FunctionTypes) -> DeclaredSignature {
             return Err(AbiIssue::UnknownLayout);
         }
         let arguments: Result<Vec<_>, _> = types.param_layouts.iter().cloned().collect();
-        let result = types.ret_layout.as_ref().map_err(|issue| *issue)?;
+        let result = match types.ret_layout.as_ref().map_err(|issue| *issue) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if result.is_some() && types.ret.is_none() {
             return Err(AbiIssue::UnknownLayout);
         }
-        allocate(profile, &arguments?, result.as_ref())
+        let arguments = match arguments {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        allocate(profile, &arguments, result.as_ref())
     })();
     DeclaredSignature {
         params: types
@@ -111,7 +121,9 @@ fn value(classified: &ClassifiedValue, passing: Passing) -> Result<ValueAbi, Abi
         defined_bits: classified.defined_bits.clone(),
         passing,
     };
-    value.validate()?;
+    if let Err(error) = value.validate() {
+        return Err(error);
+    }
     Ok(value)
 }
 
@@ -139,7 +151,7 @@ fn result_binding(profile: AbiProfile, classified: &ClassifiedValue) -> Result<V
             let pieces: Result<Vec<_>, _> = pieces
                 .iter()
                 .map(|piece| {
-                    let register = match piece.class {
+                    let register = match match piece.class {
                         RegisterClass::Integer => {
                             let register = integers.get(integer).copied();
                             integer += 1;
@@ -151,7 +163,11 @@ fn result_binding(profile: AbiProfile, classified: &ClassifiedValue) -> Result<V
                             register
                         }
                     }
-                    .ok_or(AbiIssue::UnsupportedType)?;
+                    .ok_or(AbiIssue::UnsupportedType)
+                    {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     Ok(AbiPiece {
                         location: AbiLocation::Register(register),
                         object_offset: piece.object_offset,
@@ -160,7 +176,11 @@ fn result_binding(profile: AbiProfile, classified: &ClassifiedValue) -> Result<V
                     })
                 })
                 .collect();
-            Passing::Direct(pieces?)
+            let pieces = match pieces {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Passing::Direct(pieces)
         }
         ValueClass::Memory | ValueClass::Indirect => Passing::Indirect {
             pointer: AbiLocation::Register(match profile {
@@ -191,20 +211,34 @@ impl Allocation {
         } else {
             alignment.max(8)
         };
-        let offset = rounded(
-            self.stack
-                .checked_sub(bias)
-                .ok_or(AbiIssue::UnknownLayout)?,
-            alignment,
-        )?
-        .checked_add(bias)
-        .ok_or(AbiIssue::UnknownLayout)?;
-        self.stack = offset
-            .checked_add(rounded(bytes, 8)?)
-            .ok_or(AbiIssue::UnknownLayout)?;
-        Ok(AbiLocation::Stack(
-            i64::try_from(offset).map_err(|_| AbiIssue::UnknownLayout)?,
-        ))
+        let lowered_stack = match self.stack.checked_sub(bias).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let aligned = match rounded(lowered_stack, alignment) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let offset = match aligned.checked_add(bias).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let rounded_size = match rounded(bytes, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        self.stack = match offset
+            .checked_add(rounded_size)
+            .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let value = match i64::try_from(offset).map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Ok(AbiLocation::Stack(value))
     }
 
     fn pointer(&mut self) -> Result<AbiLocation, AbiIssue> {
@@ -227,16 +261,28 @@ impl Allocation {
             classified.alignment
         };
         let passing = match &classified.passing {
-            ValueClass::Indirect => Passing::Indirect {
-                pointer: self.pointer()?,
-                returned_pointer: None,
-            },
-            ValueClass::Memory => Passing::Direct(vec![AbiPiece {
-                location: self.stack(classified.size, alignment)?,
-                object_offset: 0,
-                bytes: classified.size,
-                class: None,
-            }]),
+            ValueClass::Indirect => {
+                let hidden_pointer = match self.pointer() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                Passing::Indirect {
+                    pointer: hidden_pointer,
+                    returned_pointer: None,
+                }
+            }
+            ValueClass::Memory => {
+                let location = match self.stack(classified.size, alignment) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                Passing::Direct(vec![AbiPiece {
+                    location,
+                    object_offset: 0,
+                    bytes: classified.size,
+                    class: None,
+                }])
+            }
             ValueClass::Registers(pieces) => {
                 let integers = convention(self.profile).arguments();
                 let floats = convention(self.profile).float_arguments();
@@ -291,8 +337,13 @@ impl Allocation {
                             self.float = floats.len();
                         }
                     }
+
+                    let location = match self.stack(classified.size, alignment) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     Passing::Direct(vec![AbiPiece {
-                        location: self.stack(classified.size, alignment)?,
+                        location,
                         object_offset: 0,
                         bytes: classified.size,
                         class: None,
@@ -323,7 +374,10 @@ impl Allocation {
             };
             AbiLocation::Register(registers[position])
         } else {
-            self.stack(8, 8)?
+            match self.stack(8, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         };
         let passing = if indirect {
             Passing::Indirect {
@@ -347,19 +401,44 @@ pub(crate) fn allocate(
     arguments: &[TypeLayout],
     returned: Option<&TypeLayout>,
 ) -> Result<SignatureAbi, AbiIssue> {
-    let result = returned
+    let result = match returned
         .map(|layout| {
-            let representative = canonical(layout)?;
-            let binding = result_binding(profile, &classify(profile, &representative)?)?;
-            for alternative in alternatives(layout)? {
-                let alternative = result_binding(profile, &classify(profile, &alternative)?)?;
+            let representative = match canonical(layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let classified = match classify(profile, &representative) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let binding = match result_binding(profile, &classified) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let alternative_layouts = match alternatives(layout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            for alternative in alternative_layouts {
+                let classified = match classify(profile, &alternative) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let alternative = match result_binding(profile, &classified) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if !same_binding(&binding, &alternative) {
                     return Err(AbiIssue::UnknownLayout);
                 }
             }
             Ok(binding)
         })
-        .transpose()?;
+        .transpose()
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let hidden = result
         .as_ref()
         .is_some_and(|value| matches!(value.passing, Passing::Indirect { .. }));
@@ -377,11 +456,32 @@ pub(crate) fn allocate(
     let mut bindings = Vec::with_capacity(arguments.len());
     for layout in arguments {
         let before = allocation.clone();
-        let representative = canonical(layout)?;
-        let binding = allocation.argument(&classify(profile, &representative)?)?;
-        for alternative in alternatives(layout)? {
+        let representative = match canonical(layout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let representative_class = match classify(profile, &representative) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let binding = match allocation.argument(&representative_class) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let alternatives = match alternatives(layout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        for alternative in alternatives {
             let mut state = before.clone();
-            let alternative = state.argument(&classify(profile, &alternative)?)?;
+            let classified = match classify(profile, &alternative) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let alternative = match state.argument(&classified) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if !same_binding(&binding, &alternative) || state != allocation {
                 return Err(AbiIssue::UnknownLayout);
             }

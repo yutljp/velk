@@ -121,46 +121,68 @@ impl Machine for Adapter<'_, '_> {
     fn read(&mut self, address: u64, length: usize) -> Evaluation<Vec<Term>> {
         let mut bytes = Vec::new();
         for offset in 0..length {
-            bytes.push(self.state.byte(self.binary, address, offset)?);
+            let byte = match self.state.byte(self.binary, address, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            bytes.push(byte);
         }
         Ok(bytes)
     }
     fn write(&mut self, address: u64, bytes: &[Term]) -> Evaluation<()> {
-        self.state.write_memory(self.binary, address, bytes)?;
+        if let Err(error) = self.state.write_memory(self.binary, address, bytes) {
+            return Err(error.into());
+        }
         Ok(())
     }
     fn alternate_string_layout(&self) -> bool {
         self.binary.image().format == crate::loader::Format::MachO
     }
     fn character(&mut self, index: usize) -> Evaluation<Term> {
-        let value = self.state.argument(self.binary, self.convention, index)?;
-        self.state.require_defined(&value, 8)?;
-        Ok(self.state.low(&value, 8)?)
+        let value = match self.state.argument(self.binary, self.convention, index) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = self.state.require_defined(&value, 8) {
+            return Err(error.into());
+        }
+        let low_byte = match self.state.low(&value, 8) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        Ok(low_byte)
     }
     fn ascii(&mut self, byte: &Term) -> Evaluation<bool> {
         self.state
             .test(format!("(bvult {} {})", byte.text, smt::constant(128)))
     }
     fn byte_value(&mut self, byte: Term) -> Evaluation<u8> {
-        Ok(self.state.resolve(byte)? as u8)
+        let concrete = match self.state.resolve(byte) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Ok(concrete as u8)
     }
     fn word(&mut self, address: u64) -> Evaluation<u64> {
-        let term = self.state.eval(
+        let term = match self.state.eval(
             self.binary,
             &Expr::Load {
                 addr: Box::new(Expr::Const(address)),
                 width: 8,
                 signed: false,
             },
-        )?;
+        ) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.state.resolve(term)
     }
     fn relocate(&mut self, address: u64, value: u64) -> Evaluation<()> {
-        if !self
-            .state
-            .mapped_memory(self.binary.image())?
-            .check(address, 8, false)
-        {
+        let memory = match self.state.mapped_memory(self.binary.image()) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        if !memory.check(address, 8, false) {
             return Err(self.error("invalid C++ stream relocation"));
         }
         for (offset, byte) in value.to_le_bytes().into_iter().enumerate() {
@@ -171,8 +193,12 @@ impl Machine for Adapter<'_, '_> {
         Ok(())
     }
     fn store_word(&mut self, address: u64, value: u64) -> Evaluation<()> {
-        self.state
-            .store(self.binary.image(), address, &Term::constant(value), 8)?;
+        if let Err(error) =
+            self.state
+                .store(self.binary.image(), address, &Term::constant(value), 8)
+        {
+            return Err(error.into());
+        }
         Ok(())
     }
     fn allocate(&mut self, length: usize) -> Evaluation<u64> {
@@ -187,7 +213,10 @@ impl Machine for Adapter<'_, '_> {
         let Some(end) = start.checked_add(length as u64) else {
             return Err(self.error("C++ allocation address overflows"));
         };
-        let memory = self.state.mapped_memory(self.binary.image())?;
+        let memory = match self.state.mapped_memory(self.binary.image()) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         if end > memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE) {
             return Err(self.error("C++ allocation exceeds heap"));
         }
@@ -208,7 +237,9 @@ impl Machine for Adapter<'_, '_> {
         self.state.whitespace(byte)
     }
     fn input(&mut self, consume: bool) -> Evaluation<Option<Term>> {
-        self.state.tick()?;
+        if let Err(error) = self.state.tick() {
+            return Err(error);
+        }
         let byte = self.state.stdin.get(self.state.input_position).cloned();
         if consume && byte.is_some() {
             self.state.input_position += 1;
@@ -226,21 +257,56 @@ impl Machine for Adapter<'_, '_> {
     }
     fn integer(&mut self, signed: bool, bits: u8, direction: Direction) -> Evaluation<()> {
         if matches!(direction, Direction::Input) {
-            let stream = self.argument(0)?;
-            let destination = self.argument(1)?;
-            while let Some(byte) = self.input(false)? {
-                if !self.whitespace(&byte)? {
+            let stream = match self.argument(0) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let destination = match self.argument(1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            loop {
+                let byte = match self.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
+                let is_whitespace = match self.whitespace(&byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !is_whitespace {
                     break;
                 }
-                self.input(true)?;
+                if let Err(error) = self.input(true) {
+                    return Err(error);
+                }
             }
-            let Some(first) = self.input(false)? else {
-                self.set_stream_state(stream, true, 4)?;
+            let next_byte = match self.input(false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let Some(first) = next_byte else {
+                if let Err(error) = self.set_stream_state(stream, true, 4) {
+                    return Err(error);
+                }
                 return Ok(());
             };
-            let negative = self.equal(&first, b'-')?;
-            if negative || self.equal(&first, b'+')? {
-                self.input(true)?;
+            let negative = match self.equal(&first, b'-') {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let has_sign = if negative {
+                true
+            } else {
+                match self.equal(&first, b'+') {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
+            };
+            if has_sign && let Err(error) = self.input(true) {
+                return Err(error);
             }
             let limit = if signed {
                 (1u64 << (bits - 1)) - u64::from(!negative)
@@ -250,84 +316,152 @@ impl Machine for Adapter<'_, '_> {
             let mut value = Term::constant(0);
             let mut count = 0;
             let mut overflow = false;
-            while let Some(byte) = self.input(false)? {
-                if !self.state.test(format!(
+            loop {
+                let byte = match self.input(false) {
+                    Ok(Some(byte)) => byte,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
+                let is_digit = match self.state.test(format!(
                     "(and (bvuge {0} {1}) (bvule {0} {2}))",
                     byte.text,
                     smt::constant(48),
                     smt::constant(57)
-                ))? {
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !is_digit {
                     break;
                 }
                 let digit = format!("(bvsub {} {})", byte.text, smt::constant(48));
-                if !overflow
-                    && self.state.test(super::libc::integer_overflow(
+                let overflows = if overflow {
+                    false
+                } else {
+                    match self.state.test(super::libc::integer_overflow(
                         &value.text,
                         &digit,
                         10,
                         limit,
-                    ))?
-                {
+                    )) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
+                };
+                if overflows {
                     value = Term::constant(limit);
                     overflow = true;
                 } else if !overflow {
-                    value = self.state.bind(format!(
+                    value = match self.state.bind(format!(
                         "(bvadd (bvmul {} {}) {digit})",
                         value.text,
                         smt::constant(10)
-                    ))?;
+                    )) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                 }
-                self.input(true)?;
+                if let Err(error) = self.input(true) {
+                    return Err(error);
+                }
                 count += 1;
             }
             if count == 0 {
-                self.set_stream_state(stream, true, 4)?;
-                self.state
-                    .store(self.binary.image(), destination, &value, bits / 8)?;
+                if let Err(error) = self.set_stream_state(stream, true, 4) {
+                    return Err(error);
+                }
+                if let Err(error) =
+                    self.state
+                        .store(self.binary.image(), destination, &value, bits / 8)
+                {
+                    return Err(error.into());
+                }
                 return Ok(());
             }
-            if overflow {
-                self.set_stream_state(stream, true, 4)?;
+            if overflow && let Err(error) = self.set_stream_state(stream, true, 4) {
+                return Err(error);
             }
             if negative {
                 if overflow && !signed {
                     value = Term::constant(limit);
                 } else {
-                    value = self.state.bind(format!("(bvneg {})", value.text))?;
+                    value = match self.state.bind(format!("(bvneg {})", value.text)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                 }
             }
-            self.state
-                .store(self.binary.image(), destination, &value, bits / 8)?;
+            if let Err(error) = self
+                .state
+                .store(self.binary.image(), destination, &value, bits / 8)
+            {
+                return Err(error.into());
+            }
             return Ok(());
         }
-        let argument = self.state.argument(self.binary, self.convention, 1)?;
-        self.state.require_defined(&argument, bits.into())?;
-        let mut value = self.state.low(&argument, bits.into())?;
-        if signed
-            && self.state.test(format!(
+        let argument = match self.state.argument(self.binary, self.convention, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = self.state.require_defined(&argument, bits.into()) {
+            return Err(error.into());
+        }
+        let mut value = match self.state.low(&argument, bits.into()) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        let negative_output = if signed {
+            match self.state.test(format!(
                 "(bvuge {} {})",
                 value.text,
                 smt::constant(1u64 << (bits - 1))
-            ))?
-        {
-            self.output(vec![Term::constant(45)])?;
-            value = self
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
+        } else {
+            false
+        };
+        if negative_output {
+            if let Err(error) = self.output(vec![Term::constant(45)]) {
+                return Err(error);
+            }
+            value = match self
                 .state
-                .bind(smt::low(&format!("(bvneg {})", value.text), bits.into()))?;
+                .bind(smt::low(&format!("(bvneg {})", value.text), bits.into()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
         }
         let mut digits = Vec::new();
         loop {
-            self.state.tick()?;
-            digits.push(self.state.bind(format!(
+            if let Err(error) = self.state.tick() {
+                return Err(error);
+            }
+            let digit = match self.state.bind(format!(
                 "(bvadd (bvurem {} {}) {})",
                 value.text,
                 smt::constant(10),
                 smt::constant(48)
-            ))?);
-            value = self
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            digits.push(digit);
+            value = match self
                 .state
-                .bind(format!("(bvudiv {} {})", value.text, smt::constant(10)))?;
-            if self.equal(&value, 0)? {
+                .bind(format!("(bvudiv {} {})", value.text, smt::constant(10)))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            let is_zero = match self.equal(&value, 0) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if is_zero {
                 break;
             }
         }
@@ -336,14 +470,21 @@ impl Machine for Adapter<'_, '_> {
     }
     fn compare(&mut self, left: &[Term], right: &[Term], layout: Layout) -> Evaluation<Term> {
         for (left, right) in left.iter().zip(right) {
-            if self
+            let differs = match self
                 .state
-                .test(format!("(not (= {} {}))", left.text, right.text))?
+                .test(format!("(not (= {} {}))", left.text, right.text))
             {
-                let difference = self.state.bind(smt::low(
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if differs {
+                let difference = match self.state.bind(smt::low(
                     &format!("(bvsub {} {})", left.text, right.text),
                     32,
-                ))?;
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
                 return Ok(difference);
             }
         }
@@ -384,13 +525,19 @@ impl Machine for Adapter<'_, '_> {
             return cxx::validate_stream(self, address, input, layout);
         }
         for (&slot, symbol) in &self.binary.image().imports {
-            if cxx::stream_symbol(symbol) == Some(input) && self.word(slot)? == address {
-                let layout = if cxx::name(symbol).starts_with("_ZSt") {
-                    Layout::Gnu
-                } else {
-                    Layout::Llvm
+            if cxx::stream_symbol(symbol) == Some(input) {
+                let word = match self.word(slot) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
                 };
-                return cxx::validate_stream(self, address, input, layout);
+                if word == address {
+                    let layout = if cxx::name(symbol).starts_with("_ZSt") {
+                        Layout::Gnu
+                    } else {
+                        Layout::Llvm
+                    };
+                    return cxx::validate_stream(self, address, input, layout);
+                }
             }
         }
         Err(self.error("unsupported C++ stream: expected std::cin or std::cout"))
@@ -400,9 +547,14 @@ impl Machine for Adapter<'_, '_> {
         let Some(location) = address.checked_add(offset) else {
             return Err(self.error("C++ stream state address overflows"));
         };
-        let flags = self.word(location)?;
-        if flags & 2 != 0 {
-            self.set_stream_state(address, input, 4)?;
+        let flags = match self.word(location) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if flags & 2 != 0
+            && let Err(error) = self.set_stream_state(address, input, 4)
+        {
+            return Err(error);
         }
         Ok(flags != 0)
     }
@@ -411,7 +563,10 @@ impl Machine for Adapter<'_, '_> {
         let Some(location) = address.checked_add(offset) else {
             return Err(self.error("C++ stream state address overflows"));
         };
-        let current = self.word(location)?;
+        let current = match self.word(location) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.store_word(location, current | flags)
     }
     fn end_input(&mut self, address: u64) -> Evaluation<()> {

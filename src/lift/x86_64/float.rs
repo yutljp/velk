@@ -19,16 +19,25 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
     let float_operand = |index: u32, precision: Precision| -> Option<Expr> {
         match instruction.op_kind(index) {
             OpKind::Register => {
-                let slot = xmm(instruction.op_register(index))?;
+                let Some(slot) = xmm(instruction.op_register(index)) else {
+                    return None;
+                };
                 Some(Lifter::read_reg(slot, precision.bits()))
             }
-            OpKind::Memory => Some(load_at(memory_address(instruction)?, precision.bits() / 8)),
+            OpKind::Memory => {
+                let Some(address) = memory_address(instruction) else {
+                    return None;
+                };
+                Some(load_at(address, precision.bits() / 8))
+            }
             _ => None,
         }
     };
     // The low bits of the destination receive `value`; the rest stay.
     let write_low = |lifter: &mut Lifter, value: Expr, precision: Precision| -> Option<()> {
-        let slot = xmm(instruction.op0_register())?;
+        let Some(slot) = xmm(instruction.op0_register()) else {
+            return None;
+        };
         let merged = match precision {
             Precision::Double => value,
             Precision::Single => Expr::bin(
@@ -52,21 +61,39 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
                 Mulsd | Mulss => Operation::FloatMul(precision),
                 _ => Operation::FloatDiv(precision),
             };
-            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
-            write_low(lifter, Expr::apply(op, vec![a, b]), precision)?;
+            let Some(a) = float_operand(0, precision) else {
+                return None;
+            };
+            let Some(b) = float_operand(1, precision) else {
+                return None;
+            };
+            if write_low(lifter, Expr::apply(op, vec![a, b]), precision).is_none() {
+                return None;
+            }
         }
         Sqrtsd | Sqrtss => {
-            let a = float_operand(1, precision)?;
-            write_low(
+            let Some(a) = float_operand(1, precision) else {
+                return None;
+            };
+            if write_low(
                 lifter,
                 Expr::apply(Operation::FloatSqrt(precision), vec![a]),
                 precision,
-            )?;
+            )
+            .is_none()
+            {
+                return None;
+            }
         }
         // The second operand unless the first is strictly smaller (larger),
         // which a NaN or two zeros never are.
         Minsd | Minss | Maxsd | Maxss => {
-            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
+            let Some(a) = float_operand(0, precision) else {
+                return None;
+            };
+            let Some(b) = float_operand(1, precision) else {
+                return None;
+            };
             let (smaller, larger) = if matches!(instruction.mnemonic(), Minsd | Minss) {
                 (a.clone(), b.clone())
             } else {
@@ -82,15 +109,26 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
                 then: Box::new(a),
                 els: Box::new(b),
             };
-            write_low(lifter, first, precision)?;
+            if write_low(lifter, first, precision).is_none() {
+                return None;
+            }
         }
         Ucomisd | Comisd | Ucomiss | Comiss => {
-            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
+            let Some(a) = float_operand(0, precision) else {
+                return None;
+            };
+            let Some(b) = float_operand(1, precision) else {
+                return None;
+            };
             lifter.set_flags(Flags::float_compare(a, b, precision));
         }
         Cvtsi2sd | Cvtsi2ss => {
-            let bits = operand_width(instruction, 1)?;
-            let value = operand(lifter, instruction, 1)?;
+            let Some(bits) = operand_width(instruction, 1) else {
+                return None;
+            };
+            let Some(value) = operand(lifter, instruction, 1) else {
+                return None;
+            };
             let converted = Expr::apply(
                 Operation::IntToFloat {
                     signed: true,
@@ -99,12 +137,18 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
                 },
                 vec![value],
             );
-            write_low(lifter, converted, precision)?;
+            if write_low(lifter, converted, precision).is_none() {
+                return None;
+            }
         }
         // The rounding ones round as the default mode does.
         Cvttsd2si | Cvttss2si | Cvtsd2si | Cvtss2si => {
-            let (index, bits) = gpr(instruction.op0_register())?;
-            let value = float_operand(1, precision)?;
+            let Some((index, bits)) = gpr(instruction.op0_register()) else {
+                return None;
+            };
+            let Some(value) = float_operand(1, precision) else {
+                return None;
+            };
             let rounding = match instruction.mnemonic() {
                 Cvttsd2si | Cvttss2si => Rounding::TowardZero,
                 _ => Rounding::NearestEven,
@@ -123,7 +167,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
         }
         // The immediate names the rounding, or with bit 2 the current mode.
         Roundsd | Roundss => {
-            let value = float_operand(1, precision)?;
+            let Some(value) = float_operand(1, precision) else {
+                return None;
+            };
             let rounding = match instruction.immediate8() {
                 mode if mode & 4 != 0 => Rounding::NearestEven,
                 mode => match mode & 3 {
@@ -134,14 +180,18 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
                 },
             };
             let rounded = Expr::apply(Operation::FloatRound(precision, rounding), vec![value]);
-            write_low(lifter, rounded, precision)?;
+            if write_low(lifter, rounded, precision).is_none() {
+                return None;
+            }
         }
         Cvtsd2ss | Cvtss2sd => {
             let to = match precision {
                 Precision::Double => Precision::Single,
                 Precision::Single => Precision::Double,
             };
-            let value = float_operand(1, precision)?;
+            let Some(value) = float_operand(1, precision) else {
+                return None;
+            };
             let converted = Expr::apply(
                 Operation::FloatConvert {
                     from: precision,
@@ -149,7 +199,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Opti
                 },
                 vec![value],
             );
-            write_low(lifter, converted, to)?;
+            if write_low(lifter, converted, to).is_none() {
+                return None;
+            }
         }
         _ => return None,
     }

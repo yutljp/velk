@@ -1,4 +1,5 @@
-use super::{Ctx, Node, body::indent, render_expr, render_stmt};
+use super::body::indent;
+use super::{Ctx, Node, render_expr, render_stmt};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 
 #[cfg(test)]

@@ -163,7 +163,12 @@ pub(super) fn source_halves(operand: Operand) -> Option<(Expr, Expr)> {
             let copied = Expr::bin(BinOp::Mul, value, Expr::constant(replicated(1, bits as u8)));
             Some((copied.clone(), copied))
         }
-        operand => Some(halves(vector(operand)?)),
+        operand => {
+            let Some(vector_register) = vector(operand) else {
+                return None;
+            };
+            Some(halves(vector_register))
+        }
     }
 }
 

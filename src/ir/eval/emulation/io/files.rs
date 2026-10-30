@@ -107,7 +107,11 @@ impl Runner<'_> {
         let mut args = Arguments::new(convention, kind);
         let mut values = Vec::new();
         for _ in 0..=stream_index {
-            values.push(args.next(self, width)?);
+            let argument = match args.next(self, width) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            values.push(argument);
         }
         let token = values[stream_index];
         let standard = token != 0 && self.streams.contains(&token);
@@ -119,29 +123,46 @@ impl Runner<'_> {
         }
         match operation {
             Fopen => {
-                let path = self.bytes_at(values[0], None)?;
+                let path = match self.bytes_at(values[0], None) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let Ok(path) = String::from_utf8(path) else {
                     return Err(error("fopen path is not UTF-8"));
                 };
-                let mode = self.bytes_at(args.next(self, width)?, None)?;
+                let argument = match args.next(self, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let mode = match self.bytes_at(argument, None) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let token = self.allocate(1);
                 if token == 0 {
                     return Err(error("FILE allocation failed"));
                 }
-                self.files.open(token, path, &mode).map_err(error)?;
+                if let Err(error) = self.files.open(token, path, &mode).map_err(error) {
+                    return Err(error);
+                }
                 Ok(Some(token))
             }
             Fflush => {
-                if self.windows.is_some() {
-                    self.windows_flush_crt(token)?;
+                if self.windows.is_some()
+                    && let Err(error) = self.windows_flush_crt(token)
+                {
+                    return Err(error);
                 }
-                if !standard {
-                    self.files.flush(token).map_err(error)?;
+                if !standard && let Err(error) = self.files.flush(token).map_err(error) {
+                    return Err(error);
                 }
                 Ok(Some(0))
             }
             Setbuf => {
-                let buffer = args.next(self, width)?;
+                let buffer = match args.next(self, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if buffer != 0 {
                     return Err(error("setbuf with a caller-owned buffer is unsupported"));
                 }
@@ -151,15 +172,29 @@ impl Runner<'_> {
                         return Ok(Some(u64::from(u32::MAX)));
                     };
                 }
-                self.files
+                if let Err(error) = self
+                    .files
                     .set_buffering(token, standard, mode, self.image.format)
-                    .map_err(error)?;
+                    .map_err(error)
+                {
+                    return Err(error);
+                }
                 Ok(Some(0))
             }
             Setvbuf => {
-                let _buffer = args.next(self, width)?;
-                let mode = args.next(self, 4)? as u32;
-                let _size = args.next(self, width)?;
+                let _buffer = match args.next(self, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let argument = match args.next(self, 4) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let mode = argument as u32;
+                let _size = match args.next(self, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if standard && self.windows.is_some() {
                     let Some(true) = self.windows_set_crt_buffering(token, mode) else {
                         return Ok(Some(u64::from(u32::MAX)));
@@ -190,9 +225,15 @@ impl Runner<'_> {
                     .map_err(error)
             }
             Fputs | Fwrite => {
-                self.files.stream(token).map_err(error)?;
+                if let Err(error) = self.files.stream(token).map_err(error) {
+                    return Err(error);
+                }
                 let (bytes, count) = if matches!(operation, Fputs) {
-                    (self.bytes_at(values[0], None)?, 0)
+                    let source_bytes = match self.bytes_at(values[0], None) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (source_bytes, 0)
                 } else {
                     let Some(total) = values[1]
                         .checked_mul(values[2])
@@ -203,15 +244,24 @@ impl Runner<'_> {
                     if total == 0 {
                         return Ok(Some(0));
                     }
-                    (self.bytes_at(values[0], Some(total as usize))?, values[2])
+                    let source_bytes = match self.bytes_at(values[0], Some(total as usize)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (source_bytes, values[2])
                 };
-                let written = self.files.write(token, &bytes, 0).map_err(error)?;
+                let written = match self.files.write(token, &bytes, 0).map_err(error) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 Ok(Some(crate::ir::eval::stdio::file_write_result(
                     operation, written, count,
                 )))
             }
             Fgets | Fread => {
-                self.files.stream(token).map_err(error)?;
+                if let Err(error) = self.files.stream(token).map_err(error) {
+                    return Err(error);
+                }
                 let line = matches!(operation, Fgets);
                 let (limit, size) = if line {
                     let Some(limit) = crate::ir::eval::stdio::line_buffer_size(values[1]) else {
@@ -232,9 +282,13 @@ impl Runner<'_> {
                 }
                 let mut bytes = Vec::new();
                 while bytes.len() < limit as usize {
-                    self.tick()?;
-                    let Some(byte) = self.files.read(token).map_err(error)? else {
-                        break;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
+                    let byte = match self.files.read(token).map_err(error) {
+                        Ok(Some(byte)) => byte,
+                        Ok(None) => break,
+                        Err(error) => return Err(error),
                     };
                     bytes.push(byte);
                     if line && byte == b'\n' {
@@ -248,7 +302,9 @@ impl Runner<'_> {
                 if line {
                     bytes.push(0);
                 }
-                self.store_bytes(values[0], &bytes)?;
+                if let Err(error) = self.store_bytes(values[0], &bytes) {
+                    return Err(error);
+                }
                 Ok(Some(if line {
                     values[0]
                 } else {

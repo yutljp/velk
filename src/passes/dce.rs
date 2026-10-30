@@ -13,7 +13,8 @@ pub fn dce_flow(ir: &mut FunctionIr) {
         }
         let mut live = live_out(ir, &live_in, index);
         let mut keep: Vec<bool> = vec![true; ir.blocks[index].stmts.len()];
-        for (position, stmt) in ir.blocks[index].stmts.iter().enumerate().rev() {
+        let reversed_statements = ir.blocks[index].stmts.iter().enumerate().rev();
+        for (position, stmt) in reversed_statements {
             let (writes, reads) = statement_registers(stmt);
             let pure = match stmt {
                 Stmt::Assign { value, .. } => !reads_outside_frame(value),

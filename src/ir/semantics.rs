@@ -112,11 +112,19 @@ pub(crate) fn holds(cond: Cond, a: u64, b: u64, bits: u32) -> bool {
 /// when it reads memory, an unknown register, or divides by zero.
 pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Option<u64> {
     Some(match expr {
-        Expr::Reg { index, width } => register(*index)? & mask(u32::from(*width)),
+        Expr::Reg { index, width } => {
+            let Some(raw) = register(*index) else {
+                return None;
+            };
+            raw & mask(u32::from(*width))
+        }
         Expr::Const(value) => *value,
         Expr::Load { .. } => return None,
         Expr::SignExtend { value, width } => {
-            sign_extend(evaluate(value, register)?, u32::from(*width) * 8) as u64
+            let Some(operand) = evaluate(value, register) else {
+                return None;
+            };
+            sign_extend(operand, u32::from(*width) * 8) as u64
         }
         Expr::Select {
             cond,
@@ -126,26 +134,41 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
             els,
         } => {
             let bits = operand_width(lhs, rhs);
-            if holds(
-                *cond,
-                evaluate(lhs, register)?,
-                evaluate(rhs, register)?,
-                bits,
-            ) {
-                evaluate(then, register)?
+            let Some(left) = evaluate(lhs, register) else {
+                return None;
+            };
+            let Some(right) = evaluate(rhs, register) else {
+                return None;
+            };
+            if holds(*cond, left, right, bits) {
+                match evaluate(then, register) {
+                    Some(value) => value,
+                    None => return None,
+                }
             } else {
-                evaluate(els, register)?
+                match evaluate(els, register) {
+                    Some(value) => value,
+                    None => return None,
+                }
             }
         }
         Expr::Apply { op, args } => {
-            let values = args
+            let Some(values) = args
                 .iter()
                 .map(|arg| evaluate(arg, register))
-                .collect::<Option<Vec<u64>>>()?;
+                .collect::<Option<Vec<u64>>>()
+            else {
+                return None;
+            };
             return fold(*op, &values);
         }
         Expr::Bin { op, lhs, rhs } => {
-            let (a, b) = (evaluate(lhs, register)?, evaluate(rhs, register)?);
+            let Some(a) = evaluate(lhs, register) else {
+                return None;
+            };
+            let Some(b) = evaluate(rhs, register) else {
+                return None;
+            };
             let bits = operand_width(lhs, rhs);
             return scalar(*op, a, b, bits);
         }
@@ -370,7 +393,9 @@ fn wide_division(signed: bool, bits: u32, args: &[u64]) -> Option<(u64, u64)> {
         let extend = |value: u128, width: u32| ((value << (128 - width)) as i128) >> (128 - width);
         let dividend = extend(dividend, 2 * bits);
         let divisor = extend(divisor, bits);
-        let quotient = dividend.checked_div(divisor)?;
+        let Some(quotient) = dividend.checked_div(divisor) else {
+            return None;
+        };
         let limit = 1i128 << (bits - 1);
         if quotient < -limit || quotient >= limit {
             return None;

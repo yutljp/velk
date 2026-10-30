@@ -34,8 +34,12 @@ pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
             let RelocationTarget::Symbol(index) = relocation.target() else {
                 return None;
             };
-            let symbol = symbols.symbol_by_index(index).ok()?;
-            let name = symbol.name().ok()?;
+            let Some(symbol) = symbols.symbol_by_index(index).ok() else {
+                return None;
+            };
+            let Some(name) = symbol.name().ok() else {
+                return None;
+            };
             (!name.is_empty() && symbol.is_undefined()).then(|| (slot, name.to_owned()))
         })
         .collect()
@@ -68,7 +72,12 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
             let RelocationTarget::Symbol(index) = relocation.target() else {
                 return None;
             };
-            let name = symbols.symbol_by_index(index).ok()?.name().ok()?;
+            let Some(symbol) = symbols.symbol_by_index(index).ok() else {
+                return None;
+            };
+            let Some(name) = symbol.name().ok() else {
+                return None;
+            };
             (!name.is_empty()).then(|| (slot, name.to_owned()))
         })
         .collect();

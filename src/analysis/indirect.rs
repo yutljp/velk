@@ -674,12 +674,22 @@ fn installed_table(image: &Image, addr: u64) -> Option<u64> {
 const MAX_ANALYZED_FUNCTION_SIZE: u64 = 512;
 
 fn find_installed_table(image: &Image, addr: u64) -> Option<u64> {
-    let function = image.functions.get(&addr)?;
-    let size = function
+    let Some(function) = image.functions.get(&addr) else {
+        return None;
+    };
+    let Some(size) = function
         .size
-        .filter(|size| *size <= MAX_ANALYZED_FUNCTION_SIZE)?;
-    let blocks = crate::lift::lift(image, addr, size, &HashSet::new()).ok()?;
-    let first = *image.convention_of(addr).arguments().first()?;
+        .filter(|size| *size <= MAX_ANALYZED_FUNCTION_SIZE)
+    else {
+        return None;
+    };
+    let Some(blocks) = crate::lift::lift(image, addr, size, &HashSet::new()).ok() else {
+        return None;
+    };
+    let Some(value) = image.convention_of(addr).arguments().first() else {
+        return None;
+    };
+    let first = *value;
     let tracker = Tracker {
         image,
         sp: crate::arch::stack_pointer(image.isa),
@@ -713,14 +723,21 @@ fn find_installed_table(image: &Image, addr: u64) -> Option<u64> {
 }
 
 fn returned_by(image: &Image, addr: u64) -> Option<u64> {
-    let function = image.functions.get(&addr)?;
+    let Some(function) = image.functions.get(&addr) else {
+        return None;
+    };
     if function.size_estimated {
         return None;
     }
-    let size = function
+    let Some(size) = function
         .size
-        .filter(|size| *size != 0 && *size <= MAX_ANALYZED_FUNCTION_SIZE)?;
-    let end = addr.checked_add(size)?;
+        .filter(|size| *size != 0 && *size <= MAX_ANALYZED_FUNCTION_SIZE)
+    else {
+        return None;
+    };
+    let Some(end) = addr.checked_add(size) else {
+        return None;
+    };
     let convention = image.convention_of(addr);
     if !matches!(
         convention,
@@ -728,8 +745,14 @@ fn returned_by(image: &Image, addr: u64) -> Option<u64> {
     ) {
         return None;
     }
-    let primary = *convention.results().first()?;
-    let blocks = crate::lift::lift_shared(image, addr, size, &|_| Default::default()).ok()?;
+    let Some(value) = convention.results().first() else {
+        return None;
+    };
+    let primary = *value;
+    let Some(blocks) = crate::lift::lift_shared(image, addr, size, &|_| Default::default()).ok()
+    else {
+        return None;
+    };
     returned_from(image, addr, end, primary, &blocks)
 }
 

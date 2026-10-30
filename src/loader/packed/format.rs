@@ -12,7 +12,11 @@ pub(super) fn slice(bytes: &[u8], offset: usize, length: usize) -> Result<&[u8],
 
 pub(super) fn number(bytes: &[u8], offset: usize, length: usize) -> Result<usize, DecodeError> {
     let mut value = 0u64;
-    for (index, byte) in slice(bytes, offset, length)?.iter().enumerate() {
+    let field_bytes = match slice(bytes, offset, length) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    for (index, byte) in field_bytes.iter().enumerate() {
         value |= u64::from(*byte) << (index * 8);
     }
     match usize::try_from(value) {

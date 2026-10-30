@@ -61,7 +61,8 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
             continue;
         }
         let mut suffix = 0;
-        for (position, stmt) in block.stmts.iter().enumerate().rev() {
+        let reversed_statements = block.stmts.iter().enumerate().rev();
+        for (position, stmt) in reversed_statements {
             let Some(key) = comparable_statement(stmt) else {
                 break;
             };

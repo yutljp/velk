@@ -34,31 +34,55 @@ impl State {
             Operation::Getchar => Ok(io::next_input(&self.stdin, &mut self.input_position)
                 .unwrap_or_else(|| Term::constant(u64::from(u32::MAX)))),
             Operation::Read => {
-                let descriptor = self.number(binary, convention, 0)? as u32;
+                let descriptor_number = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let descriptor = descriptor_number as u32;
                 if descriptor != 0 && !self.options.stdin_descriptors.contains(&descriptor) {
                     return Err(invalid("unsupported read descriptor").into());
                 }
-                let address = self.number(binary, convention, 1)?;
-                let count = self.number(binary, convention, 2)?;
+                let address = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let count = match self.number(binary, convention, 2) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let count =
                     count.min(self.stdin.len().saturating_sub(self.input_position) as u64) as usize;
                 let bytes = self.stdin[self.input_position..self.input_position + count].to_vec();
                 for _ in 0..count {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                 }
-                self.write_memory(binary, address, &bytes)?;
+                if let Err(error) = self.write_memory(binary, address, &bytes) {
+                    return Err(error.into());
+                }
                 self.input_position += count;
                 Ok(Term::constant(count as u64))
             }
             Operation::Fgets | Operation::Gets => {
-                let destination = self.number(binary, convention, 0)?;
+                let destination = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let maximum = if matches!(operation, Operation::Fgets) {
-                    let size = self.number(binary, convention, 1)? as u32 as i32;
+                    let convention_number = match self.number(binary, convention, 1) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let size = convention_number as u32 as i32;
                     if size <= 0 {
                         return Ok(Term::constant(0));
                     }
                     // Only the standard input stream is modeled.
-                    let stream = self.number(binary, convention, 2)?;
+                    let stream = match self.number(binary, convention, 2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     if stream == 0 || stream != self.stdin_stream {
                         return Err(invalid("unsupported fgets stream").into());
                     }
@@ -72,8 +96,14 @@ impl State {
                     let Some(byte) = io::next_input(&self.stdin, &mut self.input_position) else {
                         break;
                     };
-                    self.tick()?;
-                    let newline = self.test(format!("(= {} {})", byte.text, smt::constant(10)))?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
+                    let newline =
+                        match self.test(format!("(= {} {})", byte.text, smt::constant(10))) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
                     if !newline || matches!(operation, Operation::Fgets) {
                         bytes.push(byte);
                     }
@@ -88,23 +118,35 @@ impl State {
                     return Ok(Term::constant(0));
                 }
                 bytes.push(Term::constant(0));
-                self.write_memory(binary, destination, &bytes)?;
+                if let Err(error) = self.write_memory(binary, destination, &bytes) {
+                    return Err(error.into());
+                }
                 Ok(Term::constant(destination))
             }
             Operation::Scanf | Operation::Fscanf | Operation::Sscanf => {
                 let (input, format_index, source) = match operation {
                     Operation::Sscanf => {
-                        let address = self.number(binary, convention, 0)?;
-                        (
-                            self.string(binary, address, self.model_bound())?,
-                            1,
-                            ScanSource::String,
-                        )
+                        let address = match self.number(binary, convention, 0) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let input_bytes = match self.string(binary, address, self.model_bound()) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        (input_bytes, 1, ScanSource::String)
                     }
                     Operation::Fscanf => {
-                        if self.stdin_stream == 0
-                            || self.number(binary, convention, 0)? != self.stdin_stream
-                        {
+                        let unsupported_stream = if self.stdin_stream == 0 {
+                            true
+                        } else {
+                            let stream = match self.number(binary, convention, 0) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                            stream != self.stdin_stream
+                        };
+                        if unsupported_stream {
                             return Err(invalid("unsupported fscanf stream").into());
                         }
                         (
@@ -119,35 +161,55 @@ impl State {
                         ScanSource::Stdin,
                     ),
                 };
-                let address = self.number(binary, convention, format_index)?;
-                let format = self.concrete_format(binary, address)?;
-                let (result, consumed) = self.scan(
+                let address = match self.number(binary, convention, format_index) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let format = match self.concrete_format(binary, address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let (result, consumed) = match self.scan(
                     binary,
                     convention,
                     &format,
                     &input,
                     format_index + 1,
                     source,
-                )?;
+                ) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if !matches!(operation, Operation::Sscanf) {
                     self.input_position += consumed;
                 }
                 Ok(Term::constant(result))
             }
             Operation::Puts | Operation::Printf => {
-                let address = self.number(binary, convention, 0)?;
+                let address = match self.number(binary, convention, 0) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if matches!(operation, Operation::Puts) {
-                    let bytes = self.string(binary, address, self.model_bound())?;
+                    let bytes = match self.string(binary, address, self.model_bound()) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     self.write_output(1, bytes);
                     self.stdout.push(Term::constant(10));
                     return Ok(Term::constant(0));
                 }
-                let format = self.concrete_format(binary, address)?;
+                let format = match self.concrete_format(binary, address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let start = self.stdout.len();
                 let mut argument = 1;
                 let mut position = 0;
                 while position < format.len() {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     let byte = format[position];
                     position += 1;
                     if byte != b'%' {
@@ -162,9 +224,12 @@ impl State {
                         self.stdout.push(Term::constant(37));
                         continue;
                     }
-                    let term = self.argument(binary, convention, argument)?;
+                    let term = match self.argument(binary, convention, argument) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     argument += 1;
-                    self.require_defined(
+                    if let Err(error) = self.require_defined(
                         &term,
                         if conversion == b'c' {
                             8
@@ -173,45 +238,88 @@ impl State {
                         } else {
                             32
                         },
-                    )?;
+                    ) {
+                        return Err(error.into());
+                    }
                     match conversion {
                         b'c' => {
-                            let byte = self.low(&term, 8)?;
+                            let byte = match self.low(&term, 8) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
                             self.stdout.push(byte);
                         }
                         b's' => {
-                            let address = self.resolve(term)?;
-                            let bytes = self.string(binary, address, self.model_bound())?;
+                            let address = match self.resolve(term) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                            let bytes = match self.string(binary, address, self.model_bound()) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
                             self.stdout.extend(bytes);
                         }
                         b'd' | b'u' | b'x' => {
-                            let mut value = self.low(&term, 32)?;
-                            if conversion == b'd'
-                                && self.test(format!(
+                            let mut value = match self.low(&term, 32) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
+                            let negative = if conversion == b'd' {
+                                match self.test(format!(
                                     "(bvuge {} {})",
                                     value.text,
                                     smt::constant(1 << 31)
-                                ))?
-                            {
+                                )) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error),
+                                }
+                            } else {
+                                false
+                            };
+                            if negative {
                                 self.stdout.push(Term::constant(45));
-                                value =
-                                    self.bind(smt::low(&format!("(bvneg {})", value.text), 32))?;
+                                value = match self
+                                    .bind(smt::low(&format!("(bvneg {})", value.text), 32))
+                                {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error.into()),
+                                };
                             }
                             let base = if conversion == b'x' { 16 } else { 10 };
                             let mut digits = Vec::new();
                             loop {
                                 let remainder =
                                     format!("(bvurem {} {})", value.text, smt::constant(base));
-                                digits.push(self.bind(format!("(ite (bvult {remainder} {}) (bvadd {remainder} {}) (bvadd {remainder} {}))", smt::constant(10), smt::constant(48), smt::constant(87)))?);
-                                value = self.bind(format!(
+                                let digit_expression = format!(
+                                    "(ite (bvult {remainder} {}) (bvadd {remainder} {}) (bvadd {remainder} {}))",
+                                    smt::constant(10),
+                                    smt::constant(48),
+                                    smt::constant(87)
+                                );
+                                let digit = match self.bind(digit_expression) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error.into()),
+                                };
+                                digits.push(digit);
+                                value = match self.bind(format!(
                                     "(bvudiv {} {})",
                                     value.text,
                                     smt::constant(base)
-                                ))?;
-                                if self.zero(&value)? {
+                                )) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error.into()),
+                                };
+                                let is_zero = match self.zero(&value) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error),
+                                };
+                                if is_zero {
                                     break;
                                 }
-                                self.tick()?;
+                                if let Err(error) = self.tick() {
+                                    return Err(error);
+                                }
                             }
                             self.stdout.extend(digits.into_iter().rev());
                         }
@@ -239,13 +347,24 @@ impl State {
         let mut conversions = 0;
         let mut failure = false;
         while position < format.len() {
-            self.tick()?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             let byte = format[position];
             position += 1;
             if byte.is_ascii_whitespace() {
-                while consumed < input.len() && self.whitespace(&input[consumed])? {
+                while consumed < input.len() {
+                    let whitespace = match self.whitespace(&input[consumed]) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if !whitespace {
+                        break;
+                    }
                     consumed += 1;
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                 }
                 continue;
             }
@@ -257,11 +376,15 @@ impl State {
                     failure = true;
                     break;
                 }
-                if !self.test(format!(
+                let is_literal = match self.test(format!(
                     "(= {} {})",
                     input[consumed].text,
                     smt::constant(u64::from(byte))
-                ))? {
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if !is_literal {
                     break;
                 }
                 consumed += 1;
@@ -292,14 +415,20 @@ impl State {
             }
             if conversion != b'c' {
                 while consumed < input.len() {
-                    if !self.whitespace_with_preference(
+                    let is_whitespace = match self.whitespace_with_preference(
                         &input[consumed],
                         PredicatePreference::FalseFirst,
-                    )? {
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if !is_whitespace {
                         break;
                     }
                     consumed += 1;
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                 }
             }
             if consumed == input.len() {
@@ -318,10 +447,19 @@ impl State {
             let end = consumed.saturating_add(maximum).min(input.len());
             let mut bytes = Vec::new();
             if matches!(conversion, b's' | b'c') {
-                while consumed < end
-                    && (conversion == b'c' || !self.whitespace(&input[consumed])?)
-                {
-                    self.tick()?;
+                while consumed < end {
+                    if conversion != b'c' {
+                        let whitespace = match self.whitespace(&input[consumed]) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if whitespace {
+                            break;
+                        }
+                    }
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     bytes.push(input[consumed].clone());
                     consumed += 1;
                 }
@@ -329,7 +467,7 @@ impl State {
                     bytes.push(Term::constant(0));
                 }
             } else {
-                let parsed = self.parse_integer(
+                let parsed = match self.parse_integer(
                     &input[consumed..end],
                     if conversion == b'x' { 16 } else { 10 },
                     IntegerKind::Scan,
@@ -347,7 +485,10 @@ impl State {
                         IntegerModel::Exact
                     },
                     u32::from(crate::arch::pointer_bytes(self.isa)) * 8,
-                )?;
+                ) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if parsed.synthesized {
                     self.scanned_integers.push(super::super::ScannedInteger {
                         start: self.input_position + consumed,
@@ -366,16 +507,25 @@ impl State {
                 }
                 let value = parsed.value;
                 for index in 0..4 {
-                    bytes.push(self.bind(smt::low(
+                    let shifted_byte = match self.bind(smt::low(
                         &format!("(bvlshr {} {})", value.text, smt::constant(index * 8)),
                         8,
-                    ))?);
+                    )) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    bytes.push(shifted_byte);
                 }
             }
             if !suppress {
-                let destination = self.number(binary, convention, argument)?;
+                let destination = match self.number(binary, convention, argument) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 argument += 1;
-                self.write_memory(binary, destination, &bytes)?;
+                if let Err(error) = self.write_memory(binary, destination, &bytes) {
+                    return Err(error.into());
+                }
                 assignments += 1;
             }
             conversions += 1;

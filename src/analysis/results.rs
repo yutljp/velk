@@ -193,12 +193,10 @@ enum Fate {
     reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
 )]
 fn body(image: &Image, addr: u64) -> Option<std::sync::Arc<Vec<Block>>> {
-    if image
-        .functions
-        .get(&addr)?
-        .sources
-        .contains(&NameSource::Plt)
-    {
+    let Some(value) = image.functions.get(&addr) else {
+        return None;
+    };
+    if value.sources.contains(&NameSource::Plt) {
         return None;
     }
     super::summary::body(image, addr, &|_| crate::loader::Summary::default())

@@ -85,7 +85,12 @@ pub(super) fn take_stack_results(blocks: &mut [Block], image: &Image, summaries:
                         value: Expr::Reg { index, .. },
                         width,
                         ..
-                    } => Some((stack_offset(addr, sp)?, *width, *index)),
+                    } => {
+                        let Some(offset) = stack_offset(addr, sp) else {
+                            return None;
+                        };
+                        Some((offset, *width, *index))
+                    }
                     _ => None,
                 })
                 .collect();
@@ -205,7 +210,10 @@ fn stored_over(stmt: &Stmt, sp: u16, delta: u64, field: (u64, u8, u16)) -> Optio
     let Stmt::Store { addr, width, .. } = stmt else {
         return None;
     };
-    let offset = stack_offset(addr, sp)?.wrapping_add(delta);
+    let Some(base_offset) = stack_offset(addr, sp) else {
+        return None;
+    };
+    let offset = base_offset.wrapping_add(delta);
     overlaps((offset, *width), field)
         .then(|| offset <= field.0 && field.0 + u64::from(field.1) <= offset + u64::from(*width))
 }

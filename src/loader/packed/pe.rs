@@ -21,15 +21,34 @@ struct Header {
 }
 
 fn header(bytes: &[u8], offset: usize) -> Result<Header, DecodeError> {
-    slice(bytes, offset, 24)?;
-    if slice(bytes, offset, 4)? != b"PE\0\0" {
+    if let Err(error) = slice(bytes, offset, 24) {
+        return Err(error);
+    }
+    let pe_signature = match slice(bytes, offset, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if pe_signature != b"PE\0\0" {
         return Err(DecodeError::invalid(offset, "invalid PE signature"));
     }
-    let machine = number(bytes, offset + 4, 2)?;
-    let count = number(bytes, offset + 6, 2)?;
+    let machine = match number(bytes, offset + 4, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let count = match number(bytes, offset + 6, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let optional = offset + 24;
-    let size = number(bytes, offset + 20, 2)?;
-    let (word, directories) = match (machine, number(bytes, optional, 2)?, size) {
+    let size = match number(bytes, offset + 20, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let magic = match number(bytes, optional, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let (word, directories) = match (machine, magic, size) {
         (0x14c, 0x10b, 224) => (4, optional + 96),
         (0x8664, 0x20b, 240) => (8, optional + 112),
         _ => {
@@ -38,19 +57,37 @@ fn header(bytes: &[u8], offset: usize) -> Result<Header, DecodeError> {
             ));
         }
     };
-    if count == 0 || count > 96 || number(bytes, directories - 4, 4)? != 16 {
+    let mut invalid_counts = count == 0 || count > 96;
+    if !invalid_counts {
+        invalid_counts = match number(bytes, directories - 4, 4) {
+            Ok(value) => value != 16,
+            Err(error) => return Err(error),
+        };
+    }
+    if invalid_counts {
         return Err(DecodeError::Unsupported(
             "PE section or directory count".to_owned(),
         ));
     }
     let end = optional + size + count * 40;
-    slice(bytes, offset, end - offset)?;
+    if let Err(error) = slice(bytes, offset, end - offset) {
+        return Err(error);
+    }
     let mut sections = Vec::new();
     for index in 0..count {
         let start = optional + size + index * 40;
-        let address = number(bytes, start + 12, 4)?;
-        let size = number(bytes, start + 16, 4)?;
-        let offset = number(bytes, start + 20, 4)?;
+        let address = match number(bytes, start + 12, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let size = match number(bytes, start + 16, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let offset = match number(bytes, start + 20, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if address > MAX_FILE_SIZE as usize
             || size > MAX_FILE_SIZE as usize - address
             || offset > MAX_FILE_SIZE as usize
@@ -160,19 +197,38 @@ fn imports(
     mut names: usize,
     mut position: usize,
 ) -> Result<usize, DecodeError> {
-    let mut descriptor = image_offset(number(source, header.directories + 8, 4)?, base)?;
-    let size = number(source, header.directories + 12, 4)?;
-    let end = descriptor
+    let descriptor_rva = match number(source, header.directories + 8, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let mut descriptor = match image_offset(descriptor_rva, base) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let size = match number(source, header.directories + 12, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let end = match descriptor
         .checked_add(size)
-        .ok_or_else(|| DecodeError::invalid(descriptor, "PE import size overflow"))?;
-    slice(image, descriptor, size)?;
+        .ok_or_else(|| DecodeError::invalid(descriptor, "PE import size overflow"))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = slice(image, descriptor, size) {
+        return Err(error);
+    }
     enum Import<'input> {
         Name { thunk: usize, name: &'input [u8] },
         Ordinal { thunk: usize, ordinal: usize },
     }
     let mut functions = Vec::new();
     loop {
-        let library = number(source, position, 4)?;
+        let library = match number(source, position, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         position += 4;
         if library == 0 {
             break;
@@ -183,26 +239,53 @@ fn imports(
                 "too many compressed PE import descriptors",
             ));
         }
-        let mut thunk = number(source, position, 4)?;
+        let mut thunk = match number(source, position, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         position += 4;
-        slice(image, thunk, header.word)?;
-        let library = string(packed_imports, library)?;
-        copy(image, image_offset(names, base)?, library)?;
-        put(image, descriptor + 12, names, 4)?;
-        put(image, descriptor + 16, thunk + base, 4)?;
+        if let Err(error) = slice(image, thunk, header.word) {
+            return Err(error);
+        }
+        let library = match string(packed_imports, library) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let names_offset = match image_offset(names, base) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = copy(image, names_offset, library) {
+            return Err(error);
+        }
+        if let Err(error) = put(image, descriptor + 12, names, 4) {
+            return Err(error);
+        }
+        if let Err(error) = put(image, descriptor + 16, thunk + base, 4) {
+            return Err(error);
+        }
         names += library.len();
         loop {
-            let kind = number(source, position, 1)?;
+            let kind = match number(source, position, 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             position += 1;
             let import = match kind {
                 0 => break,
                 1 => {
-                    let name = string(source, position)?;
+                    let name = match string(source, position) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     position += name.len();
                     Import::Name { thunk, name }
                 }
                 0xff => {
-                    let ordinal = number(source, position, 2)?;
+                    let ordinal = match number(source, position, 2) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     position += 2;
                     Import::Ordinal { thunk, ordinal }
                 }
@@ -212,26 +295,41 @@ fn imports(
                     )));
                 }
             };
-            slice(image, thunk, header.word)?;
+            if let Err(error) = slice(image, thunk, header.word) {
+                return Err(error);
+            }
             functions.push(import);
             thunk += header.word;
         }
-        put(image, thunk, 0, header.word)?;
+        if let Err(error) = put(image, thunk, 0, header.word) {
+            return Err(error);
+        }
         descriptor += 20;
     }
     for import in functions {
         match import {
             Import::Name { thunk, name } => {
                 names = (names + 1) & !1;
-                let offset = image_offset(names, base)?;
-                put(image, offset, 0, 2)?;
-                copy(image, offset + 2, name)?;
-                put(image, thunk, names, header.word)?;
+                let offset = match image_offset(names, base) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = put(image, offset, 0, 2) {
+                    return Err(error);
+                }
+                if let Err(error) = copy(image, offset + 2, name) {
+                    return Err(error);
+                }
+                if let Err(error) = put(image, thunk, names, header.word) {
+                    return Err(error);
+                }
                 names += 2 + name.len();
             }
             Import::Ordinal { thunk, ordinal } => {
                 let value = ordinal | (1usize << (header.word * 8 - 1));
-                put(image, thunk, value, header.word)?;
+                if let Err(error) = put(image, thunk, value, header.word) {
+                    return Err(error);
+                }
             }
         }
     }
@@ -245,11 +343,14 @@ fn relocations(
     base: usize,
     mut position: usize,
 ) -> Result<usize, DecodeError> {
-    let image_base = number(
+    let image_base = match number(
         source,
         header.optional + if header.word == 8 { 24 } else { 28 },
         header.word,
-    )?;
+    ) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let Some(address_base) = image_base.checked_add(base) else {
         return Err(DecodeError::invalid(
             header.optional,
@@ -260,13 +361,20 @@ fn relocations(
     let mut pages: BTreeMap<usize, Vec<u16>> = BTreeMap::new();
     let mut previous_end = 0;
     loop {
-        let mut delta = number(source, position, 1)?;
+        let mut delta = match number(source, position, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         position += 1;
         if delta == 0 {
             break;
         }
         if delta >= 0xf0 {
-            delta = ((delta & 15) << 16) | number(source, position, 2)?;
+            let low_bits = match number(source, position, 2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            delta = ((delta & 15) << 16) | low_bits;
             position += 2;
         }
         let Some(next) = offset.checked_add(delta) else {
@@ -287,10 +395,16 @@ fn relocations(
                 "overlapping PE base relocations".to_owned(),
             ));
         }
-        slice(image, start, header.word)?;
+        if let Err(error) = slice(image, start, header.word) {
+            return Err(error);
+        }
         previous_end = start + header.word;
         let mut relative = 0usize;
-        for byte in slice(source, start, header.word)? {
+        let table_bytes = match slice(source, start, header.word) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        for byte in table_bytes {
             let Some(value) = relative
                 .checked_mul(256)
                 .and_then(|value| value.checked_add(usize::from(*byte)))
@@ -305,7 +419,9 @@ fn relocations(
         if header.word == 4 && value > u32::MAX as usize {
             return Err(DecodeError::invalid(start, "PE relocation exceeds 32 bits"));
         }
-        put(image, start, value, header.word)?;
+        if let Err(error) = put(image, start, value, header.word) {
+            return Err(error);
+        }
         let address = start + base;
         let kind = if header.word == 8 { 10 } else { 3 };
         pages
@@ -313,8 +429,14 @@ fn relocations(
             .or_default()
             .push(((kind << 12) | (address & 0xfff)) as u16);
     }
-    let directory = number(source, header.directories + 40, 4)?;
-    let size = number(source, header.directories + 44, 4)?;
+    let directory = match number(source, header.directories + 40, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let size = match number(source, header.directories + 44, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut table = Vec::new();
     for (page, mut entries) in pages {
         if !entries.len().is_multiple_of(2) {
@@ -331,15 +453,29 @@ fn relocations(
             "PE relocation block layout".to_owned(),
         ));
     }
-    copy(image, image_offset(directory, base)?, &table)?;
+    let table_offset = match image_offset(directory, base) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = copy(image, table_offset, &table) {
+        return Err(error);
+    }
     Ok(position)
 }
 
 pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
-    let pe_offset = number(bytes, 60, 4)?;
-    let packed = header(bytes, pe_offset)?;
+    let pe_offset = match number(bytes, 60, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let packed = match header(bytes, pe_offset) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     for section in &packed.sections {
-        slice(bytes, section.offset, section.size)?;
+        if let Err(error) = slice(bytes, section.offset, section.size) {
+            return Err(error);
+        }
     }
     let packed_end = packed
         .sections
@@ -349,8 +485,14 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
     if packed_end != Some(bytes.len()) {
         return Err(DecodeError::Unsupported("PE file overlay".to_owned()));
     }
-    let offset = locate(bytes, &packed)?;
-    let pack = slice(bytes, offset, 32)?;
+    let offset = match locate(bytes, &packed) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let pack = match slice(bytes, offset, 32) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if !matches!(pack[28], 0 | 0x26 | 0x46 | 0x49) {
         return Err(DecodeError::Unsupported(format!(
             "PE branch filter 0x{:02x}",
@@ -369,9 +511,18 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
             "UPX format does not match PE machine",
         ));
     }
-    let size = number(pack, 16, 4)?;
-    let compressed = number(pack, 20, 4)?;
-    let file_size = number(pack, 24, 4)?;
+    let size = match number(pack, 16, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let compressed = match number(pack, 20, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let file_size = match number(pack, 24, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if size < 4
         || size > MAX_FILE_SIZE as usize
         || file_size < packed.end
@@ -381,26 +532,46 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
     {
         return Err(DecodeError::invalid(offset, "invalid PE UPX sizes"));
     }
-    let data = slice(bytes, offset + 32, compressed)?;
+    let data = match slice(bytes, offset + 32, compressed) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut checksum = Checksum::new();
     checksum.update(data);
-    if checksum.value() != number(pack, 12, 4)? {
+    let stored_checksum = match number(pack, 12, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if checksum.value() != stored_checksum {
         return Err(DecodeError::invalid(
             offset,
             "PE UPX compressed checksum mismatch",
         ));
     }
-    let decoded = decompress(data, size, pack[6])?;
+    let decoded = match decompress(data, size, pack[6]) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut checksum = Checksum::new();
     checksum.update(&decoded);
-    if checksum.value() != number(pack, 8, 4)? {
+    let stored_checksum = match number(pack, 8, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if checksum.value() != stored_checksum {
         return Err(DecodeError::invalid(
             offset,
             "PE UPX uncompressed checksum mismatch",
         ));
     }
-    let original_offset = number(&decoded, decoded.len() - 4, 4)?;
-    let original = header(&decoded, original_offset)?;
+    let original_offset = match number(&decoded, decoded.len() - 4, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let original = match header(&decoded, original_offset) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if packed.machine != original.machine {
         return Err(DecodeError::invalid(
             original_offset,
@@ -408,7 +579,11 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
         ));
     }
     for index in [2, 4, 9, 10, 11, 13, 14] {
-        if number(&decoded, original.directories + index * 8, 4)? != 0 {
+        let directory_size = match number(&decoded, original.directories + index * 8, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if directory_size != 0 {
             return Err(DecodeError::Unsupported(format!(
                 "PE directory {index} reconstruction"
             )));
@@ -422,19 +597,40 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
     };
     let base = first.address;
     let mut image = decoded[..original_offset].to_vec();
-    let code = number(&decoded, original.optional + 20, 4)?;
-    let code_size = number(&decoded, original.optional + 4, 4)?;
+    let code = match number(&decoded, original.optional + 20, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let code_size = match number(&decoded, original.optional + 4, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if code != base || code_size > image.len() {
         return Err(DecodeError::Unsupported("PE code filter range".to_owned()));
     }
-    filter::decode(&mut image[..code_size], pack[28], pack[29])?;
+    if let Err(error) = filter::decode(&mut image[..code_size], pack[28], pack[29]) {
+        return Err(error);
+    }
     let mut footer = original.end;
     let mut imports_end = None;
-    if number(&decoded, original.directories + 8, 4)? != 0 {
-        let imports_offset = number(&decoded, footer, 4)?;
-        let names = number(&decoded, footer + 4, 4)?;
+    let import_directory_size = match number(&decoded, original.directories + 8, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if import_directory_size != 0 {
+        let imports_offset = match number(&decoded, footer, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let names = match number(&decoded, footer + 4, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         footer += 8;
-        let address = number(bytes, packed.directories + 8, 4)?;
+        let address = match number(bytes, packed.directories + 8, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let Some(section) = packed
             .sections
             .iter()
@@ -446,8 +642,11 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
             ));
         };
         let start = section.offset + address - section.address;
-        let packed_imports = slice(bytes, start, section.size - (address - section.address))?;
-        imports_end = Some(imports(
+        let packed_imports = match slice(bytes, start, section.size - (address - section.address)) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let new_imports_end = match imports(
             &mut image,
             &decoded,
             packed_imports,
@@ -455,23 +654,41 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
             base,
             names,
             imports_offset,
-        )?);
+        ) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        imports_end = Some(new_imports_end);
     }
-    if number(&decoded, original.directories + 40, 4)? != 0 {
-        let relocations_offset = number(&decoded, footer, 4)?;
+    let relocation_directory_size = match number(&decoded, original.directories + 40, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if relocation_directory_size != 0 {
+        let relocations_offset = match number(&decoded, footer, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if imports_end.is_some_and(|end| end != relocations_offset) {
             return Err(DecodeError::invalid(
                 relocations_offset,
                 "PE import table end mismatch",
             ));
         }
-        if number(&decoded, footer + 4, 1)? != 0 {
+        let relocation_encoding = match number(&decoded, footer + 4, 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if relocation_encoding != 0 {
             return Err(DecodeError::Unsupported(
                 "PE relocation encoding".to_owned(),
             ));
         }
         footer += 5;
-        let end = relocations(&mut image, &decoded, &original, base, relocations_offset)?;
+        let end = match relocations(&mut image, &decoded, &original, base, relocations_offset) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if end != original_offset {
             return Err(DecodeError::invalid(
                 end,
@@ -491,15 +708,25 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
     }
     let header_size = original.end - original_offset;
     let mut output = vec![0; file_size];
-    copy(&mut output, 0, slice(bytes, 0, pe_offset)?)?;
-    copy(
-        &mut output,
-        pe_offset,
-        slice(&decoded, original_offset, header_size)?,
-    )?;
+    let header_bytes = match slice(bytes, 0, pe_offset) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = copy(&mut output, 0, header_bytes) {
+        return Err(error);
+    }
+    let bytes = match slice(&decoded, original_offset, header_size) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = copy(&mut output, pe_offset, bytes) {
+        return Err(error);
+    }
     for index in [6, 12] {
         let offset = pe_offset + original.directories - original_offset + index * 8;
-        put(&mut output, offset, 0, 8)?;
+        if let Err(error) = put(&mut output, offset, 0, 8) {
+            return Err(error);
+        }
     }
     let mut end = pe_offset + header_size;
     for section in &original.sections {
@@ -508,13 +735,18 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
                 "overlapping or unordered PE sections".to_owned(),
             ));
         }
-        let offset = image_offset(section.address, base)?;
+        let offset = match image_offset(section.address, base) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let available = image.len().saturating_sub(offset).min(section.size);
-        copy(
-            &mut output,
-            section.offset,
-            slice(&image, offset, available)?,
-        )?;
+        let bytes = match slice(&image, offset, available) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = copy(&mut output, section.offset, bytes) {
+            return Err(error);
+        }
         end = section.offset + section.size;
     }
     if end != file_size {

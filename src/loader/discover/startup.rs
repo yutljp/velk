@@ -198,12 +198,16 @@ fn discover_i386(image: &mut Image) {
 }
 
 fn entry_decoder(image: &Image, bitness: u32) -> Option<Decoder<'_>> {
-    let entry = image.entry?;
-    let section = image
-        .section_at(entry)
-        .filter(|section| section.executable)?;
+    let Some(entry) = image.entry else {
+        return None;
+    };
+    let Some(section) = image.section_at(entry).filter(|section| section.executable) else {
+        return None;
+    };
     let size = section.file_size.saturating_sub(entry - section.vaddr);
-    let bytes = image.read_vaddr(entry, size)?;
+    let Some(bytes) = image.read_vaddr(entry, size) else {
+        return None;
+    };
     Some(Decoder::with_ip(
         bitness,
         bytes,
@@ -235,11 +239,20 @@ fn discover_aarch64(image: &mut Image) {
         return;
     };
     let read = |image: &Image, address: u64| {
-        image
+        if image
             .section_at(address)
-            .filter(|section| section.executable)?;
-        let bytes = image.read_vaddr(address, 4)?;
-        Some(u32::from_le_bytes(bytes.try_into().ok()?))
+            .filter(|section| section.executable)
+            .is_none()
+        {
+            return None;
+        }
+        let Some(bytes) = image.read_vaddr(address, 4) else {
+            return None;
+        };
+        let Some(value) = bytes.try_into().ok() else {
+            return None;
+        };
+        Some(u32::from_le_bytes(value))
     };
     if read(image, pc) == Some(0xd503201f) {
         let Some(next) = pc.checked_add(4) else {

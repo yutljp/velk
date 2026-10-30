@@ -666,21 +666,30 @@ fn stack_delta(value: &Expr, sp: u16) -> Option<i64> {
 /// Matches `rsp -= 8; *(u64 *)rsp = rbp; rbp = rsp` at the block's head and
 /// returns its range and the frame pointer register.
 fn frame_prologue(stmts: &[Stmt]) -> Option<(std::ops::Range<usize>, u16)> {
+    let Some(first) = stmts.first() else {
+        return None;
+    };
     let Stmt::Assign {
         dest: sp, value, ..
-    } = stmts.first()?
+    } = first
     else {
         return None;
     };
     if sp.index != x86::RSP {
         return None;
     }
-    if stack_delta(value, x86::RSP)? != -(8i64) {
+    let Some(delta) = stack_delta(value, x86::RSP) else {
+        return None;
+    };
+    if delta != -(8i64) {
         return None;
     }
+    let Some(second) = stmts.get(1) else {
+        return None;
+    };
     let Stmt::Store {
         addr, value: saved, ..
-    } = stmts.get(1)?
+    } = second
     else {
         return None;
     };
@@ -690,11 +699,14 @@ fn frame_prologue(stmts: &[Stmt]) -> Option<(std::ops::Range<usize>, u16)> {
     let Expr::Reg { index: frame, .. } = saved else {
         return None;
     };
+    let Some(third) = stmts.get(2) else {
+        return None;
+    };
     let Stmt::Assign {
         dest: next,
         value: source,
         ..
-    } = stmts.get(2)?
+    } = third
     else {
         return None;
     };
@@ -724,7 +736,10 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     if sp.index != x86::RSP {
         return None;
     }
-    if stack_delta(value, x86::RSP)? != 8 {
+    let Some(delta) = stack_delta(value, x86::RSP) else {
+        return None;
+    };
+    if delta != 8 {
         return None;
     }
     let Stmt::Assign {

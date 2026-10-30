@@ -215,7 +215,8 @@ fn needed_assignments(
                 .iter()
                 .flat_map(|next| incoming[*next].iter().copied())
                 .collect();
-            for (position, stmt) in blocks[index].stmts.iter().enumerate().rev() {
+            let reversed_statements = blocks[index].stmts.iter().enumerate().rev();
+            for (position, stmt) in reversed_statements {
                 let (writes, reads) = &registers[index][position];
                 // The raw return may name only the first integer result.
                 if matches!(stmt, Stmt::Ret { .. }) {

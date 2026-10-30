@@ -354,7 +354,9 @@ fn call_output_entry_demands(
     ir: &FunctionIr,
     outputs: &LiveCallOutputs,
 ) -> Option<std::collections::HashMap<u16, u64>> {
-    let outputs = outputs.as_ref()?;
+    let Some(outputs) = outputs.as_ref() else {
+        return None;
+    };
     let excluded = ir.blocks.iter().enumerate().any(|(block, body)| {
         body.stmts.iter().enumerate().any(|(position, stmt)| {
             stmt.call_outputs().iter().any(|output| {
@@ -370,7 +372,8 @@ fn call_output_entry_demands(
 }
 
 fn live_call_outputs(ir: &FunctionIr) -> LiveCallOutputs {
-    use crate::ir::{Stmt, cfg, visit::statement_registers};
+    use crate::ir::visit::statement_registers;
+    use crate::ir::{Stmt, cfg};
     use std::collections::HashSet;
     let mut outputs = HashSet::new();
     if !ir
@@ -433,7 +436,8 @@ fn live_call_outputs(ir: &FunctionIr) -> LiveCallOutputs {
     let incoming = cfg::live_in(ir);
     for (block, body) in ir.blocks.iter().enumerate() {
         let mut live = cfg::live_out(ir, &incoming, block);
-        for (position, stmt) in body.stmts.iter().enumerate().rev() {
+        let reversed_statements = body.stmts.iter().enumerate().rev();
+        for (position, stmt) in reversed_statements {
             for output in stmt.call_outputs() {
                 if live.contains(&output.dest.index) {
                     outputs.insert((block, position, output.dest.index));
@@ -733,8 +737,13 @@ pub(crate) fn apply_pointer_return_with(
         match value {
             Expr::Reg { index, width: 64 } => types.get(index).cloned(),
             Expr::Select { then, els, .. } => {
-                let ty = known(then, types)?;
-                (known(els, types)? == ty).then_some(ty)
+                let Some(ty) = known(then, types) else {
+                    return None;
+                };
+                let Some(else_type) = known(els, types) else {
+                    return None;
+                };
+                (else_type == ty).then_some(ty)
             }
             _ => None,
         }
@@ -1280,7 +1289,8 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
         {
             types.extend(conversion_types(&format, prototype.scans));
         }
-        for (position, (arg, ty)) in args.iter().zip(&types).enumerate() {
+        let typed_arguments = args.iter().zip(&types).enumerate();
+        for (position, (arg, ty)) in typed_arguments {
             let Some(index) = held(arg) else {
                 continue;
             };

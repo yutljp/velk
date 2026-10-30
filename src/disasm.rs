@@ -59,7 +59,10 @@ pub fn listing(
     let Some(bytes) = image.read_vaddr(addr, len) else {
         return Err(LiftError::Unreadable);
     };
-    let decoded = decode(image, bytes, addr, max_lines, Extent::Whole)?;
+    let decoded = match decode(image, bytes, addr, max_lines, Extent::Whole) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let literals = literal_strings(image, &decoded);
     Ok(decoded
         .into_iter()

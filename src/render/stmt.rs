@@ -346,7 +346,8 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         })
         .collect();
     let mut lines = vec!["{".to_owned()];
-    for (index, ((_, name), value)) in result.pieces.iter().zip(values).enumerate() {
+    let named_values = result.pieces.iter().zip(values).enumerate();
+    for (index, ((_, name), value)) in named_values {
         if let Some((target, precision)) = &float_members[index] {
             lines.push(format!(
                 "    {target} = {};",

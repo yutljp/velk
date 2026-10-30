@@ -260,13 +260,17 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
                 run.address
             )));
         };
-        Some(rebuild_elf(
+        let rebuilt = match rebuild_elf(
             image,
             &run.memory,
             entry,
             &extra_segments,
             options.memory_limit,
-        )?)
+        ) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Some(rebuilt)
     } else {
         None
     };
@@ -326,9 +330,13 @@ fn rebuild_elf(
         )));
     }
     let phnum = segments.len();
-    let phdr_end = header_size
+    let phdr_end = match header_size
         .checked_add(program_header_size.saturating_mul(phnum))
-        .ok_or_else(|| Error::Emulation("ELF header size overflows".to_owned()))?;
+        .ok_or_else(|| Error::Emulation("ELF header size overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let use_header_segment = segments[0].vaddr >= PAGE_SIZE
         && !segments.iter().any(|section| {
             section.vaddr <= segments[0].vaddr - PAGE_SIZE
@@ -358,18 +366,32 @@ fn rebuild_elf(
         let offset = if !use_header_segment && index == 0 {
             0
         } else {
-            align_up(output.len() as u64, PAGE_SIZE)
-                .ok_or_else(|| Error::Emulation("ELF output size overflows".to_owned()))?
+            match align_up(output.len() as u64, PAGE_SIZE)
+                .ok_or_else(|| Error::Emulation("ELF output size overflows".to_owned()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         };
-        let offset_usize = usize::try_from(offset).map_err(|_| {
-            Error::Emulation("ELF output exceeds the host address space".to_owned())
-        })?;
-        let size = usize::try_from(section.size).map_err(|_| {
+        let offset_usize = match usize::try_from(offset)
+            .map_err(|_| Error::Emulation("ELF output exceeds the host address space".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let size = match usize::try_from(section.size).map_err(|_| {
             Error::Emulation("mapped region exceeds the host address space".to_owned())
-        })?;
-        let end = offset_usize
+        }) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let end = match offset_usize
             .checked_add(size)
-            .ok_or_else(|| Error::Emulation("ELF output size overflows".to_owned()))?;
+            .ok_or_else(|| Error::Emulation("ELF output size overflows".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if end > limit.saturating_add(PAGE_SIZE as usize) {
             return Err(Error::Emulation(
                 "ELF output exceeds the unpacking memory limit".to_owned(),
@@ -377,8 +399,12 @@ fn rebuild_elf(
         }
         output.resize(end, 0);
         if let Some(file_offset) = section.file_offset {
-            let file_size = usize::try_from(section.file_size.min(section.size))
-                .map_err(|_| Error::Emulation("mapped file range is too large".to_owned()))?;
+            let file_size = match usize::try_from(section.file_size.min(section.size))
+                .map_err(|_| Error::Emulation("mapped file range is too large".to_owned()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if let Some(bytes) = image.read(file_offset, file_size as u64) {
                 output[offset_usize..offset_usize + file_size].copy_from_slice(bytes);
             } else {
@@ -422,7 +448,7 @@ fn rebuild_elf(
     }
     let mut program_index = 0usize;
     if use_header_segment {
-        write_program_header(
+        if let Err(error) = write_program_header(
             &mut output,
             ProgramHeader {
                 is_64,
@@ -433,14 +459,16 @@ fn rebuild_elf(
                 memory_size: PAGE_SIZE,
                 flags: 4,
             },
-        )?;
+        ) {
+            return Err(error);
+        }
         program_index += 1;
     }
     for (index, section) in segments.iter().enumerate() {
         let offset_index = index + usize::from(use_header_segment);
         let flags =
             4 | if section.read_only { 0 } else { 2 } | if section.executable { 1 } else { 0 };
-        write_program_header(
+        if let Err(error) = write_program_header(
             &mut output,
             ProgramHeader {
                 is_64,
@@ -451,10 +479,15 @@ fn rebuild_elf(
                 memory_size: section.size,
                 flags,
             },
-        )?;
+        ) {
+            return Err(error);
+        }
         program_index += 1;
     }
-    let symbol_data = symbol_table(image, is_64)?;
+    let symbol_data = match symbol_table(image, is_64) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut section_names = vec![0];
     let mut mapped_names = Vec::with_capacity(output_phnum);
     for index in 0..output_phnum {
@@ -472,13 +505,30 @@ fn rebuild_elf(
             };
             format!(".{name}{input_index}")
         };
-        mapped_names.push(add_string(&mut section_names, &name)?);
+        let name_offset = match add_string(&mut section_names, &name) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        mapped_names.push(name_offset);
     }
-    let symbol_name = add_string(&mut section_names, ".symtab")?;
-    let string_name = add_string(&mut section_names, ".strtab")?;
-    let names_name = add_string(&mut section_names, ".shstrtab")?;
-    let symbol_offset = align_up(output.len() as u64, if is_64 { 8 } else { 4 })
-        .ok_or_else(|| Error::Emulation("ELF symbol table offset overflows".to_owned()))?;
+    let symbol_name = match add_string(&mut section_names, ".symtab") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let string_name = match add_string(&mut section_names, ".strtab") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let names_name = match add_string(&mut section_names, ".shstrtab") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let symbol_offset = match align_up(output.len() as u64, if is_64 { 8 } else { 4 })
+        .ok_or_else(|| Error::Emulation("ELF symbol table offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     output.resize(symbol_offset as usize, 0);
     output.extend_from_slice(&symbol_data.0);
     let string_offset = output.len() as u64;
@@ -486,14 +536,26 @@ fn rebuild_elf(
     let section_names_offset = output.len() as u64;
     output.extend_from_slice(&section_names);
     let section_header_size = if is_64 { 64usize } else { 40usize };
-    let section_count = output_phnum
+    let section_count = match output_phnum
         .checked_add(4)
-        .ok_or_else(|| Error::Emulation("ELF section count overflows".to_owned()))?;
-    let section_header_offset = align_up(output.len() as u64, if is_64 { 8 } else { 4 })
-        .ok_or_else(|| Error::Emulation("ELF section table offset overflows".to_owned()))?;
-    let section_table_end = section_header_offset
+        .ok_or_else(|| Error::Emulation("ELF section count overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let section_header_offset = match align_up(output.len() as u64, if is_64 { 8 } else { 4 })
+        .ok_or_else(|| Error::Emulation("ELF section table offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let section_table_end = match section_header_offset
         .checked_add((section_header_size * section_count) as u64)
-        .ok_or_else(|| Error::Emulation("ELF section table size overflows".to_owned()))?;
+        .ok_or_else(|| Error::Emulation("ELF section table size overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if section_table_end > (limit as u64).saturating_add(PAGE_SIZE) {
         return Err(Error::Emulation(
             "ELF output exceeds the unpacking memory limit".to_owned(),
@@ -510,7 +572,7 @@ fn rebuild_elf(
                 2 | if section.read_only { 0 } else { 1 } | if section.executable { 4 } else { 0 };
             (section.vaddr, offsets[index], section.size, flags)
         };
-        write_section_header(
+        if let Err(error) = write_section_header(
             &mut output,
             SectionHeader {
                 is_64,
@@ -527,12 +589,14 @@ fn rebuild_elf(
                 alignment: PAGE_SIZE,
                 entry_size: 0,
             },
-        )?;
+        ) {
+            return Err(error);
+        }
     }
     let symbol_index = output_phnum + 1;
     let string_index = output_phnum + 2;
     let names_index = output_phnum + 3;
-    write_section_header(
+    if let Err(error) = write_section_header(
         &mut output,
         SectionHeader {
             is_64,
@@ -549,8 +613,10 @@ fn rebuild_elf(
             alignment: if is_64 { 8 } else { 4 },
             entry_size: if is_64 { 24 } else { 16 },
         },
-    )?;
-    write_section_header(
+    ) {
+        return Err(error);
+    }
+    if let Err(error) = write_section_header(
         &mut output,
         SectionHeader {
             is_64,
@@ -567,8 +633,10 @@ fn rebuild_elf(
             alignment: 1,
             entry_size: 0,
         },
-    )?;
-    write_section_header(
+    ) {
+        return Err(error);
+    }
+    if let Err(error) = write_section_header(
         &mut output,
         SectionHeader {
             is_64,
@@ -585,8 +653,10 @@ fn rebuild_elf(
             alignment: 1,
             entry_size: 0,
         },
-    )?;
-    write_elf_header(
+    ) {
+        return Err(error);
+    }
+    if let Err(error) = write_elf_header(
         &mut output,
         ElfHeader {
             is_64,
@@ -600,7 +670,9 @@ fn rebuild_elf(
             section_count,
             section_names_index: names_index,
         },
-    )?;
+    ) {
+        return Err(error);
+    }
     Ok(output)
 }
 
@@ -644,36 +716,56 @@ fn symbol_table(image: &Image, is_64: bool) -> Result<(Vec<u8>, Vec<u8>)> {
     let mut table = vec![0u8; entry_size];
     let mut strings = vec![0u8];
     for (address, size, info, name) in names {
-        let name_offset = u32::try_from(strings.len())
-            .map_err(|_| Error::Emulation("ELF string table exceeds 4 GiB".to_owned()))?;
+        let name_offset = match u32::try_from(strings.len())
+            .map_err(|_| Error::Emulation("ELF string table exceeds 4 GiB".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         strings.extend_from_slice(name.as_bytes());
         strings.push(0);
         let start = table.len();
         table.resize(start + entry_size, 0);
         if is_64 {
-            put_u32(&mut table, start, name_offset)?;
+            if let Err(error) = put_u32(&mut table, start, name_offset) {
+                return Err(error);
+            }
             table[start + 4] = info;
-            put_u16(&mut table, start + 6, 0xfff1)?;
-            put_u64(&mut table, start + 8, address)?;
-            put_u64(&mut table, start + 16, size)?;
+            if let Err(error) = put_u16(&mut table, start + 6, 0xfff1) {
+                return Err(error);
+            }
+            if let Err(error) = put_u64(&mut table, start + 8, address) {
+                return Err(error);
+            }
+            if let Err(error) = put_u64(&mut table, start + 16, size) {
+                return Err(error);
+            }
         } else {
-            put_u32(&mut table, start, name_offset)?;
-            put_u32(
-                &mut table,
-                start + 4,
-                u32::try_from(address).map_err(|_| {
-                    Error::Emulation("ELF32 symbol address exceeds 32 bits".to_owned())
-                })?,
-            )?;
-            put_u32(
-                &mut table,
-                start + 8,
-                u32::try_from(size).map_err(|_| {
-                    Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned())
-                })?,
-            )?;
+            if let Err(error) = put_u32(&mut table, start, name_offset) {
+                return Err(error);
+            }
+            let value = match u32::try_from(address)
+                .map_err(|_| Error::Emulation("ELF32 symbol address exceeds 32 bits".to_owned()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = put_u32(&mut table, start + 4, value) {
+                return Err(error);
+            }
+            let size_u32 = match u32::try_from(size)
+                .map_err(|_| Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = put_u32(&mut table, start + 8, size_u32) {
+                return Err(error);
+            }
             table[start + 12] = info;
-            put_u16(&mut table, start + 14, 0xfff1)?;
+            if let Err(error) = put_u16(&mut table, start + 14, 0xfff1) {
+                return Err(error);
+            }
         }
     }
     Ok((table, strings))
@@ -686,8 +778,12 @@ fn align_up(value: u64, alignment: u64) -> Option<u64> {
 }
 
 fn add_string(table: &mut Vec<u8>, value: &str) -> Result<u32> {
-    let offset = u32::try_from(table.len())
-        .map_err(|_| Error::Emulation("ELF section name table exceeds 4 GiB".to_owned()))?;
+    let offset = match u32::try_from(table.len())
+        .map_err(|_| Error::Emulation("ELF section name table exceeds 4 GiB".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     table.extend_from_slice(value.as_bytes());
     table.push(0);
     Ok(offset)
@@ -745,62 +841,121 @@ fn write_elf_header(output: &mut [u8], header: ElfHeader) -> Result<()> {
         section_count,
         section_names_index,
     } = header;
-    let ident = output
+    let ident = match output
         .get_mut(..16)
-        .ok_or_else(|| Error::Emulation("ELF output header is truncated".to_owned()))?;
+        .ok_or_else(|| Error::Emulation("ELF output header is truncated".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     ident[..7].copy_from_slice(&[0x7f, b'E', b'L', b'F', if is_64 { 2 } else { 1 }, 1, 1]);
-    put_u16(output, 16, 2)?;
-    put_u16(output, 18, machine)?;
-    put_u32(output, 20, 1)?;
+    if let Err(error) = put_u16(output, 16, 2) {
+        return Err(error);
+    }
+    if let Err(error) = put_u16(output, 18, machine) {
+        return Err(error);
+    }
+    if let Err(error) = put_u32(output, 20, 1) {
+        return Err(error);
+    }
     if is_64 {
-        put_u64(output, 24, entry)?;
-        put_u64(output, 32, 64)?;
-        put_u64(output, 40, section_header_offset)?;
-        put_u32(output, 48, 0)?;
-        put_u16(output, 52, header_size as u16)?;
-        put_u16(output, 54, program_header_size as u16)?;
-        put_u16(output, 56, phnum as u16)?;
-        put_u16(output, 58, section_header_size as u16)?;
-        put_u16(
-            output,
-            60,
-            u16::try_from(section_count)
-                .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))?,
-        )?;
-        put_u16(
-            output,
-            62,
-            u16::try_from(section_names_index)
-                .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))?,
-        )?;
+        if let Err(error) = put_u64(output, 24, entry) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, 32, 64) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, 40, section_header_offset) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, 48, 0) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 52, header_size as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 54, program_header_size as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 56, phnum as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 58, section_header_size as u16) {
+            return Err(error);
+        }
+        let value = match u16::try_from(section_count)
+            .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u16(output, 60, value) {
+            return Err(error);
+        }
+        let section_names_index_u16 = match u16::try_from(section_names_index)
+            .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u16(output, 62, section_names_index_u16) {
+            return Err(error);
+        }
     } else {
-        let entry = u32::try_from(entry)
-            .map_err(|_| Error::Emulation("ELF32 entry exceeds 32 bits".to_owned()))?;
-        put_u32(output, 24, entry)?;
-        put_u32(output, 28, 52)?;
-        put_u32(
-            output,
-            32,
-            u32::try_from(section_header_offset)
-                .map_err(|_| Error::Emulation("ELF32 section table exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(output, 36, 0)?;
-        put_u16(output, 40, header_size as u16)?;
-        put_u16(output, 42, program_header_size as u16)?;
-        put_u16(output, 44, phnum as u16)?;
-        put_u16(output, 46, section_header_size as u16)?;
-        put_u16(
-            output,
-            48,
-            u16::try_from(section_count)
-                .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))?,
-        )?;
-        put_u16(
-            output,
-            50,
-            u16::try_from(section_names_index)
-                .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))?,
-        )?;
+        let entry = match u32::try_from(entry)
+            .map_err(|_| Error::Emulation("ELF32 entry exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, 24, entry) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, 28, 52) {
+            return Err(error);
+        }
+        let section_header_offset_u32 = match u32::try_from(section_header_offset)
+            .map_err(|_| Error::Emulation("ELF32 section table exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, 32, section_header_offset_u32) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, 36, 0) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 40, header_size as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 42, program_header_size as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 44, phnum as u16) {
+            return Err(error);
+        }
+        if let Err(error) = put_u16(output, 46, section_header_size as u16) {
+            return Err(error);
+        }
+        let section_count_u16 = match u16::try_from(section_count)
+            .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u16(output, 48, section_count_u16) {
+            return Err(error);
+        }
+        let section_names_index_u16 = match u16::try_from(section_names_index)
+            .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u16(output, 50, section_names_index_u16) {
+            return Err(error);
+        }
     }
     Ok(())
 }
@@ -822,68 +977,118 @@ fn write_section_header(output: &mut [u8], header: SectionHeader) -> Result<()> 
         entry_size,
     } = header;
     let header_size = if is_64 { 64usize } else { 40usize };
-    let base = usize::try_from(table_offset)
-        .map_err(|_| {
-            Error::Emulation("ELF section header offset exceeds the host address space".to_owned())
-        })?
-        .checked_add(
-            index.checked_mul(header_size).ok_or_else(|| {
-                Error::Emulation("ELF section header offset overflows".to_owned())
-            })?,
-        )
-        .ok_or_else(|| Error::Emulation("ELF section header offset overflows".to_owned()))?;
-    put_u32(output, base, name)?;
-    put_u32(output, base + 4, kind)?;
+    let value = match usize::try_from(table_offset).map_err(|_| {
+        Error::Emulation("ELF section header offset exceeds the host address space".to_owned())
+    }) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let header_offset = match index
+        .checked_mul(header_size)
+        .ok_or_else(|| Error::Emulation("ELF section header offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let base = match value
+        .checked_add(header_offset)
+        .ok_or_else(|| Error::Emulation("ELF section header offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = put_u32(output, base, name) {
+        return Err(error);
+    }
+    if let Err(error) = put_u32(output, base + 4, kind) {
+        return Err(error);
+    }
     if is_64 {
-        put_u64(output, base + 8, flags)?;
-        put_u64(output, base + 16, address)?;
-        put_u64(output, base + 24, offset)?;
-        put_u64(output, base + 32, size)?;
-        put_u32(output, base + 40, link)?;
-        put_u32(output, base + 44, info)?;
-        put_u64(output, base + 48, alignment)?;
-        put_u64(output, base + 56, entry_size)?;
+        if let Err(error) = put_u64(output, base + 8, flags) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 16, address) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 24, offset) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 32, size) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 40, link) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 44, info) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 48, alignment) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 56, entry_size) {
+            return Err(error);
+        }
     } else {
-        put_u32(
-            output,
-            base + 8,
-            u32::try_from(flags)
-                .map_err(|_| Error::Emulation("ELF32 section flags exceed 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 12,
-            u32::try_from(address).map_err(|_| {
-                Error::Emulation("ELF32 section address exceeds 32 bits".to_owned())
-            })?,
-        )?;
-        put_u32(
-            output,
-            base + 16,
-            u32::try_from(offset)
-                .map_err(|_| Error::Emulation("ELF32 section offset exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 20,
-            u32::try_from(size)
-                .map_err(|_| Error::Emulation("ELF32 section size exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(output, base + 24, link)?;
-        put_u32(output, base + 28, info)?;
-        put_u32(
-            output,
-            base + 32,
-            u32::try_from(alignment).map_err(|_| {
-                Error::Emulation("ELF32 section alignment exceeds 32 bits".to_owned())
-            })?,
-        )?;
-        put_u32(
-            output,
-            base + 36,
-            u32::try_from(entry_size)
-                .map_err(|_| Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned()))?,
-        )?;
+        let flags_u32 = match u32::try_from(flags)
+            .map_err(|_| Error::Emulation("ELF32 section flags exceed 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 8, flags_u32) {
+            return Err(error);
+        }
+        let address_u32 = match u32::try_from(address)
+            .map_err(|_| Error::Emulation("ELF32 section address exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 12, address_u32) {
+            return Err(error);
+        }
+        let offset_u32 = match u32::try_from(offset)
+            .map_err(|_| Error::Emulation("ELF32 section offset exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 16, offset_u32) {
+            return Err(error);
+        }
+        let size_u32 = match u32::try_from(size)
+            .map_err(|_| Error::Emulation("ELF32 section size exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 20, size_u32) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 24, link) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 28, info) {
+            return Err(error);
+        }
+        let alignment_u32 = match u32::try_from(alignment)
+            .map_err(|_| Error::Emulation("ELF32 section alignment exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 32, alignment_u32) {
+            return Err(error);
+        }
+        let entry_size_u32 = match u32::try_from(entry_size)
+            .map_err(|_| Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 36, entry_size_u32) {
+            return Err(error);
+        }
     }
     Ok(())
 }
@@ -900,54 +1105,97 @@ fn write_program_header(output: &mut [u8], header: ProgramHeader) -> Result<()> 
     } = header;
     let size = if is_64 { 56usize } else { 32usize };
     let header_size = if is_64 { 64usize } else { 52usize };
-    let base =
-        header_size
-            .checked_add(index.checked_mul(size).ok_or_else(|| {
-                Error::Emulation("ELF program header offset overflows".to_owned())
-            })?)
-            .ok_or_else(|| Error::Emulation("ELF program header offset overflows".to_owned()))?;
-    put_u32(output, base, 1)?;
+    let header_offset = match index
+        .checked_mul(size)
+        .ok_or_else(|| Error::Emulation("ELF program header offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let base = match header_size
+        .checked_add(header_offset)
+        .ok_or_else(|| Error::Emulation("ELF program header offset overflows".to_owned()))
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if let Err(error) = put_u32(output, base, 1) {
+        return Err(error);
+    }
     if is_64 {
-        put_u32(output, base + 4, flags)?;
-        put_u64(output, base + 8, offset)?;
-        put_u64(output, base + 16, address)?;
-        put_u64(output, base + 24, address)?;
-        put_u64(output, base + 32, file_size)?;
-        put_u64(output, base + 40, memory_size)?;
-        put_u64(output, base + 48, PAGE_SIZE)?;
+        if let Err(error) = put_u32(output, base + 4, flags) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 8, offset) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 16, address) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 24, address) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 32, file_size) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 40, memory_size) {
+            return Err(error);
+        }
+        if let Err(error) = put_u64(output, base + 48, PAGE_SIZE) {
+            return Err(error);
+        }
     } else {
-        put_u32(
-            output,
-            base + 4,
-            u32::try_from(offset)
-                .map_err(|_| Error::Emulation("ELF32 file offset exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 8,
-            u32::try_from(address)
-                .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 12,
-            u32::try_from(address)
-                .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 16,
-            u32::try_from(file_size)
-                .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(
-            output,
-            base + 20,
-            u32::try_from(memory_size)
-                .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))?,
-        )?;
-        put_u32(output, base + 24, flags)?;
-        put_u32(output, base + 28, PAGE_SIZE as u32)?;
+        let value = match u32::try_from(offset)
+            .map_err(|_| Error::Emulation("ELF32 file offset exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 4, value) {
+            return Err(error);
+        }
+        let address_u32 = match u32::try_from(address)
+            .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 8, address_u32) {
+            return Err(error);
+        }
+        let address_u32 = match u32::try_from(address)
+            .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 12, address_u32) {
+            return Err(error);
+        }
+        let file_size_u32 = match u32::try_from(file_size)
+            .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 16, file_size_u32) {
+            return Err(error);
+        }
+        let memory_size_u32 = match u32::try_from(memory_size)
+            .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = put_u32(output, base + 20, memory_size_u32) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 24, flags) {
+            return Err(error);
+        }
+        if let Err(error) = put_u32(output, base + 28, PAGE_SIZE as u32) {
+            return Err(error);
+        }
     }
     Ok(())
 }
@@ -988,7 +1236,9 @@ fn in_regions(address: u64, regions: &[Section]) -> bool {
 }
 
 fn intersect(start: u64, end: u64, region_start: u64, region_size: u64) -> Option<(u64, u64)> {
-    let region_end = region_start.checked_add(region_size)?;
+    let Some(region_end) = region_start.checked_add(region_size) else {
+        return None;
+    };
     let overlap_start = start.max(region_start);
     let overlap_end = end.min(region_end);
     (overlap_start < overlap_end).then_some((overlap_start, overlap_end - overlap_start))

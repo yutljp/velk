@@ -120,7 +120,11 @@ pub fn registers_after(
     ir: &FunctionIr,
     setup: &Setup<'_>,
 ) -> Result<HashMap<u16, u64>, &'static str> {
-    Ok(state_after(ir, setup)?.0)
+    let state = match state_after(ir, setup) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    Ok(state.0)
 }
 
 /// Registers by index and memory by address.

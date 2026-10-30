@@ -7,7 +7,8 @@
 
 use std::collections::HashMap;
 
-use super::{Node, compare_chain::predecessor_counts};
+use super::Node;
+use super::compare_chain::predecessor_counts;
 use crate::ir::{Cond, Expr, FunctionIr, Stmt};
 
 /// The most tests one joined condition holds.
@@ -105,11 +106,15 @@ fn combined_guard(first: Expr, second: Expr, body: &[Node], either: bool) -> Opt
 }
 
 fn nested_guard(node: &Node) -> Option<Node> {
-    let (first, body) = selected_guard(node)?;
+    let Some((first, body)) = selected_guard(node) else {
+        return None;
+    };
     let [inner] = body else {
         return None;
     };
-    let (second, body) = selected_guard(inner)?;
+    let Some((second, body)) = selected_guard(inner) else {
+        return None;
+    };
     combined_guard(first, second, body, false)
 }
 

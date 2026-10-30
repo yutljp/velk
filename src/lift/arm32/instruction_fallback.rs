@@ -733,15 +733,19 @@ impl fmt::Display for Instruction {
                 width,
                 signed,
             } => {
-                write!(
+                if let Err(error) = write!(
                     f,
                     "{}xt{}{} r{destination}, ",
                     if *signed { "s" } else { "u" },
                     if addend.is_some() { "a" } else { "" },
                     if *width == 1 { "b" } else { "h" }
-                )?;
-                if let Some(addend) = addend {
-                    write!(f, "r{addend}, ")?;
+                ) {
+                    return Err(error);
+                }
+                if let Some(addend) = addend
+                    && let Err(error) = write!(f, "r{addend}, ")
+                {
+                    return Err(error);
                 }
                 write!(f, "r{source}, ror #{rotation}")
             }

@@ -34,14 +34,20 @@ fn headers(image: &crate::loader::Image) -> Result<Headers, String> {
     let Some(dos) = image.read(0, 64).filter(|bytes| bytes.starts_with(b"MZ")) else {
         return Err("missing DOS header".to_owned());
     };
-    let offset = word(dos, 0x3c, 4)?;
+    let offset = match word(dos, 0x3c, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let Some(nt) = image
         .read(offset, 24)
         .filter(|bytes| bytes.starts_with(b"PE\0\0"))
     else {
         return Err(format!("missing PE header at file offset 0x{offset:x}"));
     };
-    let optional_size = word(nt, 20, 2)?;
+    let optional_size = match word(nt, 20, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let Some(optional) = offset
         .checked_add(24)
         .and_then(|offset| image.read(offset, optional_size))
@@ -50,12 +56,25 @@ fn headers(image: &crate::loader::Image) -> Result<Headers, String> {
     };
     let width = crate::arch::pointer_bytes(image.isa) as usize;
     let magic = if width == 8 { 0x20b } else { 0x10b };
-    if word(optional, 0, 2)? != magic {
+    let optional_magic = match word(optional, 0, 2) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    if optional_magic != magic {
         return Err("PE optional header does not match the architecture".to_owned());
     }
-    let base = word(optional, if width == 8 { 24 } else { 28 }, width)?;
-    let size = word(optional, 56, 4)?;
-    let headers_size = word(optional, 60, 4)?;
+    let base = match word(optional, if width == 8 { 24 } else { 28 }, width) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let size = match word(optional, 56, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let headers_size = match word(optional, 60, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let limit = if width == 8 { u64::MAX } else { 1u64 << 32 };
     if size == 0
         || headers_size == 0
@@ -67,27 +86,44 @@ fn headers(image: &crate::loader::Image) -> Result<Headers, String> {
         return Err("invalid PE image or header size".to_owned());
     }
     let directory_start = if width == 8 { 112 } else { 96 };
-    let directories = word(optional, directory_start - 4, 4)?;
+    let directories = match word(optional, directory_start - 4, 4) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let directory = |index: usize| -> Result<(u64, u64), String> {
         if index as u64 >= directories {
             return Ok((0, 0));
         }
-        let rva = word(optional, directory_start + index * 8, 4)?;
-        let bytes = word(optional, directory_start + index * 8 + 4, 4)?;
+        let rva = match word(optional, directory_start + index * 8, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let data_size = match word(optional, directory_start + index * 8 + 4, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if rva == 0 {
             return Ok((0, 0));
         }
-        if rva.checked_add(bytes).is_none_or(|end| end > size) {
+        if rva.checked_add(data_size).is_none_or(|end| end > size) {
             return Err(format!("PE data directory {index} exceeds the image"));
         }
-        Ok((base + rva, bytes))
+        Ok((base + rva, data_size))
+    };
+    let exports_directory = match directory(0) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let tls_directory = match directory(9) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
     };
     Ok(Headers {
         base,
         size,
         headers_size,
-        exports: directory(0)?,
-        tls: directory(9)?,
+        exports: exports_directory,
+        tls: tls_directory,
     })
 }
 
@@ -222,13 +258,20 @@ impl Runner<'_> {
             return Ok(());
         }
         // Setup errors invalidate the complete process; partial loader state is never executed.
-        let header = headers(self.image)?;
+        let header = match headers(self.image) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let width = crate::arch::pointer_bytes(self.image.isa);
-        self.machine
+        if let Err(error) = self
+            .machine
             .strict_memory
             .as_mut()
             .expect("strict memory")
-            .map(header.base, header.headers_size, true)?;
+            .map(header.base, header.headers_size, true)
+        {
+            return Err(error);
+        }
         let bytes = self
             .image
             .read(0, header.headers_size)
@@ -289,13 +332,20 @@ impl Runner<'_> {
             for &(name, _) in table {
                 functions.insert(name.to_owned());
             }
-            let mut bytes = synthetic_image(&dll, &functions, width as usize)?;
-            let base = self
+            let mut bytes = match synthetic_image(&dll, &functions, width as usize) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let base = match self
                 .machine
                 .strict_memory
                 .as_mut()
                 .expect("strict memory")
-                .map_zeroed(bytes.len() as u64, true)?;
+                .map_zeroed(bytes.len() as u64, true)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             put(
                 &mut bytes,
                 0x98 + if width == 8 { 24 } else { 28 },
@@ -344,7 +394,11 @@ impl Runner<'_> {
             }
             self.setup_store(slot, address, width);
         }
-        modules[0].exports = self.main_exports(&header)?;
+        let main_exports = match self.main_exports(&header) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        modules[0].exports = main_exports;
         let peb = self.allocate(0x400);
         let ldr = self.allocate(0x80);
         let parameters = self.allocate(0x100);
@@ -405,13 +459,17 @@ impl Runner<'_> {
             self.setup_store(entry + u64::from(width) * 6, module.base, width);
             self.setup_store(entry + u64::from(width) * 8, module.size, 4);
             let full = entry + if width == 8 { 0x48 } else { 0x24 };
-            self.setup_unicode(full, &module.path)?;
+            if let Err(error) = self.setup_unicode(full, &module.path) {
+                return Err(error);
+            }
             let basename = module
                 .path
                 .rsplit(['\\', '/'])
                 .next()
                 .unwrap_or(&module.path);
-            self.setup_unicode(full + u64::from(width) * 2, basename)?;
+            if let Err(error) = self.setup_unicode(full + u64::from(width) * 2, basename) {
+                return Err(error);
+            }
             entries.push(entry);
         }
         for list in 0..3u64 {
@@ -436,15 +494,23 @@ impl Runner<'_> {
             }
         }
         let image_name = parameters + if width == 8 { 0x60 } else { 0x38 };
-        self.setup_unicode(image_name, &self.options.windows.image_path)?;
-        let command_wide = self.setup_unicode(
+        if let Err(error) = self.setup_unicode(image_name, &self.options.windows.image_path) {
+            return Err(error);
+        }
+        let command_wide = match self.setup_unicode(
             image_name + u64::from(width) * 2,
             &self.options.windows.command_line,
-        )?;
+        ) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let command_ansi = if self.options.windows.command_line.is_ascii() {
             let mut bytes = self.options.windows.command_line.as_bytes().to_vec();
             bytes.push(0);
-            self.setup_bytes(&bytes)?
+            match self.setup_bytes(&bytes) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else {
             0
         };
@@ -473,15 +539,28 @@ impl Runner<'_> {
             environment.extend_from_slice(&[0, 0]);
         }
         environment.extend_from_slice(&[0, 0]);
-        let environment_pointer = self.setup_bytes(&environment)?;
+        let environment_pointer = match self.setup_bytes(&environment) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.setup_store(
             parameters + if width == 8 { 0x80 } else { 0x48 },
             environment_pointer,
             width,
         );
-        let callbacks = self.setup_static_tls(header.tls, teb)?;
-        let heap = self.setup_bytes(&[0; 64])?;
+        let callbacks = match self.setup_static_tls(header.tls, teb) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let heap = match self.setup_bytes(&[0; 64]) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.setup_store(peb + if width == 8 { 0x30 } else { 0x18 }, heap, width);
+        let registry = match super::registry::contents(&self.options.windows.registry) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.windows = Some(Process {
             modules,
             exports,
@@ -509,7 +588,7 @@ impl Runner<'_> {
             standard_handles: [true; 3],
             crt_output: [Vec::new(), Vec::new()],
             crt_buffering: [None, None],
-            registry: super::registry::contents(&self.options.windows.registry)?,
+            registry,
             registry_handles: BTreeMap::new(),
         });
         Ok(())
@@ -532,15 +611,33 @@ impl Runner<'_> {
         if size < 40 {
             return Err("truncated PE export directory".to_owned());
         }
-        let ordinal_base = self.image_word(directory + 16, 4)?;
-        let count = self.image_word(directory + 24, 4)?;
+        let ordinal_base = match self.image_word(directory + 16, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let count = match self.image_word(directory + 24, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if count > 4096 {
             return Err("main module has more than 4096 named exports".to_owned());
         }
-        let functions = self.image_word(directory + 28, 4)?;
-        let names = self.image_word(directory + 32, 4)?;
-        let ordinals = self.image_word(directory + 36, 4)?;
-        let function_count = self.image_word(directory + 20, 4)?;
+        let functions = match self.image_word(directory + 28, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let names = match self.image_word(directory + 32, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let ordinals = match self.image_word(directory + 36, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let function_count = match self.image_word(directory + 20, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         for (rva, count, width) in [
             (functions, function_count, 4),
             (names, count, 4),
@@ -555,14 +652,21 @@ impl Runner<'_> {
             }
         }
         for index in 0..count {
-            let rva = self.image_word(header.base + names + index * 4, 4)?;
+            let rva = match self.image_word(header.base + names + index * 4, 4) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if rva >= header.size {
                 return Err("PE export name is outside the image".to_owned());
             }
             let mut name = Vec::new();
             let mut terminated = false;
             for offset in 0..4096.min(header.size - rva) {
-                let byte = self.image_word(header.base + rva + offset, 1)? as u8;
+                let loaded = match self.image_word(header.base + rva + offset, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let byte = loaded as u8;
                 if byte == 0 {
                     terminated = true;
                     break;
@@ -572,11 +676,17 @@ impl Runner<'_> {
             if !terminated {
                 return Err("unterminated PE export name".to_owned());
             }
-            let ordinal = self.image_word(header.base + ordinals + index * 2, 2)?;
+            let ordinal = match self.image_word(header.base + ordinals + index * 2, 2) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if ordinal >= function_count {
                 return Err("PE export ordinal exceeds the function table".to_owned());
             }
-            let rva = self.image_word(header.base + functions + ordinal * 4, 4)?;
+            let rva = match self.image_word(header.base + functions + ordinal * 4, 4) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if rva == 0 || rva >= header.size {
                 continue;
             }
@@ -612,11 +722,26 @@ impl Runner<'_> {
         if size < u64::from(width) * 4 + 8 {
             return Err("truncated PE TLS directory".to_owned());
         }
-        let start = self.image_word(directory, width)?;
-        let end = self.image_word(directory + u64::from(width), width)?;
-        let index = self.image_word(directory + u64::from(width) * 2, width)?;
-        let callbacks = self.image_word(directory + u64::from(width) * 3, width)?;
-        let zero = self.image_word(directory + u64::from(width) * 4, 4)?;
+        let start = match self.image_word(directory, width) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let end = match self.image_word(directory + u64::from(width), width) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let index = match self.image_word(directory + u64::from(width) * 2, width) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let callbacks = match self.image_word(directory + u64::from(width) * 3, width) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let zero = match self.image_word(directory + u64::from(width) * 4, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let Some(length) = end.checked_sub(start) else {
             return Err("PE TLS template ends before its start".to_owned());
         };
@@ -626,7 +751,10 @@ impl Runner<'_> {
         else {
             return Err("PE TLS data exceeds 16 MiB".to_owned());
         };
-        let flags = self.image_word(directory + u64::from(width) * 4 + 4, 4)?;
+        let flags = match self.image_word(directory + u64::from(width) * 4 + 4, 4) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let alignment = (flags >> 20) & 15;
         if alignment == 15 {
             return Err("invalid PE TLS alignment".to_owned());
@@ -675,7 +803,10 @@ impl Runner<'_> {
             let Some(at) = callbacks.checked_add(offset * u64::from(width)) else {
                 return Err("PE TLS callback table overflows".to_owned());
             };
-            let address = self.image_word(at, width)?;
+            let address = match self.image_word(at, width) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if address == 0 {
                 return Ok(addresses);
             }

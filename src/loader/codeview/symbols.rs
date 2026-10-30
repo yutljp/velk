@@ -7,7 +7,8 @@ use super::{
 };
 use crate::ir::calls::{FunctionSource, TypeSource};
 use crate::ir::{AbiIssue, CType, DebugLocal};
-use crate::loader::{Image, dwarf::FunctionTypes};
+use crate::loader::Image;
+use crate::loader::dwarf::FunctionTypes;
 
 #[derive(Debug)]
 struct Variable {

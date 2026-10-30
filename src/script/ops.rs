@@ -498,16 +498,19 @@ pub fn handle(
             ))
         }
         Request::Card { bin, addr, budget } => {
-            let card = match bin.open(session) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
-            }
-            .card(
-                parse(&addr)?,
-                budget.unwrap_or(DEFAULT_BUDGET),
-                None,
-                deadline,
-            )?;
+            };
+            let address = match parse(&addr) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let card = match binary.card(address, budget.unwrap_or(DEFAULT_BUDGET), None, deadline)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(json!(card))
         }
         Request::Decompile {
@@ -536,13 +539,29 @@ pub fn handle(
             addresses,
             show_addresses,
         } => decompile_many(session, bin, addresses, show_addresses, deadline),
-        Request::Disasm { bin, addr, limit } => Ok(json!(
-            bin.open(session)?
-                .disasm(parse(&addr)?, limit.unwrap_or(usize::MAX))?
-        )),
+        Request::Disasm { bin, addr, limit } => {
+            let binary = match bin.open(session) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let address = match parse(&addr) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let lines = match binary.disasm(address, limit.unwrap_or(usize::MAX)) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(lines))
+        }
         Request::Ir { bin, addr } => {
-            let analysis = analysis(session, &bin, &addr, deadline)?;
-            passed(deadline)?;
+            let analysis = match analysis(session, &bin, &addr, deadline) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = passed(deadline) {
+                return Err(error);
+            }
             Ok(json!(analysis.ir.render()))
         }
         Request::Signature { bin, addr } => {
@@ -556,23 +575,41 @@ pub fn handle(
             };
             binary.signature(address, deadline)
         }
-        Request::References { bin, addr } => Ok(analysis(session, &bin, &addr, deadline)?
-            .references
-            .iter()
-            .map(|reference| {
-                json!({
-                    "addr": addr::format(reference.addr),
-                    "section": reference.section,
-                    "text": reference.text,
-                    "pointer": reference.pointer.map(addr::format),
-                    "guid": reference.guid,
+        Request::References { bin, addr } => {
+            let analysis = match analysis(session, &bin, &addr, deadline) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(analysis
+                .references
+                .iter()
+                .map(|reference| {
+                    json!({
+                        "addr": addr::format(reference.addr),
+                        "section": reference.section,
+                        "text": reference.text,
+                        "pointer": reference.pointer.map(addr::format),
+                        "guid": reference.guid,
+                    })
                 })
-            })
-            .collect()),
+                .collect())
+        }
         Request::Strings { bin, addr, decode } => strings(session, bin, addr, decode, deadline),
-        Request::ShapeHash { bin, addr } => Ok(json!(
-            bin.open(session)?.shape_hash(parse(&addr)?, deadline)?
-        )),
+        Request::ShapeHash { bin, addr } => {
+            let binary = match bin.open(session) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let address = match parse(&addr) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let hash = match binary.shape_hash(address, deadline) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(hash))
+        }
         Request::BuildSignatures { bin } => {
             if bin.arch().is_some() || bin.options().raw.is_some() {
                 let binary = match bin.open(session) {
@@ -594,10 +631,23 @@ pub fn handle(
         }
         Request::Identify { bin, signatures } => {
             let database = match signatures {
-                Value::String(path) => Database::load(path.as_ref())?,
-                value => Database::from_json(value)?,
+                Value::String(path) => match Database::load(path.as_ref()) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                },
+                value => match Database::from_json(value) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                },
             };
-            let identification = bin.open(session)?.identify(&database, deadline)?;
+            let binary = match bin.open(session) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let identification = match binary.identify(&database, deadline) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(json!({
                 "matches": identification.matches.iter().map(|matched| json!({
                     "addr": addr::format(matched.addr),

@@ -301,7 +301,8 @@ fn reader(
     let mut found = None;
     let mut start = index + 1;
     loop {
-        for (position, stmt) in ir.blocks[block].stmts.iter().enumerate().skip(start) {
+        let later_statements = ir.blocks[block].stmts.iter().enumerate().skip(start);
+        for (position, stmt) in later_statements {
             let (writes, read) = statement_registers(stmt);
             if read.contains(&dest) {
                 if found.is_some() || count_operands(stmt, dest) != 1 {

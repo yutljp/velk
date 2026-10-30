@@ -51,7 +51,10 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
             )
             && matches!(rhs.as_ref(), Expr::Const(0xff)) =>
         {
-            Some(index(*target)?)
+            let Some(slot) = index(*target) else {
+                return None;
+            };
+            Some(slot)
         }
         _ => None,
     };
@@ -97,14 +100,20 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     // The integer registers past the named ones, each 8 bytes past the one
     // before, up to the last.
     let arguments = ir.convention.arguments();
-    let first = arguments
+    let Some(first) = arguments
         .iter()
-        .position(|register| offset_of(*register).is_some())?;
+        .position(|register| offset_of(*register).is_some())
+    else {
+        return None;
+    };
     if first == 0 {
         return None;
     }
-    let base = offset_of(arguments[first])?;
-    for (position, register) in arguments.iter().enumerate().skip(first) {
+    let Some(base) = offset_of(arguments[first]) else {
+        return None;
+    };
+    let trailing_arguments = arguments.iter().enumerate().skip(first);
+    for (position, register) in trailing_arguments {
         let Some(offset) = offset_of(*register) else {
             return None;
         };
@@ -114,7 +123,9 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     }
     // Every floating-point argument register, both halves, 16 bytes apart.
     let floats = ir.convention.float_arguments();
-    let float_base = offset_of(floats[0])?;
+    let Some(float_base) = offset_of(floats[0]) else {
+        return None;
+    };
     for (position, register) in floats.iter().enumerate() {
         let low = float_base.wrapping_add(16 * position as u64);
         let Some(offset) = offset_of(*register) else {

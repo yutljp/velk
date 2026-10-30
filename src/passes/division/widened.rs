@@ -44,7 +44,10 @@ fn inline_shift(expr: &Expr) -> Option<(u16, u64)> {
     let Expr::Const(amount) = rhs.as_ref() else {
         return None;
     };
-    Some((view_base(lhs)?, *amount))
+    let Some(base) = view_base(lhs) else {
+        return None;
+    };
+    Some((base, *amount))
 }
 
 /// The `(statement, dividend, divisor)` of the widened signed division, if the
@@ -68,8 +71,12 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
             if let Some(found) = inline_shift(expr) {
                 return Some(found);
             }
-            let reg = view_base(expr)?;
-            let at = definition_before(stmts, probe, reg)?;
+            let Some(reg) = view_base(expr) else {
+                return None;
+            };
+            let Some(at) = definition_before(stmts, probe, reg) else {
+                return None;
+            };
             shift_statement(&stmts[at])
         };
         let (left, right) = (term(lhs), term(rhs));
@@ -98,15 +105,31 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
         }
         // Case B: `v + (v >> 31)`, the sign of the truncated high half.
         let narrow = |plain: &Expr, shifted: &Expr| -> Option<(u16, u64, usize)> {
-            let (shifted_reg, amount) = inline_shift(shifted)?;
-            if amount != 31 || view_base(plain)? != shifted_reg {
+            let Some((shifted_reg, amount)) = inline_shift(shifted) else {
+                return None;
+            };
+            if amount != 31 {
                 return None;
             }
-            let view_at = definition_before(stmts, probe, shifted_reg)?;
-            let (_, view) = assignment(&stmts[view_at])?;
+            let Some(base) = view_base(plain) else {
+                return None;
+            };
+            if base != shifted_reg {
+                return None;
+            }
+            let Some(view_at) = definition_before(stmts, probe, shifted_reg) else {
+                return None;
+            };
+            let Some((_, view)) = assignment(&stmts[view_at]) else {
+                return None;
+            };
             let base = view_base(view).unwrap_or(shifted_reg);
-            let high_at = definition_before(stmts, view_at, base)?;
-            let (source, high) = shift_statement(&stmts[high_at])?;
+            let Some(high_at) = definition_before(stmts, view_at, base) else {
+                return None;
+            };
+            let Some((source, high)) = shift_statement(&stmts[high_at]) else {
+                return None;
+            };
             (high >= 32).then_some((source, high, high_at))
         };
         let narrow_hit = narrow(lhs, rhs).or_else(|| narrow(rhs, lhs));
@@ -127,10 +150,18 @@ fn widened_product(
     source: u16,
     shift: u64,
 ) -> Option<(Expr, u64)> {
-    let product_at = definition_before(stmts, before, source)?;
-    let (_, product) = assignment(&stmts[product_at])?;
-    let (leaf, magic, _) = magic_product(strip_mask(product))?;
-    let divisor = magic_divisor_signed64(magic, shift, 32)?;
+    let Some(product_at) = definition_before(stmts, before, source) else {
+        return None;
+    };
+    let Some((_, product)) = assignment(&stmts[product_at]) else {
+        return None;
+    };
+    let Some((leaf, magic, _)) = magic_product(strip_mask(product)) else {
+        return None;
+    };
+    let Some(divisor) = magic_divisor_signed64(magic, shift, 32) else {
+        return None;
+    };
     Some((leaf, divisor))
 }
 
@@ -147,7 +178,10 @@ fn shift_statement(stmt: &crate::ir::Stmt) -> Option<(u16, u64)> {
     let Expr::Const(amount) = rhs.as_ref() else {
         return None;
     };
-    Some((view_base(lhs)?, *amount))
+    let Some(base) = view_base(lhs) else {
+        return None;
+    };
+    Some((base, *amount))
 }
 
 pub(crate) fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {

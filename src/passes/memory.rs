@@ -706,7 +706,8 @@ fn store_back(
     if sources.contains(&dest) {
         return None;
     }
-    for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
+    let probe_statements = stmts.iter().enumerate().take(index + 8).skip(index + 1);
+    for (probe, stmt) in probe_statements {
         if stmt.has_deferred_call_memory()
             || memory_ordering_barrier(stmt)
                 && (!crosses || !statement_registers(stmt).0.is_empty())

@@ -73,13 +73,16 @@ fn recover_once(
 }
 
 pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
+    let Some(last) = block.stmts.last() else {
+        return None;
+    };
     let Stmt::Brif {
         cond,
         lhs,
         rhs,
         target,
         ..
-    } = block.stmts.last()?
+    } = last
     else {
         return Option::None;
     };
@@ -422,7 +425,9 @@ fn recognize(
     limits: &Limits,
 ) -> Option<Recovered> {
     let resolved = resolve(target, &environment_from(block, limits.held.clone()));
-    let (base, table, index, scale, entry) = table_pattern(&resolved)?;
+    let Some((base, table, index, scale, entry)) = table_pattern(&resolved) else {
+        return None;
+    };
     // A table the program may write holds no cases known here.
     if !image
         .section_at(table)
@@ -438,14 +443,26 @@ fn recognize(
     let read_case = |position: u64| -> Option<u64> {
         let offset = match entry {
             Entry::Absolute => {
-                u64::from_le_bytes(image.read_vaddr(table + position * 8, 8)?.try_into().ok()?)
-                    as i64
+                let Some(vaddr) = image.read_vaddr(table + position * 8, 8) else {
+                    return None;
+                };
+                let Some(entry_bytes) = vaddr.try_into().ok() else {
+                    return None;
+                };
+                u64::from_le_bytes(entry_bytes) as i64
             }
             Entry::Offset32 => {
-                let bytes = image.read_vaddr(table + position * 4, 4)?;
+                let Some(bytes) = image.read_vaddr(table + position * 4, 4) else {
+                    return None;
+                };
                 i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
-            Entry::Byte => i64::from(image.read_vaddr(table + position, 1)?[0]) << scale,
+            Entry::Byte => {
+                let Some(entry_bytes) = image.read_vaddr(table + position, 1) else {
+                    return None;
+                };
+                i64::from(entry_bytes[0]) << scale
+            }
         };
         let case = base.wrapping_add(offset as u64);
         image
@@ -457,10 +474,13 @@ fn recognize(
     if let Some(value) = constant(&index)
         && value < 4096
     {
+        let Some(case) = read_case(value) else {
+            return None;
+        };
         return Some(Recovered {
             block_start: block.start,
             index: Expr::Const(value),
-            cases: vec![(value as i64, read_case(value)?)],
+            cases: vec![(value as i64, case)],
             default: None,
             table: (table + value * entry_bytes, entry_bytes),
         });

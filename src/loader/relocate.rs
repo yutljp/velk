@@ -281,13 +281,29 @@ fn patch_aarch64(
 }
 
 fn read_u32(bytes: &[u8], place: usize) -> Option<u32> {
-    let field = bytes.get(place..place.checked_add(4)?)?;
-    Some(u32::from_le_bytes(field.try_into().ok()?))
+    let Some(end) = place.checked_add(4) else {
+        return None;
+    };
+    let Some(field) = bytes.get(place..end) else {
+        return None;
+    };
+    let Some(value) = field.try_into().ok() else {
+        return None;
+    };
+    Some(u32::from_le_bytes(value))
 }
 
 fn read_u64(bytes: &[u8], place: usize) -> Option<u64> {
-    let field = bytes.get(place..place.checked_add(8)?)?;
-    Some(u64::from_le_bytes(field.try_into().ok()?))
+    let Some(end) = place.checked_add(8) else {
+        return None;
+    };
+    let Some(field) = bytes.get(place..end) else {
+        return None;
+    };
+    let Some(value) = field.try_into().ok() else {
+        return None;
+    };
+    Some(u64::from_le_bytes(value))
 }
 
 fn write_u32(bytes: &mut [u8], place: usize, value: u32) {

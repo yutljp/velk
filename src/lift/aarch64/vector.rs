@@ -121,9 +121,15 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
     let lanes = |op, bits, a: Expr, b: Expr| Expr::apply(Operation::Lanes(op, bits), vec![a, b]);
     match instruction.opcode {
         O::SQDMULH => {
-            let dest = vector(operands[0])?;
-            let a = vector(operands[1])?;
-            let b = vector(operands[2])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(a) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(b) = vector(operands[2]) else {
+                return None;
+            };
             if !matches!(dest.2, 16 | 32)
                 || (a.1, a.2) != (dest.1, dest.2)
                 || (b.1, b.2) != (dest.1, dest.2)
@@ -153,9 +159,17 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         | O::URHADD
             if vector(operands[0]).is_some() =>
         {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let (a, b) = (halves(vector(operands[1])?), source_halves(operands[2])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_halves) = source_halves(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), second_halves);
             let op = match instruction.opcode {
                 O::ADD => LaneOp::Add,
                 O::SUB => LaneOp::Sub,
@@ -187,8 +201,12 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     Operand::ImmShift(..) | Operand::ImmShiftMSL(..)
                 ) =>
         {
-            let dest = vector(operands[0])?;
-            let lane = immediate_lane(operands[1], false, dest.2)?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(lane) = immediate_lane(operands[1], false, dest.2) else {
+                return None;
+            };
             let bits = Expr::constant(replicated(lane, dest.2));
             let (low, high) = halves(dest);
             let combine = |half: Expr| match instruction.opcode {
@@ -203,8 +221,13 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // The set bits of each byte.
         O::CNT => {
-            let dest = vector(operands[0])?;
-            let (low, high) = halves(vector(operands[1])?);
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (low, high) = halves(first_source);
             lifter.write_vector(
                 dest,
                 lanes(LaneOp::PopCount, 8, low, Expr::constant(0)),
@@ -213,8 +236,12 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // The sum of every lane, each extended, into a scalar twice as wide.
         O::UADDLV | O::SADDLV => {
-            let (slot, bits) = simd(operands[0])?;
-            let source = vector(operands[1])?;
+            let Some((slot, bits)) = simd(operands[0]) else {
+                return None;
+            };
+            let Some(source) = vector(operands[1]) else {
+                return None;
+            };
             let (low, high) = halves(source);
             let sum = Expr::apply(
                 Operation::SumLanesLong {
@@ -226,8 +253,16 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
             lifter.write_simd(slot, bits, (sum, Expr::constant(0)));
         }
         O::AND | O::ORR | O::EOR | O::BIC | O::ORN if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
-            let (a, b) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), halves(second_source));
             let combine = |x: Expr, y: Expr| match instruction.opcode {
                 O::AND => Expr::bin(BinOp::And, x, y),
                 O::ORR => Expr::bin(BinOp::Or, x, y),
@@ -248,15 +283,23 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // The sum of every lane, into a scalar.
         O::ADDV => {
-            let (slot, bits) = simd(operands[0])?;
-            let source = vector(operands[1])?;
+            let Some((slot, bits)) = simd(operands[0]) else {
+                return None;
+            };
+            let Some(source) = vector(operands[1]) else {
+                return None;
+            };
             let (low, high) = halves(source);
             let sum = Expr::apply(Operation::SumLanes(source.2), vec![low, high]);
             lifter.write_simd(slot, bits, (sum, Expr::constant(0)));
         }
         O::UMAXV => {
-            let (slot, bits) = simd(operands[0])?;
-            let source = vector(operands[1])?;
+            let Some((slot, bits)) = simd(operands[0]) else {
+                return None;
+            };
+            let Some(source) = vector(operands[1]) else {
+                return None;
+            };
             let (low, high) = halves(source);
             let mut maximum = if source.1 {
                 lanes(LaneOp::MaxUnsigned, source.2, low, high)
@@ -273,8 +316,13 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // The two 64-bit lanes added, into a scalar.
         O::ADDP if simd(operands[0]).is_some() => {
-            let (slot, bits) = simd(operands[0])?;
-            let (low, high) = halves(vector(operands[1])?);
+            let Some((slot, bits)) = simd(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (low, high) = halves(first_source);
             lifter.write_simd(
                 slot,
                 bits,
@@ -283,18 +331,30 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // A general register or one lane, in every lane.
         O::DUP if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let value = match lane(operands[1]) {
                 Some(source) => lane_value(source),
-                None => lifter.operand(operands[1], dest.2.max(32))?,
+                None => match lifter.operand(operands[1], dest.2.max(32)) {
+                    Some(value) => value,
+                    None => return None,
+                },
             };
             let half = replicate(value, dest.2);
             lifter.write_vector(dest, half.clone(), half);
         }
         O::SHL | O::USHR | O::SSHR if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
-            let source = halves(vector(operands[1])?);
-            let count = shift_count(operands[2])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let source = halves(first_source);
+            let Some(count) = shift_count(operands[2]) else {
+                return None;
+            };
             let op = match instruction.opcode {
                 O::SHL => LaneOp::ShiftLeft,
                 O::USHR => LaneOp::ShiftRight,
@@ -309,11 +369,22 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // Bytes from the pair of sources taken as one, the first lowest.
         O::EXT => {
-            let dest = vector(operands[0])?;
-            let (n, m) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (n, m) = (halves(first_source), halves(second_source));
             let start = match operands[3] {
                 Operand::Imm64(value) => value,
-                other => immediate(other)?,
+                other => match immediate(other) {
+                    Some(value) => value,
+                    None => return None,
+                },
             };
             let parts = if dest.1 {
                 vec![n.0, n.1, m.0, m.1]
@@ -331,44 +402,59 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // Below zero, or at most zero.
         O::CMLT | O::CMLE if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let op = if instruction.opcode == O::CMLT {
                 LaneOp::GreaterSigned
             } else {
                 LaneOp::GreaterEqualSigned
             };
+            let Some(source) = vector(operands[1]) else {
+                return None;
+            };
             let (low, high) = by_halves(
                 (Expr::constant(0), Expr::constant(0)),
-                halves(vector(operands[1])?),
+                halves(source),
                 |zero, x| lanewise(op, dest.2, zero, x),
             );
             lifter.write_vector(dest, low, high);
         }
         // All ones where the lanes share a set bit.
         O::CMTST => {
-            let dest = vector(operands[0])?;
-            let (low, high) = by_halves(
-                halves(vector(operands[1])?),
-                halves(vector(operands[2])?),
-                |x, y| {
-                    complement(lanewise(
-                        LaneOp::Equal,
-                        dest.2,
-                        Expr::bin(BinOp::And, x, y),
-                        Expr::constant(0),
-                    ))
-                },
-            );
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (low, high) = by_halves(halves(first_source), halves(second_source), |x, y| {
+                complement(lanewise(
+                    LaneOp::Equal,
+                    dest.2,
+                    Expr::bin(BinOp::And, x, y),
+                    Expr::constant(0),
+                ))
+            });
             lifter.write_vector(dest, low, high);
         }
         O::MLA | O::MLS => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let product = by_halves(
-                halves(vector(operands[1])?),
-                source_halves(operands[2])?,
-                |x, y| lanewise(LaneOp::Mul, bits, x, y),
-            );
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_halves) = source_halves(operands[2]) else {
+                return None;
+            };
+            let product = by_halves(halves(first_source), second_halves, |x, y| {
+                lanewise(LaneOp::Mul, bits, x, y)
+            });
             let op = if instruction.opcode == O::MLA {
                 LaneOp::Add
             } else {
@@ -378,14 +464,20 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
             lifter.write_vector(dest, low, high);
         }
         O::SABD | O::UABD | O::SABA | O::UABA => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
             let signed = matches!(instruction.opcode, O::SABD | O::SABA);
-            let difference = by_halves(
-                halves(vector(operands[1])?),
-                halves(vector(operands[2])?),
-                |x, y| absolute_difference(bits, signed, x, y),
-            );
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let difference = by_halves(halves(first_source), halves(second_source), |x, y| {
+                absolute_difference(bits, signed, x, y)
+            });
             let (low, high) = if matches!(instruction.opcode, O::SABA | O::UABA) {
                 by_halves(halves(dest), difference, |acc, d| {
                     lanewise(LaneOp::Add, bits, acc, d)
@@ -400,7 +492,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         // one either's bits less half the differing ones, and a difference
         // the halves' difference less a borrow from the low bits.
         O::SHADD | O::UHADD | O::SRHADD | O::SHSUB | O::UHSUB => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
             let signed = matches!(instruction.opcode, O::SHADD | O::SRHADD | O::SHSUB);
             let half = |value: Expr| {
@@ -411,41 +505,56 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                 };
                 lane_shift(op, bits, value, 1)
             };
-            let (low, high) = by_halves(
-                halves(vector(operands[1])?),
-                halves(vector(operands[2])?),
-                |x, y| match instruction.opcode {
-                    O::SHADD | O::UHADD => lanewise(
-                        LaneOp::Add,
-                        bits,
-                        Expr::bin(BinOp::And, x.clone(), y.clone()),
-                        half(Expr::bin(BinOp::Xor, x, y)),
-                    ),
-                    O::SRHADD => lanewise(
-                        LaneOp::Sub,
-                        bits,
-                        Expr::bin(BinOp::Or, x.clone(), y.clone()),
-                        half(Expr::bin(BinOp::Xor, x, y)),
-                    ),
-                    _ => lanewise(
-                        LaneOp::Sub,
-                        bits,
-                        lanewise(LaneOp::Sub, bits, half(x.clone()), half(y.clone())),
-                        Expr::bin(
-                            BinOp::And,
-                            Expr::bin(BinOp::And, complement(x), y),
-                            Expr::constant(replicated(1, bits)),
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (low, high) =
+                by_halves(
+                    halves(first_source),
+                    halves(second_source),
+                    |x, y| match instruction.opcode {
+                        O::SHADD | O::UHADD => lanewise(
+                            LaneOp::Add,
+                            bits,
+                            Expr::bin(BinOp::And, x.clone(), y.clone()),
+                            half(Expr::bin(BinOp::Xor, x, y)),
                         ),
-                    ),
-                },
-            );
+                        O::SRHADD => lanewise(
+                            LaneOp::Sub,
+                            bits,
+                            Expr::bin(BinOp::Or, x.clone(), y.clone()),
+                            half(Expr::bin(BinOp::Xor, x, y)),
+                        ),
+                        _ => lanewise(
+                            LaneOp::Sub,
+                            bits,
+                            lanewise(LaneOp::Sub, bits, half(x.clone()), half(y.clone())),
+                            Expr::bin(
+                                BinOp::And,
+                                Expr::bin(BinOp::And, complement(x), y),
+                                Expr::constant(replicated(1, bits)),
+                            ),
+                        ),
+                    },
+                );
             lifter.write_vector(dest, low, high);
         }
         // Pairs of neighbouring lanes of the two sources taken as one.
         O::ADDP | O::SMAXP | O::UMAXP | O::SMINP | O::UMINP if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let (a, b) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), halves(second_source));
             let even = unzip(a.clone(), b.clone(), bits, dest.1, LaneParity::Even);
             let odd = unzip(a, b, bits, dest.1, LaneParity::Odd);
             let op = match instruction.opcode {
@@ -465,7 +574,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         O::NOT | O::NEG | O::ABS | O::SQNEG | O::SQABS | O::CLZ | O::CLS
             if vector(operands[0]).is_some() =>
         {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
             let negate = |x: Expr| lanewise(LaneOp::Sub, bits, Expr::constant(0), x);
             let saturating_negate =
@@ -499,14 +610,19 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     )
                 }
             };
-            let (low, high) = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (low, high) = halves(first_source);
             lifter.write_vector(dest, unary_operation(low), unary_operation(high));
         }
         // Bitwise selects: bsl picks from the first source where the
         // destination is set, bit inserts the first source where the second
         // is set, and bif where it is clear.
         O::BSL | O::BIT | O::BIF => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let select = |mask: Expr, set: Expr, clear: Expr| {
                 Expr::bin(
                     BinOp::Or,
@@ -514,11 +630,13 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     Expr::bin(BinOp::And, clear, complement(mask)),
                 )
             };
-            let (d, n, m) = (
-                halves(dest),
-                halves(vector(operands[1])?),
-                halves(vector(operands[2])?),
-            );
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (d, n, m) = (halves(dest), halves(first_source), halves(second_source));
             let select_bits = |d: Expr, n: Expr, m: Expr| match instruction.opcode {
                 O::BSL => select(d, n, m),
                 O::BIT => select(m, n, d),
@@ -532,9 +650,13 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         O::USRA | O::SSRA | O::URSHR | O::SRSHR | O::URSRA | O::SRSRA
             if vector(operands[0]).is_some() =>
         {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let count = shift_count(operands[2])?;
+            let Some(count) = shift_count(operands[2]) else {
+                return None;
+            };
             let signed = matches!(instruction.opcode, O::SSRA | O::SRSHR | O::SRSRA);
             let rounded = matches!(
                 instruction.opcode,
@@ -549,7 +671,10 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     lane_shift(LaneOp::ShiftRight, bits, x, count)
                 }
             };
-            let (x, y) = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (x, y) = halves(first_source);
             let shifted = (shift(x), shift(y));
             let (low, high) = if matches!(instruction.opcode, O::URSHR | O::SRSHR) {
                 shifted
@@ -563,9 +688,13 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         // Shifts that insert the source's bits and keep the destination's
         // the shift leaves empty.
         O::SLI | O::SRI if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let count = shift_count(operands[2])?;
+            let Some(count) = shift_count(operands[2]) else {
+                return None;
+            };
             let lane = mask_bits(u64::from(bits));
             let (op, inserted) = if instruction.opcode == O::SLI {
                 (LaneOp::ShiftLeft, (lane << count) & lane)
@@ -576,7 +705,10 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                 )
             };
             let kept = Expr::constant(!replicated(inserted, bits));
-            let (low, high) = by_halves(halves(dest), halves(vector(operands[1])?), |d, x| {
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (low, high) = by_halves(halves(dest), halves(first_source), |d, x| {
                 Expr::bin(
                     BinOp::Or,
                     Expr::bin(BinOp::And, d, kept.clone()),
@@ -586,9 +718,17 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
             lifter.write_vector(dest, low, high);
         }
         O::ZIP1 | O::ZIP2 => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let (a, b) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), halves(second_source));
             let second = instruction.opcode == O::ZIP2;
             let interleave = |op: fn(u8) -> Operation, x: &Expr, y: &Expr| {
                 Expr::apply(op(bits), vec![x.clone(), y.clone()])
@@ -615,8 +755,16 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
             lifter.write_vector(dest, low, high);
         }
         O::UZP1 | O::UZP2 => {
-            let dest = vector(operands[0])?;
-            let (a, b) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), halves(second_source));
             let (low, high) = unzip(
                 a,
                 b,
@@ -633,9 +781,17 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         // The even (or odd) lanes of each pair, the first source's in the
         // even lanes and the second's in the odd ones.
         O::TRN1 | O::TRN2 => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2;
-            let (a, b) = (halves(vector(operands[1])?), halves(vector(operands[2])?));
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let Some(second_source) = vector(operands[2]) else {
+                return None;
+            };
+            let (a, b) = (halves(first_source), halves(second_source));
             let (low, high) = if bits == 64 {
                 if instruction.opcode == O::TRN1 {
                     (a.0, b.0)
@@ -673,13 +829,18 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         }
         // Each lane extended to twice its width and shifted left.
         O::SSHLL | O::SSHLL2 | O::USHLL | O::USHLL2 | O::SHLL | O::SHLL2 => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let bits = dest.2 / 2;
             let count = shift_count(operands[2]).unwrap_or(u64::from(bits));
             let upper = matches!(instruction.opcode, O::SSHLL2 | O::USHLL2 | O::SHLL2);
             let signed = matches!(instruction.opcode, O::SSHLL | O::SSHLL2);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
             let (low, high) = widened(
-                halves(vector(operands[1])?),
+                halves(first_source),
                 if upper {
                     VectorHalf::Upper
                 } else {
@@ -702,7 +863,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         _ if let Some((form, signed, upper)) = widening(instruction.opcode)
             && vector(operands[0]).is_some() =>
         {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let wide = dest.2;
             let extend = |operand: (Expr, Expr)| {
                 widened(
@@ -716,13 +879,19 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     signed,
                 )
             };
-            let first = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let first = halves(first_source);
             let first = if matches!(form, Widening::AddWide | Widening::SubWide) {
                 first
             } else {
                 extend(first)
             };
-            let second = extend(source_halves(operands[2])?);
+            let Some(second_halves) = source_halves(operands[2]) else {
+                return None;
+            };
+            let second = extend(second_halves);
             let (low, high) = by_halves(first, second, |x, y| match form {
                 Widening::Add | Widening::AddWide => lanewise(LaneOp::Add, wide, x, y),
                 Widening::Sub | Widening::SubWide => lanewise(LaneOp::Sub, wide, x, y),
@@ -751,10 +920,18 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         _ if let Some((form, upper)) = narrowing(instruction.opcode)
             && vector(operands[0]).is_some() =>
         {
-            let dest = vector(operands[0])?;
-            let wide = vector(operands[1])?.2;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let wide = first_source.2;
             let narrow = u64::from(wide / 2);
-            let source = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let source = halves(first_source);
             let value = match form {
                 Narrowing::Truncate => narrowed(source, wide),
                 Narrowing::SaturateSigned { unsigned } => Expr::apply(
@@ -774,7 +951,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                     )
                 }
                 Narrowing::Shift { rounded } => {
-                    let count = shift_count(operands[2])?;
+                    let Some(count) = shift_count(operands[2]) else {
+                        return None;
+                    };
                     let shift = |x: Expr| {
                         let x = if rounded {
                             let round = Expr::constant(replicated(1 << (count - 1), wide));
@@ -788,7 +967,10 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                 }
                 Narrowing::High { op, rounded } => {
                     let round = Expr::constant(replicated(1 << (narrow - 1), wide));
-                    let each = by_halves(source, halves(vector(operands[2])?), |x, y| {
+                    let Some(second_source) = vector(operands[2]) else {
+                        return None;
+                    };
+                    let each = by_halves(source, halves(second_source), |x, y| {
                         let value = lanewise(op, wide, x, y);
                         let value = if rounded {
                             lanewise(LaneOp::Add, wide, value, round.clone())
@@ -805,7 +987,9 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         // The sums of neighbouring lanes, each extended, in lanes of twice
         // the width, added to the destination for the accumulating forms.
         O::SADDLP | O::UADDLP | O::SADALP | O::UADALP => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let wide = dest.2;
             let bits = u64::from(wide / 2);
             let signed = matches!(instruction.opcode, O::SADDLP | O::SADALP);
@@ -832,7 +1016,10 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
                 };
                 lanewise(LaneOp::Add, wide, even, odd)
             };
-            let (x, y) = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (x, y) = halves(first_source);
             let sums = (pairs(x), pairs(y));
             let (low, high) = if matches!(instruction.opcode, O::SADALP | O::UADALP) {
                 by_halves(halves(dest), sums, |acc, s| {
@@ -846,14 +1033,19 @@ pub(super) fn lift_vector(lifter: &mut Lifter, instruction: &Instruction) -> Opt
         // The lanes in reverse order within each 16-, 32- or 64-bit part,
         // or the bits of each byte.
         O::REV16 | O::REV32 | O::REV64 | O::RBIT if vector(operands[0]).is_some() => {
-            let dest = vector(operands[0])?;
+            let Some(dest) = vector(operands[0]) else {
+                return None;
+            };
             let each = |half: Expr| match instruction.opcode {
                 O::REV16 => reverse_lanes(half, dest.2, 16),
                 O::REV32 => reverse_lanes(half, dest.2, 32),
                 O::REV64 => reverse_lanes(half, dest.2, 64),
                 _ => Expr::apply(Operation::ReverseBits(64), vec![reverse_lanes(half, 8, 64)]),
             };
-            let (low, high) = halves(vector(operands[1])?);
+            let Some(first_source) = vector(operands[1]) else {
+                return None;
+            };
+            let (low, high) = halves(first_source);
             lifter.write_vector(dest, each(low), each(high));
         }
         _ => return None,

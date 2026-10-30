@@ -72,7 +72,9 @@ fn resolve_low(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     entry: &gimli::DebuggingInformationEntry<EndianSlice<'_, LittleEndian>>,
 ) -> Option<u64> {
-    let value = attribute(entry, gimli::DW_AT_low_pc)?;
+    let Some(value) = attribute(entry, gimli::DW_AT_low_pc) else {
+        return None;
+    };
     match value {
         AttributeValue::DebugAddrIndex(index) => dwarf.address(unit, index).ok(),
         other => attribute_offset(dwarf, unit, other),
@@ -169,16 +171,24 @@ fn aggregate_size(
     if depth == 0 {
         return None;
     }
-    let entry = unit.entry(offset).ok()?;
+    let Some(entry) = unit.entry(offset).ok() else {
+        return None;
+    };
     match entry.tag() {
         gimli::DW_TAG_structure_type | gimli::DW_TAG_union_type => {
-            match attribute(&entry, gimli::DW_AT_byte_size)? {
+            let Some(byte_size) = attribute(&entry, gimli::DW_AT_byte_size) else {
+                return None;
+            };
+            match byte_size {
                 AttributeValue::Data8(_) => None,
                 value => byte_count(value),
             }
         }
         gimli::DW_TAG_typedef | gimli::DW_TAG_const_type | gimli::DW_TAG_volatile_type => {
-            match attribute(&entry, gimli::DW_AT_type)? {
+            let Some(type_attribute) = attribute(&entry, gimli::DW_AT_type) else {
+                return None;
+            };
+            match type_attribute {
                 AttributeValue::UnitRef(inner) => aggregate_size(unit, inner, depth - 1),
                 _ => None,
             }
@@ -366,10 +376,17 @@ fn type_size(
     if depth == 0 {
         return None;
     }
-    let entry = unit.entry(offset).ok()?;
-    let inner = || match attribute(&entry, gimli::DW_AT_type)? {
-        AttributeValue::UnitRef(inner) => type_size(unit, inner, depth - 1),
-        _ => None,
+    let Some(entry) = unit.entry(offset).ok() else {
+        return None;
+    };
+    let inner = || {
+        let Some(type_attribute) = attribute(&entry, gimli::DW_AT_type) else {
+            return None;
+        };
+        match type_attribute {
+            AttributeValue::UnitRef(inner) => type_size(unit, inner, depth - 1),
+            _ => None,
+        }
     };
     match entry.tag() {
         gimli::DW_TAG_typedef
@@ -382,10 +399,16 @@ fn type_size(
                 .unwrap_or(8),
         ),
         gimli::DW_TAG_array_type => {
-            let element = inner()?;
+            let Some(element) = inner() else {
+                return None;
+            };
             let mut count = 1u64;
-            let mut tree = unit.entries_tree(Some(offset)).ok()?;
-            let root = tree.root().ok()?;
+            let Some(mut tree) = unit.entries_tree(Some(offset)).ok() else {
+                return None;
+            };
+            let Some(root) = tree.root().ok() else {
+                return None;
+            };
             let mut children = root.children();
             while let Ok(Some(child)) = children.next() {
                 let child = child.entry();
@@ -394,11 +417,22 @@ fn type_size(
                 }
                 let length = match attribute(child, gimli::DW_AT_count).and_then(byte_count) {
                     Some(length) => length,
-                    None => attribute(child, gimli::DW_AT_upper_bound)
-                        .and_then(byte_count)?
-                        .checked_add(1)?,
+                    None => {
+                        let Some(value) =
+                            attribute(child, gimli::DW_AT_upper_bound).and_then(byte_count)
+                        else {
+                            return None;
+                        };
+                        match value.checked_add(1) {
+                            Some(value) => value,
+                            None => return None,
+                        }
+                    }
                 };
-                count = count.checked_mul(length)?;
+                count = match count.checked_mul(length) {
+                    Some(value) => value,
+                    None => return None,
+                };
             }
             element.checked_mul(count)
         }
@@ -415,7 +449,9 @@ fn attribute_string(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     value: AttributeValue<EndianSlice<'_, LittleEndian>>,
 ) -> Option<String> {
-    let string = dwarf.attr_string(unit, value).ok()?;
+    let Some(string) = dwarf.attr_string(unit, value).ok() else {
+        return None;
+    };
     let text = string.to_string_lossy().into_owned();
     // A non-identifier means the string was misread, e.g. from an unrelocated
     // string offset; the caller then falls back to a synthesized name.
@@ -545,14 +581,14 @@ fn source_id(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     offset: gimli::UnitOffset<usize>,
 ) -> Option<TypeSource> {
+    let Some(info_offset) = unit.header.offset().to_debug_info_offset(&unit.header) else {
+        return None;
+    };
+    let Some(unit_offset) = info_offset.0.try_into().ok() else {
+        return None;
+    };
     Some(TypeSource {
-        unit: unit
-            .header
-            .offset()
-            .to_debug_info_offset(&unit.header)?
-            .0
-            .try_into()
-            .ok()?,
+        unit: unit_offset,
         die: offset.0,
     })
 }

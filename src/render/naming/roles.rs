@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, HashSet};
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
-use crate::render::{Symbols, structure::Node};
+use crate::render::Symbols;
+use crate::render::structure::Node;
 
 #[derive(Clone, PartialEq, Eq)]
 pub(in crate::render) enum NamedPlace {

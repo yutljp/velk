@@ -132,7 +132,8 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
             {
                 let mut tail = Vec::new();
                 let mut remaining = TAIL_STATEMENTS + 1;
-                for next in nodes[index + 1..].iter().chain(following.iter().copied()) {
+                let following_nodes = nodes[index + 1..].iter().chain(following.iter().copied());
+                for next in following_nodes {
                     if matches!(next, Node::Label(_)) {
                         continue;
                     }

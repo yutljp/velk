@@ -10,10 +10,14 @@ pub(super) fn function_profile(
     function: &gimli::DebuggingInformationEntry<Reader<'_>>,
 ) -> Result<(), AbiIssue> {
     let mut entries = unit.entries();
-    let root = entries
-        .next_dfs()
-        .map_err(|_| AbiIssue::UnknownLayout)?
-        .ok_or(AbiIssue::UnknownLayout)?;
+    let dfs = match entries.next_dfs().map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let root = match dfs.ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if !matches!(
         attribute(root, gimli::DW_AT_language),
         Some(AttributeValue::Language(
@@ -66,8 +70,14 @@ pub(super) fn read(
     if depth == 0 {
         return Err(AbiIssue::UnknownLayout);
     }
-    let entry = unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout)?;
-    let explicit_alignment = alignment(attribute(&entry, gimli::DW_AT_alignment))?;
+    let entry = match unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let explicit_alignment = match alignment(attribute(&entry, gimli::DW_AT_alignment)) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let byte_size = attribute(&entry, gimli::DW_AT_byte_size).and_then(number);
     if matches!(
         entry.tag(),
@@ -77,7 +87,14 @@ pub(super) fn read(
             | gimli::DW_TAG_restrict_type
             | gimli::DW_TAG_atomic_type
     ) {
-        let mut layout = read(unit, type_offset(&entry)?, depth - 1)?;
+        let target = match type_offset(&entry) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let mut layout = match read(unit, target, depth - 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if explicit_alignment.is_some() {
             layout.alignment = explicit_alignment;
         }
@@ -89,7 +106,10 @@ pub(super) fn read(
             (size, Some(size), LayoutKind::Pointer, true)
         }
         gimli::DW_TAG_base_type => {
-            let size = byte_size.ok_or(AbiIssue::UnknownLayout)?;
+            let size = match byte_size.ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let kind = match attribute(&entry, gimli::DW_AT_encoding) {
                 Some(AttributeValue::Encoding(
                     gimli::DW_ATE_signed
@@ -113,7 +133,14 @@ pub(super) fn read(
             (size, Some(size), kind, true)
         }
         gimli::DW_TAG_enumeration_type => {
-            let mut layout = read(unit, type_offset(&entry)?, depth - 1)?;
+            let type_target = match type_offset(&entry) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let mut layout = match read(unit, type_target, depth - 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if !matches!(layout.kind, LayoutKind::Integer) {
                 return Err(AbiIssue::UnsupportedType);
             }
@@ -123,8 +150,18 @@ pub(super) fn read(
             return Ok(layout);
         }
         gimli::DW_TAG_array_type => {
-            let element = read(unit, type_offset(&entry)?, depth - 1)?;
-            let count = array_count(unit, offset)?;
+            let type_target = match type_offset(&entry) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let element = match read(unit, type_target, depth - 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match array_count(unit, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if attribute(&entry, gimli::DW_AT_byte_stride)
                 .and_then(number)
                 .is_some_and(|stride| stride != element.size)
@@ -132,10 +169,14 @@ pub(super) fn read(
             {
                 return Err(AbiIssue::UnsupportedType);
             }
-            let size = element
+            let size = match element
                 .size
                 .checked_mul(count)
-                .ok_or(AbiIssue::UnknownLayout)?;
+                .ok_or(AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if byte_size.is_some_and(|declared| declared != size) {
                 return Err(AbiIssue::UnknownLayout);
             }
@@ -155,7 +196,10 @@ pub(super) fn read(
             if attribute(&entry, gimli::DW_AT_declaration).is_some() {
                 return Err(AbiIssue::UnknownLayout);
             }
-            let size = byte_size.ok_or(AbiIssue::UnknownLayout)?;
+            let size = match byte_size.ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let union = entry.tag() == gimli::DW_TAG_union_type;
             let mut trivial = entry.tag() != gimli::DW_TAG_class_type
                 && matches!(
@@ -165,12 +209,25 @@ pub(super) fn read(
                     ))
                 );
             let mut fields = Vec::new();
-            let mut tree = unit
+            let mut tree = match unit
                 .entries_tree(Some(offset))
-                .map_err(|_| AbiIssue::UnknownLayout)?;
-            let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+                .map_err(|_| AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let mut children = root.children();
-            while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+            loop {
+                let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+                    Ok(Some(child)) => child,
+                    Ok(None) => break,
+                    Err(error) => return Err(error),
+                };
+
                 let child = child.entry();
                 if matches!(
                     child.tag(),
@@ -187,23 +244,38 @@ pub(super) fn read(
                 if attribute(child, gimli::DW_AT_alignment).is_some() {
                     return Err(AbiIssue::UnsupportedType);
                 }
-                let field = read(unit, type_offset(child)?, depth - 1)?;
-                trivial &= field.trivial;
+                let type_target = match type_offset(child) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let field_layout = match read(unit, type_target, depth - 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                trivial &= field_layout.trivial;
                 let bit_size = attribute(child, gimli::DW_AT_bit_size).and_then(number);
                 let byte_offset =
                     if union || attribute(child, gimli::DW_AT_data_bit_offset).is_some() {
                         0
                     } else {
-                        attribute(child, gimli::DW_AT_data_member_location)
+                        match attribute(child, gimli::DW_AT_data_member_location)
                             .and_then(number)
-                            .ok_or(AbiIssue::UnknownLayout)?
+                            .ok_or(AbiIssue::UnknownLayout)
+                        {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     };
-                let bit_offset = field_bit_offset(child, byte_offset, field.size, bit_size)?;
+                let bit_offset =
+                    match field_bit_offset(child, byte_offset, field_layout.size, bit_size) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                 let defined = bit_size.is_none() || attribute(child, gimli::DW_AT_name).is_some();
                 fields.push(LayoutField {
                     bit_offset,
                     bit_size,
-                    layout: field,
+                    layout: field_layout,
                     defined,
                 });
             }
@@ -233,16 +305,29 @@ fn field_bit_offset(
     if let Some(offset) = attribute(entry, gimli::DW_AT_data_bit_offset) {
         return number(offset).ok_or(AbiIssue::UnknownLayout);
     }
-    let start = byte_offset.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
+    let start = match byte_offset.checked_mul(8).ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     match attribute(entry, gimli::DW_AT_bit_offset) {
         Some(offset) => {
-            let offset = number(offset).ok_or(AbiIssue::UnknownLayout)?;
-            let size = bit_size.ok_or(AbiIssue::UnknownLayout)?;
-            let low = storage_size
+            let offset = match number(offset).ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let size = match bit_size.ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let low = match storage_size
                 .checked_mul(8)
                 .and_then(|storage| storage.checked_sub(offset))
                 .and_then(|high| high.checked_sub(size))
-                .ok_or(AbiIssue::UnknownLayout)?;
+                .ok_or(AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             start.checked_add(low).ok_or(AbiIssue::UnknownLayout)
         }
         None => Ok(start),
@@ -253,35 +338,58 @@ pub(super) fn array_count(
     unit: &Unit<Reader<'_>>,
     offset: gimli::UnitOffset,
 ) -> Result<u64, AbiIssue> {
-    let mut tree = unit
+    let mut tree = match unit
         .entries_tree(Some(offset))
-        .map_err(|_| AbiIssue::UnknownLayout)?;
-    let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+        .map_err(|_| AbiIssue::UnknownLayout)
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut children = root.children();
     let mut count = None;
-    while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+    loop {
+        let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(child)) => child,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
         let child = child.entry();
         if child.tag() != gimli::DW_TAG_subrange_type {
             continue;
         }
         let lower = match attribute(child, gimli::DW_AT_lower_bound) {
-            Some(value) => number(value).ok_or(AbiIssue::UnknownLayout)?,
+            Some(value) => match number(value).ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            },
             None => 0,
         };
-        let length = match attribute(child, gimli::DW_AT_count) {
+        let length = match match attribute(child, gimli::DW_AT_count) {
             Some(value) => number(value),
             None => attribute(child, gimli::DW_AT_upper_bound)
                 .and_then(number)
                 .and_then(|upper| upper.checked_sub(lower))
                 .and_then(|n| n.checked_add(1)),
         }
-        .ok_or(AbiIssue::UnknownLayout)?;
-        count = Some(
-            count
-                .unwrap_or(1u64)
-                .checked_mul(length)
-                .ok_or(AbiIssue::UnknownLayout)?,
-        );
+        .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let total_count = match count
+            .unwrap_or(1u64)
+            .checked_mul(length)
+            .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        count = Some(total_count);
     }
     count.ok_or(AbiIssue::UnknownLayout)
 }
@@ -296,27 +404,39 @@ pub(super) fn declaration(
     if depth == 0 {
         return None;
     }
-    let entry = unit.entry(offset).ok()?;
+    let Some(entry) = unit.entry(offset).ok() else {
+        return None;
+    };
     match entry.tag() {
         gimli::DW_TAG_typedef
         | gimli::DW_TAG_const_type
         | gimli::DW_TAG_volatile_type
         | gimli::DW_TAG_restrict_type
         | gimli::DW_TAG_atomic_type => {
-            declaration(dwarf, unit, type_offset(&entry).ok()?, name, depth - 1)
+            let Some(target) = type_offset(&entry).ok() else {
+                return None;
+            };
+            declaration(dwarf, unit, target, name, depth - 1)
         }
         gimli::DW_TAG_array_type => {
-            let count = array_count(unit, offset).ok()?;
+            let Some(count) = array_count(unit, offset).ok() else {
+                return None;
+            };
+            let Some(element_type) = type_offset(&entry).ok() else {
+                return None;
+            };
             declaration(
                 dwarf,
                 unit,
-                type_offset(&entry).ok()?,
+                element_type,
                 &format!("{name}[{count}]"),
                 depth - 1,
             )
         }
         _ => {
-            let ty = type_name(dwarf, unit, offset, depth).filter(plausible_type)?;
+            let Some(ty) = type_name(dwarf, unit, offset, depth).filter(plausible_type) else {
+                return None;
+            };
             let separator = if ty.is_pointer() { "" } else { " " };
             Some(format!("{ty}{separator}{name};"))
         }
@@ -353,24 +473,53 @@ pub(super) fn generated(
     offset: gimli::UnitOffset,
     depth: usize,
 ) -> Result<TypeLayout, AbiIssue> {
-    let original = crate::ir::abi::canonical(&read(unit, offset, depth)?)?;
-    let entry = unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout)?;
+    let member_layout = match read(unit, offset, depth) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let original = match crate::ir::abi::canonical(&member_layout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let entry = match unit.entry(offset).map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     match entry.tag() {
         gimli::DW_TAG_typedef
         | gimli::DW_TAG_const_type
         | gimli::DW_TAG_volatile_type
         | gimli::DW_TAG_restrict_type
         | gimli::DW_TAG_atomic_type => {
-            return generated(dwarf, unit, type_offset(&entry)?, depth - 1);
+            let target = match type_offset(&entry) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            return generated(dwarf, unit, target, depth - 1);
         }
         gimli::DW_TAG_array_type => {
-            let element = generated(dwarf, unit, type_offset(&entry)?, depth - 1)?;
-            let count = array_count(unit, offset)?;
+            let type_target = match type_offset(&entry) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let element = match generated(dwarf, unit, type_target, depth - 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let count = match array_count(unit, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let array_size = match element
+                .size
+                .checked_mul(count)
+                .ok_or(AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             return Ok(TypeLayout {
-                size: element
-                    .size
-                    .checked_mul(count)
-                    .ok_or(AbiIssue::UnknownLayout)?,
+                size: array_size,
                 alignment: element.alignment,
                 trivial: element.trivial,
                 kind: LayoutKind::Array {
@@ -387,12 +536,25 @@ pub(super) fn generated(
     let mut source_end = 0;
     let mut generated_end = 0;
     let mut natural_alignment = 1;
-    let mut tree = unit
+    let mut tree = match unit
         .entries_tree(Some(offset))
-        .map_err(|_| AbiIssue::UnknownLayout)?;
-    let root = tree.root().map_err(|_| AbiIssue::UnknownLayout)?;
+        .map_err(|_| AbiIssue::UnknownLayout)
+    {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let root = match tree.root().map_err(|_| AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut children = root.children();
-    while let Some(child) = children.next().map_err(|_| AbiIssue::UnknownLayout)? {
+    loop {
+        let child = match children.next().map_err(|_| AbiIssue::UnknownLayout) {
+            Ok(Some(child)) => child,
+            Ok(None) => break,
+            Err(error) => return Err(error),
+        };
+
         let child = child.entry();
         if child.tag() != gimli::DW_TAG_member {
             continue;
@@ -404,22 +566,36 @@ pub(super) fn generated(
                 .and_then(number)
                 .unwrap_or(0)
         };
-        let offset = type_offset(child)?;
-        let width = type_size(unit, offset, 8).ok_or(AbiIssue::UnknownLayout)?;
+        let offset = match type_offset(child) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let width = match type_size(unit, offset, 8).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if byte_offset < source_end {
             continue;
         }
         let named = attribute(child, gimli::DW_AT_name)
             .and_then(|value| attribute_string(dwarf, unit, value));
         let declared = named.and_then(|name| {
-            type_name(dwarf, unit, offset, 8).filter(plausible_type)?;
+            if type_name(dwarf, unit, offset, 8)
+                .filter(plausible_type)
+                .is_none()
+            {
+                return None;
+            }
             attribute(child, gimli::DW_AT_bit_size)
                 .is_none()
                 .then(|| declaration(dwarf, unit, offset, &name, 16))
                 .flatten()
         });
         let field = if declared.is_some() {
-            generated(dwarf, unit, offset, depth - 1)?
+            match generated(dwarf, unit, offset, depth - 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else if union {
             continue;
         } else {
@@ -436,34 +612,55 @@ pub(super) fn generated(
                 layout: gap,
                 defined: true,
             });
-            generated_end = generated_end
+            generated_end = match generated_end
                 .checked_add(byte_offset - source_end)
-                .ok_or(AbiIssue::UnknownLayout)?;
+                .ok_or(AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
         }
-        let alignment = field.alignment.ok_or(AbiIssue::UnknownLayout)?;
+        let alignment = match field.alignment.ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         natural_alignment = natural_alignment.max(alignment);
         let placed = if union {
             0
         } else {
-            rounded(generated_end, alignment)?
+            match rounded(generated_end, alignment) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         };
         if placed != byte_offset {
             return Err(AbiIssue::IncompatibleDefinition);
         }
-        generated_end = generated_end.max(
-            placed
-                .checked_add(field.size)
-                .ok_or(AbiIssue::UnknownLayout)?,
-        );
+        let field_end = match placed
+            .checked_add(field.size)
+            .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        generated_end = generated_end.max(field_end);
         source_end = if union {
             0
         } else {
-            byte_offset
+            match byte_offset
                 .checked_add(field.size)
-                .ok_or(AbiIssue::UnknownLayout)?
+                .ok_or(AbiIssue::UnknownLayout)
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
+        };
+        let placed_bits = match placed.checked_mul(8).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
         };
         fields.push(LayoutField {
-            bit_offset: placed.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?,
+            bit_offset: placed_bits,
             bit_size: None,
             layout: field,
             defined: true,
@@ -479,24 +676,37 @@ pub(super) fn generated(
         generated_end = original.size;
     } else if !union && original.size > source_end {
         let gap = bytes(original.size - source_end);
+        let gap_bit_offset = match generated_end.checked_mul(8).ok_or(AbiIssue::UnknownLayout) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         fields.push(LayoutField {
-            bit_offset: generated_end
-                .checked_mul(8)
-                .ok_or(AbiIssue::UnknownLayout)?,
+            bit_offset: gap_bit_offset,
             bit_size: None,
             layout: gap,
             defined: true,
         });
-        generated_end = generated_end
+        generated_end = match generated_end
             .checked_add(original.size - source_end)
-            .ok_or(AbiIssue::UnknownLayout)?;
+            .ok_or(AbiIssue::UnknownLayout)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
     }
-    let alignment = original.alignment.ok_or(AbiIssue::UnknownLayout)?;
+    let alignment = match original.alignment.ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if alignment < natural_alignment {
         return Err(AbiIssue::IncompatibleDefinition);
     }
+    let rounded = match rounded(generated_end, alignment) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     Ok(TypeLayout {
-        size: rounded(generated_end, alignment)?,
+        size: rounded,
         alignment: Some(alignment),
         kind: if union {
             LayoutKind::Union(fields)

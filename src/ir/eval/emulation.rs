@@ -1175,19 +1175,27 @@ impl Runner<'_> {
 
                 let mut args = Vec::with_capacity(inputs.len());
                 for input in inputs {
-                    args.push(self.eval(input)?);
+                    let evaluated = match self.eval(input) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    args.push(evaluated);
                 }
                 if outputs.len() == 2 {
                     let half = *width / 2;
                     let upper = args[0].wrapping_add(u64::from(half));
                     let low = self.machine.load(args[0], half);
                     let high = self.machine.load(upper, half);
-                    self.memory_error()?;
+                    if let Err(error) = self.memory_error() {
+                        return Err(error);
+                    }
                     let bits = u32::from(half) * 8;
                     if low == args[2] & super::mask(bits) && high == args[4] & super::mask(bits) {
                         self.machine.store(args[0], args[1], half);
                         self.machine.store(upper, args[3], half);
-                        self.memory_error()?;
+                        if let Err(error) = self.memory_error() {
+                            return Err(error);
+                        }
                     }
                     self.assign_fact(outputs[0], Fact::constant(low));
                     self.assign_fact(outputs[1], Fact::constant(high));
@@ -1196,7 +1204,9 @@ impl Runner<'_> {
                         return Err(Stop::Error("missing atomic memory address".to_owned()));
                     };
                     let old = self.machine.load(address, *width);
-                    self.memory_error()?;
+                    if let Err(error) = self.memory_error() {
+                        return Err(error);
+                    }
                     let operand = args.get(1).copied().unwrap_or(0);
                     let value = match op {
                         AtomicOp::Add => old.wrapping_add(operand),
@@ -1216,7 +1226,9 @@ impl Runner<'_> {
                     } & super::mask(u32::from(*width) * 8);
                     if *op != AtomicOp::Load && (*op != AtomicOp::CompareExchange || value != old) {
                         self.machine.store(address, value, *width);
-                        self.memory_error()?;
+                        if let Err(error) = self.memory_error() {
+                            return Err(error);
+                        }
                     }
                     if let Some(&dest) = outputs.first() {
                         self.assign_fact(dest, Fact::constant(old));
@@ -1312,12 +1324,14 @@ impl Runner<'_> {
                     "Linux syscalls require explicit ELF emulation".into(),
                 ));
             }
-            let number = match self.eval(&Expr::reg(convention.arguments()[0], 64)) {
-                Ok(number) => number,
+            let evaluated = match self.eval(&Expr::reg(convention.arguments()[0], 64)) {
+                Ok(evaluated) => evaluated,
                 Err(stop) => return Err(stop),
             };
-            let Some(operation) = super::syscalls::operation(convention, number) else {
-                return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+            let Some(operation) = super::syscalls::operation(convention, evaluated) else {
+                return Err(Stop::Error(format!(
+                    "unsupported Linux syscall {evaluated}"
+                )));
             };
             let value = match operation {
                 super::syscalls::Operation::Read => {
@@ -1335,7 +1349,9 @@ impl Runner<'_> {
                 super::syscalls::Operation::Exit => return Err(Stop::Exit),
                 super::syscalls::Operation::Protect => {
                     if !self.stop_on_write && self.stop_address.is_none() {
-                        return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+                        return Err(Stop::Error(format!(
+                            "unsupported Linux syscall {evaluated}"
+                        )));
                     }
                     let address = match self.argument(1, convention, kind) {
                         Ok(value) => value,
@@ -1631,12 +1647,19 @@ impl Runner<'_> {
         let registers = convention.arguments();
         let stack_count = arguments.len().saturating_sub(registers.len());
         let width = crate::arch::pointer_bytes(self.image.isa);
-        let stack_size = (stack_count as u64)
+        let stack_size = match (stack_count as u64)
             .checked_mul(u64::from(width))
             .and_then(|size| size.checked_add(256))
-            .ok_or_else(|| Stop::Error("callback stack size overflows".to_owned()))?;
+            .ok_or_else(|| Stop::Error("callback stack size overflows".to_owned()))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let stack_register = crate::arch::stack_pointer(self.image.isa);
-        let old_stack = self.eval(&Expr::reg(stack_register, width * 8))?;
+        let old_stack = match self.eval(&Expr::reg(stack_register, width * 8)) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let Some(mut call_stack) = old_stack.checked_sub(stack_size) else {
             return Err(Stop::Error("callback stack underflows".to_owned()));
         };
@@ -1656,11 +1679,18 @@ impl Runner<'_> {
                     "callback argument address overflows".to_owned(),
                 ));
             };
-            let size = (stack_count as u64)
+            let size = match (stack_count as u64)
                 .checked_mul(u64::from(width))
-                .ok_or_else(|| Stop::Error("callback argument size overflows".to_owned()))?;
-            self.check_memory_range(address, size, true)?;
-            for (index, value) in arguments.iter().skip(registers.len()).enumerate() {
+                .ok_or_else(|| Stop::Error("callback argument size overflows".to_owned()))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = self.check_memory_range(address, size, true) {
+                return Err(error);
+            }
+            let overflow_arguments = arguments.iter().skip(registers.len()).enumerate();
+            for (index, value) in overflow_arguments {
                 let Some(at) = address.checked_add((index as u64) * u64::from(width)) else {
                     return Err(Stop::Error(
                         "callback argument address overflows".to_owned(),
@@ -1668,7 +1698,9 @@ impl Runner<'_> {
                 };
                 self.machine.store(at, *value, width);
             }
-            self.memory_error()?;
+            if let Err(error) = self.memory_error() {
+                return Err(error);
+            }
         }
         for (register, value) in registers.iter().zip(arguments) {
             self.assign_fact(
@@ -1694,7 +1726,9 @@ impl Runner<'_> {
             },
             Fact::constant(old_stack),
         );
-        result?;
+        if let Err(error) = result {
+            return Err(error);
+        }
         self.eval(&Expr::reg(crate::arch::RETURN, 32))
     }
 

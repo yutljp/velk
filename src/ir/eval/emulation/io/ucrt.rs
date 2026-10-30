@@ -29,8 +29,13 @@ impl Runner<'_> {
             Convention::Win64
         };
         let mut args = Arguments::new(convention, CallKind::Invoke);
-        args.set_list(self, values[format_index + 2])?;
-        let format = self.bytes_at(values[format_index], None)?;
+        if let Err(error) = args.set_list(self, values[format_index + 2]) {
+            return Err(error);
+        }
+        let format = match self.bytes_at(values[format_index], None) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if scan {
             let unlimited = if self.image.isa == Isa::I386 {
                 u64::from(u32::MAX)
@@ -40,15 +45,26 @@ impl Runner<'_> {
             if values[1] != unlimited {
                 return Err(error(format!("{name}: bounded input is unsupported")));
             }
-            let input = self.bytes_at(values[0], None)?;
+            let input = match self.bytes_at(values[0], None) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             return self
                 .scan_input(&format, &input, &mut args)
                 .map(|(count, _)| count);
         }
-        let bytes = self.format_output(&format, &mut args)?;
+        let bytes = match self.format_output(&format, &mut args) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if !output {
-            let stream = self.stream(values[0], /* input */ false)?;
-            self.windows_crt_write(stream, &bytes)?;
+            let stream = match self.stream(values[0], /* input */ false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = self.windows_crt_write(stream, &bytes) {
+                return Err(error);
+            }
             return Ok(bytes.len() as u64);
         }
         let capacity = values[1];
@@ -65,8 +81,16 @@ impl Runner<'_> {
             )));
         }
         let count = (bytes.len() as u64).min(capacity - 1) as usize;
-        self.store_bytes(values[0], &bytes[..count])?;
-        self.store_bytes(address(values[0], count)?, &[0])?;
+        if let Err(error) = self.store_bytes(values[0], &bytes[..count]) {
+            return Err(error);
+        }
+        let terminator_address = match address(values[0], count) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = self.store_bytes(terminator_address, &[0]) {
+            return Err(error);
+        }
         Ok(bytes.len() as u64)
     }
 }

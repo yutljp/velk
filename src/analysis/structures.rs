@@ -1100,7 +1100,9 @@ fn inline_indexes(ir: &FunctionIr, param: u16, direct: bool) -> Option<Vec<crate
     for (at, block) in changed.iter_mut().enumerate() {
         for (position, stmt) in block.stmts.iter_mut().enumerate() {
             let mut lookup = |register: u16| {
-                let (index, scale, set) = indexes.get(&register)?;
+                let Some((index, scale, set)) = indexes.get(&register) else {
+                    return None;
+                };
                 same(index, *set, (at, position)).then(|| (index.clone(), *scale))
             };
             for operand in stmt.operands_mut() {
@@ -1156,7 +1158,9 @@ fn repeated(value: &Expr) -> Option<(&Expr, u64)> {
     [(lhs, rhs), (rhs, lhs)]
         .into_iter()
         .find_map(|(one, other)| {
-            let (index, times) = scaled(other)?;
+            let Some((index, times)) = scaled(other) else {
+                return None;
+            };
             (index == one.as_ref()).then_some((one.as_ref(), times.wrapping_add(1)))
         })
 }

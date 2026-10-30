@@ -595,15 +595,23 @@ pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<
         .landing_pads
         .iter()
         .filter_map(|(pad, sites)| {
-            let pad = *index.get(pad)?;
-            let (site, _) = sites.first()?;
-            let holder = ir
+            let Some(pad_index) = index.get(pad) else {
+                return None;
+            };
+            let pad = *pad_index;
+            let Some((site, _)) = sites.first() else {
+                return None;
+            };
+            let Some(containing_block) = ir
                 .blocks
                 .iter()
                 .enumerate()
                 .filter(|(_, block)| block.start <= *site)
-                .max_by_key(|(_, block)| block.start)?
-                .0;
+                .max_by_key(|(_, block)| block.start)
+            else {
+                return None;
+            };
+            let holder = containing_block.0;
             Some((pad, holder))
         })
         .collect();

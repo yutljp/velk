@@ -27,10 +27,14 @@ impl Registry {
             return Err(invalid("symbolic state limit reached"));
         }
         let index = self.next;
-        self.next = self
+        self.next = match self
             .next
             .checked_add(1)
-            .ok_or_else(|| invalid("state handle overflow"))?;
+            .ok_or_else(|| invalid("state handle overflow"))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.states.insert(index, state);
         Ok(index)
     }
@@ -45,7 +49,10 @@ impl Registry {
     }
 
     fn lookup(&self, value: &Value) -> Result<Term> {
-        let id: usize = field(value, "id")?;
+        let id: usize = match field(value, "id") {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.terms
             .get(id)
             .cloned()
@@ -65,17 +72,37 @@ pub(super) fn handle(
     registry: &mut Registry,
     request: Value,
 ) -> Result<Value> {
-    let bin: BinaryRef = field(&request, "bin")?;
-    let action: String = field(&request, "action")?;
-    let binary = bin.open(session)?;
+    let bin: BinaryRef = match field(&request, "bin") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let action: String = match field(&request, "action") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let binary = match bin.open(session) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if action == "create" {
-        let start: String = field(&request, "start")?;
-        let options = field(&request, "options")?;
-        return registry
-            .insert(State::new(binary, &start, &options)?, 0)
-            .map(|id| json!(id));
+        let start: String = match field(&request, "start") {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let options = match field(&request, "options") {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let start_state = match State::new(binary, &start, &options) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        return registry.insert(start_state, 0).map(|id| json!(id));
     }
-    let id: usize = field(&request, "state")?;
+    let id: usize = match field(&request, "state") {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let Some(mut state) = registry.states.remove(&id) else {
         return Err(invalid("unknown symbolic state handle"));
     };
@@ -83,44 +110,125 @@ pub(super) fn handle(
         return Ok(Value::Null);
     }
     let result = (|| match action.as_str() {
-        "fork" => Ok(json!(registry.insert(state.clone(), 1)?)),
-        "term" => registry.term(state.symbolic()?),
-        "constant" => {
-            let value: crate::emulation::Word = field(&request, "value")?;
-            registry.term(Term::constant(value.value()?))
+        "fork" => {
+            let id = match registry.insert(state.clone(), 1) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(id))
         }
-        "readRegister" => registry.term(state.read_register(field(&request, "index")?)?),
+        "term" => {
+            let term = match state.symbolic() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            registry.term(term)
+        }
+        "constant" => {
+            let value: crate::emulation::Word = match field(&request, "value") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let constant = match value.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            registry.term(Term::constant(constant))
+        }
+        "readRegister" => {
+            let register_index = match field(&request, "index") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let register = match state.read_register(register_index) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            registry.term(register)
+        }
         "writeRegister" => {
-            let term = registry.lookup(&request["term"])?;
-            state.write_register(field(&request, "index")?, term)?;
+            let term = match registry.lookup(&request["term"]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let register_index = match field(&request, "index") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = state.write_register(register_index, term) {
+                return Err(error);
+            }
             Ok(Value::Null)
         }
         "readMemory" => {
-            let at: crate::emulation::Word = field(&request, "at")?;
-            let terms = state.read_memory(binary, at.value()?, field(&request, "size")?)?;
+            let at: crate::emulation::Word = match field(&request, "at") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let memory_address = match at.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let read_size = match field(&request, "size") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let terms = match state.read_memory(binary, memory_address, read_size) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if terms.len() > TERM_LIMIT.saturating_sub(registry.terms.len()) {
                 return Err(invalid("symbolic term limit reached"));
             }
-            let handles: Vec<Value> = terms
+            let handles: Vec<Value> = match terms
                 .into_iter()
                 .map(|term| registry.term(term))
-                .collect::<Result<_>>()?;
+                .collect::<Result<_>>()
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(json!(handles))
         }
         "writeMemory" => {
-            let at: crate::emulation::Word = field(&request, "at")?;
-            let values: Vec<Value> = field(&request, "terms")?;
-            let terms: Vec<Term> = values
+            let at: crate::emulation::Word = match field(&request, "at") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let values: Vec<Value> = match field(&request, "terms") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let terms: Vec<Term> = match values
                 .iter()
                 .map(|value| registry.lookup(value))
-                .collect::<Result<_>>()?;
-            state.write_memory(binary, at.value()?, &terms)?;
+                .collect::<Result<_>>()
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let write_address = match at.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = state.write_memory(binary, write_address, &terms) {
+                return Err(error);
+            }
             Ok(Value::Null)
         }
         "constrain" => {
-            let lhs = registry.lookup(&request["lhs"])?;
-            let rhs = registry.lookup(&request["rhs"])?;
-            let condition: String = field(&request, "condition")?;
+            let lhs = match registry.lookup(&request["lhs"]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let rhs = match registry.lookup(&request["rhs"]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let condition: String = match field(&request, "condition") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let cond = match condition.as_str() {
                 "eq" => Cond::Eq,
                 "ne" => Cond::Ne,
@@ -134,13 +242,35 @@ pub(super) fn handle(
                 "sge" => Cond::Ge,
                 _ => return Err(invalid("unknown symbolic condition")),
             };
-            state.constrain(cond, &lhs, &rhs, field(&request, "bits")?)?;
+            let bit_count = match field(&request, "bits") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = state.constrain(cond, &lhs, &rhs, bit_count) {
+                return Err(error);
+            }
             Ok(Value::Null)
         }
-        "satisfiable" => Ok(json!(state.satisfiable()?)),
+        "satisfiable" => {
+            let satisfiable = match state.satisfiable() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(satisfiable))
+        }
         "evaluate" => {
-            let term = registry.lookup(&request["term"])?;
-            let values = state.evaluate(&term, field(&request, "count")?)?;
+            let term = match registry.lookup(&request["term"]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let solution_count = match field(&request, "count") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let values = match state.evaluate(&term, solution_count) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             Ok(json!(
                 values
                     .into_iter()
@@ -149,20 +279,39 @@ pub(super) fn handle(
             ))
         }
         "bounds" => {
-            let term = registry.lookup(&request["term"])?;
-            Ok(json!(state.bounds(&term)?.map(|(min, max)| [
+            let term = match registry.lookup(&request["term"]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            let bounds = match state.bounds(&term) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(bounds.map(|(min, max)| [
                 crate::addr::format(min),
                 crate::addr::format(max)
             ])))
         }
         "address" => Ok(json!(crate::addr::format(state.address()))),
         "step" => {
-            let words: Vec<crate::emulation::Word> = field(&request, "until")?;
-            let until = words
+            let words: Vec<crate::emulation::Word> = match field(&request, "until") {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let until = match words
                 .iter()
                 .map(crate::emulation::Word::value)
-                .collect::<Result<Vec<_>>>()?;
-            match state.step(binary, &until)? {
+                .collect::<Result<Vec<_>>>()
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let step = match state.step(binary, &until) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            match step {
                 Step::Reached => Ok(
                     json!({"reason": "address", "address": crate::addr::format(state.address())}),
                 ),
@@ -173,7 +322,11 @@ pub(super) fn handle(
                     }
                     let mut ids = Vec::new();
                     for state in states {
-                        ids.push(registry.insert(state, 1)?);
+                        let id = match registry.insert(state, 1) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        ids.push(id);
                     }
                     Ok(json!({"reason": "branch", "states": ids}))
                 }

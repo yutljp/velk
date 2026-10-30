@@ -581,7 +581,8 @@ pub(crate) fn clobbers_knowing(
                     break;
                 }
                 Stmt::Switch { cases, default, .. } => {
-                    for target in cases.iter().map(|(_, target)| target).chain(default) {
+                    let targets = cases.iter().map(|(_, target)| target).chain(default);
+                    for target in targets {
                         successors.push((*target, state.clone()));
                     }
                     block_terminated = true;
@@ -592,8 +593,8 @@ pub(crate) fn clobbers_knowing(
                         return None;
                     }
                     let entry = State::entry(sp, narrow);
-                    for (index, (held, was)) in state.machine.iter().zip(&entry.machine).enumerate()
-                    {
+                    let machine_pairs = state.machine.iter().zip(&entry.machine).enumerate();
+                    for (index, (held, was)) in machine_pairs {
                         if held != was {
                             changed.insert(index as u16);
                         }

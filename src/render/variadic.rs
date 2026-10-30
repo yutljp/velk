@@ -442,7 +442,8 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     // Propagate frame addresses only when their definition is unique.
     let mut aliases = Vec::new();
     let entry_blocks = if matches!(layout, Layout::SysV) { 3 } else { 1 };
-    for (block, contents) in ir.blocks.iter().enumerate().take(entry_blocks) {
+    let entry_contents = ir.blocks.iter().enumerate().take(entry_blocks);
+    for (block, contents) in entry_contents {
         if block == 1 && matches!(layout, Layout::SysV) {
             continue;
         }
@@ -1027,7 +1028,8 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
         }
     }
     let predecessors = super::structure::compare_chain::predecessor_counts(ir);
-    for block in removed.iter().copied().chain(std::iter::once(stop.0)) {
+    let removed_and_stop = removed.iter().copied().chain(std::iter::once(stop.0));
+    for block in removed_and_stop {
         if block == start {
             return false;
         }

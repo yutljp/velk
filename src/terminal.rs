@@ -366,7 +366,10 @@ fn assembly_number(text: &str) -> Option<(usize, bool)> {
     let marker = usize::from(text.starts_with(['#', '$']));
     let sign = usize::from(text[marker..].starts_with(['+', '-']));
     let start = marker + sign;
-    if !text.as_bytes().get(start)?.is_ascii_digit() {
+    let Some(first_byte) = text.as_bytes().get(start) else {
+        return None;
+    };
+    if !first_byte.is_ascii_digit() {
         return None;
     }
     let length = text[start..]

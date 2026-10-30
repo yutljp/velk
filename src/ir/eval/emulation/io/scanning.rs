@@ -17,12 +17,16 @@ impl Runner<'_> {
         let mut input_failure = false;
         let pointer_bytes = crate::arch::pointer_bytes(self.image.isa);
         while position < format.len() {
-            self.tick()?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             let byte = format[position];
             position += 1;
             if byte.is_ascii_whitespace() {
                 while input.get(consumed).is_some_and(u8::is_ascii_whitespace) {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     consumed += 1;
                 }
                 continue;
@@ -79,7 +83,9 @@ impl Runner<'_> {
             }
             if conversion != b'c' {
                 while input.get(consumed).is_some_and(u8::is_ascii_whitespace) {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     consumed += 1;
                 }
             }
@@ -102,7 +108,9 @@ impl Runner<'_> {
                 while consumed < end
                     && (conversion == b'c' || !input[consumed].is_ascii_whitespace())
                 {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     bytes.push(input[consumed]);
                     consumed += 1;
                 }
@@ -136,7 +144,9 @@ impl Runner<'_> {
                     let Some(digit) = (input[consumed] as char).to_digit(radix) else {
                         break;
                     };
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     let Some(next) = value
                         .checked_mul(u64::from(radix))
                         .and_then(|value| value.checked_add(u64::from(digit)))
@@ -152,20 +162,28 @@ impl Runner<'_> {
                 if negative {
                     value = value.wrapping_neg();
                 }
-                let width = super::formatting::integer_width(
+                let width = match super::formatting::integer_width(
                     length,
                     pointer_bytes,
                     matches!(
                         self.image.format,
                         crate::loader::Format::Pe | crate::loader::Format::Coff
                     ),
-                )?;
+                ) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 bytes.extend_from_slice(&value.to_le_bytes()[..width as usize]);
             }
             conversions += 1;
             if !suppress {
-                let destination = args.next(self, pointer_bytes)?;
-                self.store_bytes(destination, &bytes)?;
+                let destination = match args.next(self, pointer_bytes) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = self.store_bytes(destination, &bytes) {
+                    return Err(error);
+                }
                 assignments += 1;
             }
         }

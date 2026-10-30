@@ -64,23 +64,40 @@ pub(crate) fn canonical(layout: &TypeLayout) -> Result<TypeLayout, AbiIssue> {
         }
         let mut resolved = layout.clone();
         resolved.kind = match &layout.kind {
-            LayoutKind::Array { element, count } => LayoutKind::Array {
-                element: Box::new(resolve(element, depth + 1, budget)?),
-                count: *count,
-            },
+            LayoutKind::Array { element, count } => {
+                let resolved = match resolve(element, depth + 1, budget) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                LayoutKind::Array {
+                    element: Box::new(resolved),
+                    count: *count,
+                }
+            }
             LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
                 let fields: Result<Vec<_>, _> = fields
                     .iter()
                     .map(|field| {
                         let mut field = field.clone();
-                        field.layout = resolve(&field.layout, depth + 1, budget)?;
+                        field.layout = match resolve(&field.layout, depth + 1, budget) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
                         Ok(field)
                     })
                     .collect();
                 if matches!(layout.kind, LayoutKind::Struct(_)) {
-                    LayoutKind::Struct(fields?)
+                    let fields = match fields {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    LayoutKind::Struct(fields)
                 } else {
-                    LayoutKind::Union(fields?)
+                    let fields = match fields {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    LayoutKind::Union(fields)
                 }
             }
             kind => kind.clone(),
@@ -88,19 +105,31 @@ pub(crate) fn canonical(layout: &TypeLayout) -> Result<TypeLayout, AbiIssue> {
         if resolved.alignment.is_none() {
             resolved.alignment = Some(match &resolved.kind {
                 LayoutKind::Array { element, .. } => {
-                    element.alignment.ok_or(AbiIssue::UnknownLayout)?
+                    match element.alignment.ok_or(AbiIssue::UnknownLayout) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 }
-                LayoutKind::Struct(fields) | LayoutKind::Union(fields) => fields
-                    .iter()
-                    .map(|field| field.layout.alignment.ok_or(AbiIssue::UnknownLayout))
-                    .collect::<Result<Vec<_>, _>>()?
-                    .into_iter()
-                    .max()
-                    .ok_or(AbiIssue::UnknownLayout)?,
+                LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
+                    let alignments = match fields
+                        .iter()
+                        .map(|field| field.layout.alignment.ok_or(AbiIssue::UnknownLayout))
+                        .collect::<Result<Vec<_>, _>>()
+                    {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    match alignments.into_iter().max().ok_or(AbiIssue::UnknownLayout) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
+                }
                 _ => return Err(AbiIssue::UnknownLayout),
             });
         }
-        valid_alignment(&resolved)?;
+        if let Err(error) = valid_alignment(&resolved) {
+            return Err(error);
+        }
         Ok(resolved)
     }
     resolve(layout, 0, &mut 65536)
@@ -205,12 +234,18 @@ pub(crate) fn alternatives(layout: &TypeLayout) -> Result<Vec<TypeLayout>, AbiIs
 }
 
 fn spend(budget: &mut usize) -> Result<(), AbiIssue> {
-    *budget = budget.checked_sub(1).ok_or(AbiIssue::UnknownLayout)?;
+    *budget = match budget.checked_sub(1).ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     Ok(())
 }
 
 fn valid_alignment(layout: &TypeLayout) -> Result<(), AbiIssue> {
-    let alignment = layout.alignment.ok_or(AbiIssue::UnknownLayout)?;
+    let alignment = match layout.alignment.ok_or(AbiIssue::UnknownLayout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     if layout.size == 0
         || layout.size.checked_mul(8).is_none()
         || !alignment.is_power_of_two()
@@ -317,13 +352,19 @@ pub(crate) fn classify(
 fn natural_alignment(layout: &TypeLayout) -> Result<u64, AbiIssue> {
     match &layout.kind {
         LayoutKind::Array { element, .. } => {
-            Ok(element.alignment.ok_or(AbiIssue::UnknownLayout)?.min(16))
+            let element_alignment = match element.alignment.ok_or(AbiIssue::UnknownLayout) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            Ok(element_alignment.min(16))
         }
         LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
             fields.iter().try_fold(1, |alignment, field| {
-                Ok(alignment
-                    .max(field.layout.alignment.ok_or(AbiIssue::UnknownLayout)?)
-                    .min(16))
+                let field_alignment = match field.layout.alignment.ok_or(AbiIssue::UnknownLayout) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                Ok(alignment.max(field_alignment).min(16))
             })
         }
         _ => Ok(layout.size.min(16)),
@@ -335,9 +376,20 @@ pub(crate) fn compatible(
     original: &TypeLayout,
     generated: &TypeLayout,
 ) -> Result<(), AbiIssue> {
-    let generated = classify(profile, &canonical(generated)?)?;
+    let canonical_layout = match canonical(generated) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    let generated = match classify(profile, &canonical_layout) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut baseline: Option<ClassifiedValue> = None;
-    for original in alternatives(original)? {
+    let alternative_layouts = match alternatives(original) {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
+    for original in alternative_layouts {
         let original = match classify(profile, &original) {
             Ok(value) => value,
             Err(issue) => return Err(issue),
@@ -583,7 +635,10 @@ fn homogeneous(layout: &TypeLayout) -> Option<Vec<ClassPiece>> {
     let Some(()) = members(layout, 0, &mut found) else {
         return None;
     };
-    let precision = found.first()?.1;
+    let Some(value) = found.first() else {
+        return None;
+    };
+    let precision = value.1;
     let bytes = u64::from(precision.bits()) / 8;
     if (found.len() as u64).checked_mul(bytes) != Some(layout.size)
         || found

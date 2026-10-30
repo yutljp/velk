@@ -122,7 +122,11 @@ impl State {
         };
         let mut values = Vec::new();
         for index in 0..=stream_index {
-            values.push(self.number(binary, convention, index)?);
+            let argument = match self.number(binary, convention, index) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            values.push(argument);
         }
         let token = values[stream_index];
         let standard = token != 0 && self.standard_streams.contains(&token);
@@ -140,51 +144,92 @@ impl State {
         }
         let result = match operation {
             Fopen => {
-                let path = self.concrete_format(binary, values[0])?;
+                let path = match self.concrete_format(binary, values[0]) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let Ok(path) = String::from_utf8(path) else {
                     return Err(invalid("fopen path is not UTF-8").into());
                 };
-                let mode_address = self.number(binary, convention, 1)?;
-                let mode = self.concrete_format(binary, mode_address)?;
+                let mode_address = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let mode = match self.concrete_format(binary, mode_address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let token = self.heap_next;
-                let memory = self.mapped_memory(binary.image())?;
+                let memory = match self.mapped_memory(binary.image()) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
                 let Some(next) = token.checked_add(1).filter(|end| {
                     *end <= memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE)
                 }) else {
                     return Err(invalid("FILE allocation exceeds heap").into());
                 };
-                self.files
+                if let Err(error) = self
+                    .files
                     .open(token, path, &mode)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?;
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    return Err(error);
+                }
                 self.heap_next = next;
                 token
             }
             Fflush => {
-                if !standard {
-                    self.files
+                if !standard
+                    && let Err(error) = self
+                        .files
                         .flush(token)
-                        .map_err(|error| super::Failure::Error(invalid(error)))?;
+                        .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    return Err(error);
                 }
                 0
             }
             Setbuf => {
-                let buffer = self.number(binary, convention, 1)?;
+                let buffer = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if buffer != 0 {
                     return Err(invalid("setbuf with a caller-owned buffer is unsupported").into());
                 }
                 let mode = crate::ir::eval::stdio::default_buffering_mode(binary.image().format);
-                self.files
+                if let Err(error) = self
+                    .files
                     .set_buffering(token, standard, mode, binary.image().format)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?;
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    return Err(error);
+                }
                 0
             }
             Setvbuf => {
-                let _buffer = self.number(binary, convention, 1)?;
-                let mode = self.number(binary, convention, 2)? as u32;
-                let _size = self.number(binary, convention, 3)?;
-                self.files
+                let _buffer = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let convention_number = match self.number(binary, convention, 2) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let mode = convention_number as u32;
+                let _size = match self.number(binary, convention, 3) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                match self
+                    .files
                     .set_buffering(token, standard, mode, binary.image().format)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             }
             Fclose | Fileno | Feof | Ferror => {
                 if standard {
@@ -201,16 +246,29 @@ impl State {
                         .into()),
                     };
                 }
-                self.files
+                match self
+                    .files
                     .indicator(token, operation)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             }
             Fputs | Fwrite => {
-                self.files
+                if let Err(error) = self
+                    .files
                     .stream(token)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?;
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    return Err(error);
+                }
                 let (bytes, count) = if matches!(operation, Fputs) {
-                    (self.string(binary, values[0], self.model_bound())?, 0)
+                    let source_bytes = match self.string(binary, values[0], self.model_bound()) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    (source_bytes, 0)
                 } else {
                     let Some(total) = values[1]
                         .checked_mul(values[2])
@@ -221,25 +279,35 @@ impl State {
                     if total == 0 {
                         return Ok(Some(Term::constant(0)));
                     }
-                    (
-                        self.read_memory(binary, values[0], total as usize)?,
-                        values[2],
-                    )
+                    let source_bytes = match self.read_memory(binary, values[0], total as usize) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    (source_bytes, values[2])
                 };
                 for _ in &bytes {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                 }
-                let written = self
+                let written = match self
                     .files
                     .write(token, &bytes, Term::constant(0))
-                    .map_err(|error| super::Failure::Error(invalid(error)))?;
+                    .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 crate::ir::eval::stdio::file_write_result(operation, written, count)
             }
             Fgets | Fread => {
-                if !standard {
-                    self.files
+                if !standard
+                    && let Err(error) = self
+                        .files
                         .stream(token)
-                        .map_err(|error| super::Failure::Error(invalid(error)))?;
+                        .map_err(|error| super::Failure::Error(invalid(error)))
+                {
+                    return Err(error);
                 }
                 let line = matches!(operation, Fgets);
                 let (limit, size) = if line {
@@ -261,22 +329,35 @@ impl State {
                 }
                 let mut bytes = Vec::new();
                 while bytes.len() < limit as usize {
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     let byte = if standard {
                         crate::ir::eval::emulation::io::next_input(
                             &self.stdin,
                             &mut self.input_position,
                         )
                     } else {
-                        self.files
+                        match self
+                            .files
                             .read(token)
-                            .map_err(|error| super::Failure::Error(invalid(error)))?
+                            .map_err(|error| super::Failure::Error(invalid(error)))
+                        {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     };
                     let Some(byte) = byte else {
                         break;
                     };
-                    let newline =
-                        line && self.test(format!("(= {} {})", byte.text, smt::constant(10)))?;
+                    let newline = if line {
+                        match self.test(format!("(= {} {})", byte.text, smt::constant(10))) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
+                    } else {
+                        false
+                    };
                     bytes.push(byte);
                     if newline {
                         break;
@@ -289,7 +370,9 @@ impl State {
                 if line {
                     bytes.push(Term::constant(0));
                 }
-                self.write_memory(binary, values[0], &bytes)?;
+                if let Err(error) = self.write_memory(binary, values[0], &bytes) {
+                    return Err(error.into());
+                }
                 if line {
                     values[0]
                 } else {

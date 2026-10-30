@@ -1,4 +1,5 @@
-use super::{BinOp, CType, Ctx, Expr, Node, Stmt, locals::Local};
+use super::locals::Local;
+use super::{BinOp, CType, Ctx, Expr, Node, Stmt};
 use std::collections::HashMap;
 
 pub(super) struct Aggregate {

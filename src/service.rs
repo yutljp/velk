@@ -1459,7 +1459,11 @@ impl Binary {
     }
 
     pub fn shape_hash(&mut self, addr: u64, deadline: Option<Instant>) -> Result<String> {
-        Ok(sigs::shape_hash(&self.analysis(addr, deadline)?.ir))
+        let analysis = match self.analysis(addr, deadline) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Ok(sigs::shape_hash(&analysis.ir))
     }
 
     /// Signatures of the named functions; Err once `deadline` passes.

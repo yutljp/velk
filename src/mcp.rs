@@ -50,10 +50,16 @@ pub const TOPICS: [(&str, &str); 6] = [
 
 /// Serves newline-delimited JSON-RPC requests on standard input and output.
 pub fn serve() -> Result<()> {
-    let engine = Engine::new()?;
+    let engine = match Engine::new() {
+        Ok(value) => value,
+        Err(error) => return Err(error),
+    };
     let mut stdout = std::io::stdout().lock();
     for line in std::io::stdin().lock().lines() {
-        let line = line.map_err(Error::Stdio)?;
+        let line = match line.map_err(Error::Stdio) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if line.trim().is_empty() {
             continue;
         }
@@ -62,8 +68,12 @@ pub fn serve() -> Result<()> {
             Err(_) => Some(reply(Value::Null, Err(PARSE_ERROR))),
         };
         if let Some(response) = response {
-            writeln!(stdout, "{response}").map_err(Error::Stdio)?;
-            stdout.flush().map_err(Error::Stdio)?;
+            if let Err(error) = writeln!(stdout, "{response}").map_err(Error::Stdio) {
+                return Err(error);
+            }
+            if let Err(error) = stdout.flush().map_err(Error::Stdio) {
+                return Err(error);
+            }
         }
     }
     Ok(())
@@ -71,7 +81,10 @@ pub fn serve() -> Result<()> {
 
 /// Answers a request; notifications, which carry no id, get no reply.
 fn dispatch_request(engine: &Engine, request: &Value) -> Option<Value> {
-    let id = request.get("id")?.clone();
+    let Some(value) = request.get("id") else {
+        return None;
+    };
+    let id = value.clone();
     let result = match request.get("method").and_then(Value::as_str) {
         Some("initialize") => Ok(json!({
             "protocolVersion": request

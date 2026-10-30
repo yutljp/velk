@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use crate::ir::{CType, Definition, FunctionIr};
 
-use super::{declaration, naming::Layout};
+use super::declaration;
+use super::naming::Layout;
 
 pub(super) fn add_debug(ir: &FunctionIr, arrays: &mut HashMap<String, Layout>) {
     for definition in &ir.definitions {

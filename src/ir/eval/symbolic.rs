@@ -187,9 +187,23 @@ impl State {
                 "symbolic execution supports little-endian i386, x86-64 and AArch64",
             ));
         }
-        let address = binary.find_address(start)?;
-        let blocks = lift(image, address)?;
-        let solver = Rc::new(RefCell::new(Solver::new()?));
+        let address = match binary.find_address(start) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let blocks = match lift(image, address) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let solver = match Solver::new() {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let solver = Rc::new(RefCell::new(solver));
+        let files = match super::stdio::Files::new(BTreeMap::new()).map_err(invalid) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let mut state = Self {
             solver,
             source_digest: image.input_digest,
@@ -207,7 +221,7 @@ impl State {
             steps: 0,
             options: options.clone(),
             path: Vec::new(),
-            files: super::stdio::Files::new(BTreeMap::new()).map_err(invalid)?,
+            files,
             input_files: BTreeMap::new(),
             stdin: Vec::new(),
             scanned_integers: Vec::new(),
@@ -232,7 +246,10 @@ impl State {
             model_call_kind: CallKind::Invoke,
             branch_observations: None,
         };
-        let memory = state.mapped_memory(image)?;
+        let memory = match state.mapped_memory(image) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let initial = match crate::emulation::tls::initial(image, &memory, options.canary.as_ref())
         {
             Ok(initial) => initial,
@@ -268,26 +285,42 @@ impl State {
             if !physical.contains(&index) {
                 return Err(invalid(format!("unknown physical register {index}")));
             }
-            state
-                .registers
-                .insert(index, Term::constant(value.value()?));
+            let initial = match value.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            state.registers.insert(index, Term::constant(initial));
         }
         let convention = image.convention_of(address);
         for (index, value) in options.argument_values.iter().enumerate() {
-            let term = Term::constant(value.value()?);
+            let argument_number = match value.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let term = Term::constant(argument_number);
             state.arguments.insert(index, term.clone());
-            state.initialize_argument(binary, index, term, stack)?;
+            if let Err(error) = state.initialize_argument(binary, index, term, stack) {
+                return Err(error);
+            }
         }
         for &index in &options.arguments {
-            let term = state.symbolic()?;
+            let term = match state.symbolic() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             state.arguments.insert(index, term.clone());
-            state.initialize_argument(binary, index, term, stack)?;
+            if let Err(error) = state.initialize_argument(binary, index, term, stack) {
+                return Err(error);
+            }
         }
         for &index in &options.registers {
             if !physical.contains(&index) {
                 return Err(invalid("symbolic inputs require physical registers"));
             }
-            let term = state.symbolic()?;
+            let term = match state.symbolic() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             state.input_registers.insert(index, term.clone());
             for (&argument, value) in &mut state.arguments {
                 if convention.arguments().get(argument) == Some(&index) {
@@ -297,45 +330,73 @@ impl State {
             state.registers.insert(index, term);
         }
         for range in &options.memory {
-            let address = range.address.value()?;
+            let address = match range.address.value() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             for offset in 0..range.size {
                 let Some(at) = address.checked_add(offset as u64) else {
                     return Err(invalid("symbolic memory range overflows"));
                 };
-                let byte = state.symbolic_byte()?;
-                state.write_memory(binary, at, std::slice::from_ref(&byte))?;
+                let byte = match state.symbolic_byte() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = state.write_memory(binary, at, std::slice::from_ref(&byte)) {
+                    return Err(error);
+                }
                 state.input_memory.insert(at, byte);
             }
         }
         for (path, bytes) in &options.files {
             let mut terms = Vec::new();
             for _ in bytes {
-                terms.push(state.symbolic_byte()?);
+                let byte = match state.symbolic_byte() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                terms.push(byte);
             }
             state.input_files.insert(path.clone(), terms);
         }
-        state.files = super::stdio::Files::new(state.input_files.clone()).map_err(invalid)?;
+        state.files = match super::stdio::Files::new(state.input_files.clone()).map_err(invalid) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         for _ in 0..options.stdin {
-            let byte = state.symbolic_byte()?;
+            let byte = match state.symbolic_byte() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             state.stdin.push(byte);
         }
         if !options.argv.is_empty() {
             if !options.arguments.is_empty() || !options.argument_values.is_empty() {
                 return Err(invalid("argv and scalar arguments are mutually exclusive"));
             }
-            let memory = state.mapped_memory(image)?;
-            let heap_end = memory
+            let memory = match state.mapped_memory(image) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let heap_end = match memory
                 .heap_base
                 .checked_add(crate::emulation::HEAP_SIZE)
-                .ok_or_else(|| invalid("heap address overflows"))?;
+                .ok_or_else(|| invalid("heap address overflows"))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let mut base = memory.heap_base;
             for &address in state.memory.keys() {
                 if (memory.heap_base..heap_end).contains(&address) {
-                    base = base.max(
-                        address
-                            .checked_add(1)
-                            .ok_or_else(|| invalid("heap input range overflows"))?,
-                    );
+                    let end = match address
+                        .checked_add(1)
+                        .ok_or_else(|| invalid("heap input range overflows"))
+                    {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    base = base.max(end);
                 }
             }
             let width = crate::arch::pointer_bytes(image.isa);
@@ -353,49 +414,74 @@ impl State {
             {
                 return Err(invalid("argv exceeds heap capacity"));
             }
-            let mut address = base
+            let mut address = match base
                 .checked_add((options.argv.len() as u64 + 1).saturating_mul(u64::from(width)))
-                .ok_or_else(|| invalid("argv table overflows"))?;
+                .ok_or_else(|| invalid("argv table overflows"))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             for (index, &length) in options.argv.iter().enumerate() {
-                state.store(
+                if let Err(error) = state.store(
                     image,
                     base + index as u64 * u64::from(width),
                     &Term::constant(address),
                     width,
-                )?;
+                ) {
+                    return Err(error);
+                }
                 let mut bytes = Vec::new();
                 for _ in 0..length {
-                    let byte = state.symbolic_byte()?;
+                    let byte = match state.symbolic_byte() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     state
                         .constraints
                         .push(format!("(not (= {} {}))", byte.text, smt::constant(0)));
                     state.memory.insert(address, byte.clone());
                     bytes.push(byte);
-                    address = address
+                    address = match address
                         .checked_add(1)
-                        .ok_or_else(|| invalid("argv address overflows"))?;
+                        .ok_or_else(|| invalid("argv address overflows"))
+                    {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                 }
                 state.memory.insert(address, Term::constant(0));
-                address = address
+                address = match address
                     .checked_add(1)
-                    .ok_or_else(|| invalid("argv terminator overflows"))?;
+                    .ok_or_else(|| invalid("argv terminator overflows"))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 state.argv.push(bytes);
             }
-            state.store(
+            if let Err(error) = state.store(
                 image,
                 base + options.argv.len() as u64 * u64::from(width),
                 &Term::constant(0),
                 width,
-            )?;
-            state.initialize_argument(
+            ) {
+                return Err(error);
+            }
+            if let Err(error) = state.initialize_argument(
                 binary,
                 0,
                 Term::constant(options.argv.len() as u64),
                 stack,
-            )?;
-            state.initialize_argument(binary, 1, Term::constant(base), stack)?;
+            ) {
+                return Err(error);
+            }
+            if let Err(error) = state.initialize_argument(binary, 1, Term::constant(base), stack) {
+                return Err(error);
+            }
         }
-        state.initialize_streams(binary)?;
+        if let Err(error) = state.initialize_streams(binary) {
+            return Err(error);
+        }
         if let Err(failure) = state.initialize_cxx(binary) {
             return match failure {
                 Failure::Error(error) => Err(error),
@@ -407,7 +493,10 @@ impl State {
 
     /// Creates an unconstrained 64-bit value in this state's solver session.
     pub fn symbolic(&self) -> Result<Term> {
-        let text = self.solver.borrow_mut().define(None)?;
+        let text = match self.solver.borrow_mut().define(None) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         Ok(Term {
             text,
             concrete: None,
@@ -418,12 +507,18 @@ impl State {
     }
 
     fn symbolic_byte(&self) -> Result<Term> {
-        let term = self.symbolic()?;
+        let term = match self.symbolic() {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         self.low(&term, 8)
     }
 
     fn bind(&self, expression: String) -> Result<Term> {
-        let text = self.solver.borrow_mut().define(Some(&expression))?;
+        let text = match self.solver.borrow_mut().define(Some(&expression)) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         Ok(Term {
             text,
             concrete: None,
@@ -458,7 +553,9 @@ impl State {
 
     /// Writes a full register value. Partial writes are represented by the lifted IR.
     pub fn write_register(&mut self, index: u16, term: Term) -> Result<()> {
-        self.check_term(&term)?;
+        if let Err(error) = self.check_term(&term) {
+            return Err(error);
+        }
         if !super::emulation::physical_registers(self.isa).contains(&index) {
             return Err(invalid(format!("unknown physical register {index}")));
         }
@@ -506,8 +603,13 @@ impl State {
 
     /// Reads byte terms from concrete addresses using emulation's memory mapping.
     pub fn read_memory(&self, binary: &Binary, address: u64, size: usize) -> Result<Vec<Term>> {
-        self.check_binary(binary)?;
-        let memory = self.mapped_memory(binary.image())?;
+        if let Err(error) = self.check_binary(binary) {
+            return Err(error);
+        }
+        let memory = match self.mapped_memory(binary.image()) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if !memory.check(address, size as u64, /* write */ false) {
             return Err(memory_failure(&memory));
         }
@@ -529,14 +631,24 @@ impl State {
 
     /// Writes low eight bits of each term to writable concrete byte addresses.
     pub fn write_memory(&mut self, binary: &Binary, address: u64, bytes: &[Term]) -> Result<()> {
-        self.check_binary(binary)?;
-        let memory = self.mapped_memory(binary.image())?;
+        if let Err(error) = self.check_binary(binary) {
+            return Err(error);
+        }
+        let memory = match self.mapped_memory(binary.image()) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if !memory.check(address, bytes.len() as u64, /* write */ true) {
             return Err(memory_failure(&memory));
         }
         for (offset, byte) in bytes.iter().enumerate() {
-            let byte = self.low(byte, 8)?;
-            self.require_defined(&byte, 8)?;
+            let byte = match self.low(byte, 8) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = self.require_defined(&byte, 8) {
+                return Err(error);
+            }
             let at = address + offset as u64;
             if self.steps == 0 {
                 self.input_memory.insert(at, byte.clone());
@@ -548,10 +660,18 @@ impl State {
 
     /// Adds a comparison constraint. Width must be 1..64 bits.
     pub fn constrain(&mut self, cond: Cond, lhs: &Term, rhs: &Term, bits: u32) -> Result<()> {
-        self.check_term(lhs)?;
-        self.check_term(rhs)?;
-        self.require_defined(lhs, bits)?;
-        self.require_defined(rhs, bits)?;
+        if let Err(error) = self.check_term(lhs) {
+            return Err(error);
+        }
+        if let Err(error) = self.check_term(rhs) {
+            return Err(error);
+        }
+        if let Err(error) = self.require_defined(lhs, bits) {
+            return Err(error);
+        }
+        if let Err(error) = self.require_defined(rhs, bits) {
+            return Err(error);
+        }
         if !(1..=64).contains(&bits) {
             return Err(invalid("constraint width must be 1..64"));
         }
@@ -562,16 +682,18 @@ impl State {
 
     /// Checks the complete path constraints without changing them.
     pub fn satisfiable(&self) -> Result<bool> {
-        Ok(self
-            .solver
-            .borrow_mut()
-            .query(&self.constraints, None)?
-            .is_some())
+        let model = match self.solver.borrow_mut().query(&self.constraints, None) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Ok(model.is_some())
     }
 
     /// Enumerates up to `count` unsigned values, in increasing order.
     pub fn evaluate(&self, term: &Term, count: usize) -> Result<Vec<u64>> {
-        self.check_term(term)?;
+        if let Err(error) = self.check_term(term) {
+            return Err(error);
+        }
         if count > 256 {
             return Err(invalid("value count exceeds 256"));
         }
@@ -579,12 +701,16 @@ impl State {
     }
 
     fn enumerate(&self, term: &Term, count: usize) -> Result<Vec<u64>> {
-        self.require_defined(term, 64)?;
+        if let Err(error) = self.require_defined(term, 64) {
+            return Err(error);
+        }
         let mut constraints = self.constraints.clone();
         let mut values = Vec::new();
         for _ in 0..count {
-            let Some(value) = self.extreme(term, &constraints, /* maximum */ false)? else {
-                break;
+            let value = match self.extreme(term, &constraints, /* maximum */ false) {
+                Ok(Some(value)) => value,
+                Ok(None) => break,
+                Err(error) => return Err(error),
             };
             values.push(value);
             constraints.push(format!("(bvugt {} {})", term.text, smt::constant(value)));
@@ -594,11 +720,21 @@ impl State {
 
     /// Returns the unsigned minimum and maximum, or None for an infeasible state.
     pub fn bounds(&self, term: &Term) -> Result<Option<(u64, u64)>> {
-        self.check_term(term)?;
-        let Some(minimum) = self.extreme(term, &self.constraints, /* maximum */ false)? else {
+        if let Err(error) = self.check_term(term) {
+            return Err(error);
+        }
+        let smallest = match self.extreme(term, &self.constraints, /* maximum */ false) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let Some(minimum) = smallest else {
             return Ok(None);
         };
-        let Some(maximum) = self.extreme(term, &self.constraints, /* maximum */ true)? else {
+        let extreme = match self.extreme(term, &self.constraints, /* maximum */ true) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let Some(maximum) = extreme else {
             return Err(invalid(
                 "solver gave inconsistent satisfiability results for bounds",
             ));
@@ -651,12 +787,17 @@ impl State {
     }
 
     fn low(&self, value: &Term, bits: u32) -> Result<Term> {
-        self.check_term(value)?;
+        if let Err(error) = self.check_term(value) {
+            return Err(error);
+        }
         let mask = semantics::mask(bits);
         match value.concrete {
             Some(value) => Ok(Term::constant(value & mask)),
             None => {
-                let mut result = self.bind(smt::low(&value.text, bits))?;
+                let mut result = match self.bind(smt::low(&value.text, bits)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 result.defined = value.defined | !mask;
                 result.bits = value.bits.min(bits);
                 Ok(result)
@@ -673,22 +814,35 @@ impl State {
     }
 
     fn resolve(&self, term: Term) -> Evaluation<u64> {
-        self.require_defined(&term, 64)?;
+        if let Err(error) = self.require_defined(&term, 64) {
+            return Err(error.into());
+        }
         if let Some(value) = term.concrete {
             return Ok(value);
         }
-        let value = self
+        let value = match self
             .solver
             .borrow_mut()
-            .query(&self.constraints, Some(&term.text))?;
+            .query(&self.constraints, Some(&term.text))
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         if let Some(value) = value {
             let mut trial = self.constraints.clone();
             trial.push(format!("(not (= {} {}))", term.text, smt::constant(value)));
-            if self.solver.borrow_mut().query(&trial, None)?.is_none() {
+            let other_model = match self.solver.borrow_mut().query(&trial, None) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            if other_model.is_none() {
                 return Ok(value);
             }
         }
-        let values = self.enumerate(&term, self.options.address_limit + 1)?;
+        let values = match self.enumerate(&term, self.options.address_limit + 1) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         if values.len() == 1 {
             return Ok(values[0]);
         }
@@ -707,22 +861,30 @@ impl State {
         if width == 0 || width > 8 {
             return Err(invalid("invalid memory width"));
         }
-        self.require_defined(term, u32::from(width) * 8)?;
-        let memory = self.mapped_memory(image)?;
+        if let Err(error) = self.require_defined(term, u32::from(width) * 8) {
+            return Err(error);
+        }
+        let memory = match self.mapped_memory(image) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if !memory.check(address, u64::from(width), /* write */ true) {
             return Err(memory_failure(&memory));
         }
         for byte in 0..width {
             let value = match term.concrete {
                 Some(value) => Term::constant((value >> (u32::from(byte) * 8)) & 255),
-                None => self.bind(smt::low(
+                None => match self.bind(smt::low(
                     &format!(
                         "(bvlshr {} {})",
                         term.text,
                         smt::constant(u64::from(byte) * 8)
                     ),
                     8,
-                ))?,
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                },
             };
             self.memory.insert(address + u64::from(byte), value);
         }
@@ -736,7 +898,15 @@ impl State {
                 if !(1..=64).contains(width) {
                     return Err(invalid("invalid register width").into());
                 }
-                return Ok(self.low(&self.read_register(*index)?, u32::from(*width))?);
+                let register = match self.read_register(*index) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                let truncated = match self.low(&register, u32::from(*width)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                return Ok(truncated);
             }
             Expr::Load {
                 addr,
@@ -746,19 +916,29 @@ impl State {
                 if *width == 0 || *width > 8 {
                     return Err(invalid("invalid load width").into());
                 }
-                let address = match self.resolve(self.eval(binary, addr)?) {
+                let address_term = match self.eval(binary, addr) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let address = match self.resolve(address_term) {
                     Ok(address) => address,
                     Err(Failure::Address(term, values, limited)) => {
-                        if let Some(value) =
-                            self.table_load(binary, &term, &values, *width, *signed)?
-                        {
+                        let table_result =
+                            match self.table_load(binary, &term, &values, *width, *signed) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
+                        if let Some(value) = table_result {
                             return Ok(value);
                         }
                         return Err(Failure::Address(term, values, limited));
                     }
                     Err(error) => return Err(error),
                 };
-                let bytes = self.read_memory(binary, address, usize::from(*width))?;
+                let bytes = match self.read_memory(binary, address, usize::from(*width)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
                 let mut text = smt::constant(0);
                 let mut concrete = Some(0u64);
                 for (index, byte) in bytes.iter().enumerate() {
@@ -778,7 +958,10 @@ impl State {
                 }
                 return Ok(match concrete {
                     Some(value) => Term::constant(value),
-                    None => self.bind(text)?,
+                    None => match self.bind(text) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    },
                 });
             }
             Expr::Select {
@@ -788,11 +971,21 @@ impl State {
                 then,
                 els,
             } => {
-                let a = self.eval(binary, lhs)?;
-                let b = self.eval(binary, rhs)?;
+                let a = match self.eval(binary, lhs) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let b = match self.eval(binary, rhs) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let bits = semantics::operand_width(lhs, rhs);
-                self.require_defined(&a, bits)?;
-                self.require_defined(&b, bits)?;
+                if let Err(error) = self.require_defined(&a, bits) {
+                    return Err(error.into());
+                }
+                if let Err(error) = self.require_defined(&b, bits) {
+                    return Err(error.into());
+                }
                 if let (Some(a), Some(b)) = (a.concrete, b.concrete) {
                     return self.eval(
                         binary,
@@ -804,8 +997,14 @@ impl State {
                     );
                 }
                 let test = smt::condition(*cond, &a.text, &b.text, bits);
-                let test = self.predicate(&test)?;
-                let choice = self.resolve(test)?;
+                let test = match self.predicate(&test) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                let choice = match self.resolve(test) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 return self.eval(binary, if choice == 1 { then } else { els });
             }
             Expr::SignExtend { width, .. } if !(1..=8).contains(width) => {
@@ -820,7 +1019,10 @@ impl State {
         let mut operands = Vec::new();
         let mut all_concrete = true;
         for child in crate::ir::visit::children(expression) {
-            let value = self.eval(binary, child)?;
+            let value = match self.eval(binary, child) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             all_concrete &= value.concrete.is_some();
             operands.push((child, value));
         }
@@ -881,7 +1083,7 @@ impl State {
             .collect();
         let translated = smt::resolved_value(expression, &terms);
         // Undefined arithmetic is an execution error, rather than a silently removed path.
-        if matches!(
+        let is_division = matches!(
             expression,
             Expr::Bin {
                 op: crate::ir::BinOp::DivU
@@ -890,22 +1092,27 @@ impl State {
                     | crate::ir::BinOp::ModS,
                 ..
             }
-        ) && self
-            .solver
-            .borrow_mut()
-            .query(
+        );
+        if is_division {
+            let undefined = match self.solver.borrow_mut().query(
                 &[
                     self.constraints.clone(),
                     vec![format!("(not {})", translated.defined)],
                 ]
                 .concat(),
                 None,
-            )?
-            .is_some()
-        {
-            return Err(invalid("arithmetic may be undefined (division by zero)").into());
+            ) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            if undefined.is_some() {
+                return Err(invalid("arithmetic may be undefined (division by zero)").into());
+            }
         }
-        let mut result = self.bind(translated.term)?;
+        let mut result = match self.bind(translated.term) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         if operands.iter().any(|(_, term)| term.defined != u64::MAX) {
             result.defined = match expression {
                 Expr::Bin { op, .. } => {
@@ -922,7 +1129,9 @@ impl State {
     /// Evaluates a lifted expression in the current register and memory state.
     /// A symbolic memory address must have exactly one possible value here.
     pub fn expression(&self, binary: &Binary, expression: &Expr) -> Result<Term> {
-        self.check_binary(binary)?;
+        if let Err(error) = self.check_binary(binary) {
+            return Err(error);
+        }
         match self.eval(binary, expression) {
             Ok(term) => Ok(term),
             Err(Failure::Error(error)) => Err(error),
@@ -982,7 +1191,9 @@ impl State {
 
     /// Runs until a branch or stop address. Returned successors may be stepped independently.
     pub fn step(&mut self, binary: &Binary, until: &[u64]) -> Result<Step> {
-        self.check_binary(binary)?;
+        if let Err(error) = self.check_binary(binary) {
+            return Err(error);
+        }
         for &address in until {
             let imported = binary.image().imports.contains_key(&address)
                 || binary
@@ -1079,17 +1290,35 @@ impl State {
                 if dest.index == crate::lift::execution::ADDRESS {
                     self.path.push(crate::addr::format(self.address));
                 } else {
-                    let value = self.eval(binary, value)?;
-                    let value = self.low(&value, u32::from(dest.width))?;
+                    let value = match self.eval(binary, value) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let value = match self.low(&value, u32::from(dest.width)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     self.registers.insert(dest.index, value);
                 }
             }
             Stmt::Store {
                 addr, value, width, ..
             } => {
-                let address = self.resolve(self.eval(binary, addr)?)?;
-                let value = self.eval(binary, value)?;
-                self.store(binary.image(), address, &value, *width)?;
+                let address_term = match self.eval(binary, addr) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let address = match self.resolve(address_term) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let value = match self.eval(binary, value) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = self.store(binary.image(), address, &value, *width) {
+                    return Err(error.into());
+                }
             }
             Stmt::Brif {
                 cond,
@@ -1098,11 +1327,21 @@ impl State {
                 target,
                 ..
             } => {
-                let a = self.eval(binary, lhs)?;
-                let b = self.eval(binary, rhs)?;
+                let a = match self.eval(binary, lhs) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let b = match self.eval(binary, rhs) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let bits = semantics::operand_width(lhs, rhs);
-                self.require_defined(&a, bits)?;
-                self.require_defined(&b, bits)?;
+                if let Err(error) = self.require_defined(&a, bits) {
+                    return Err(error.into());
+                }
+                if let Err(error) = self.require_defined(&b, bits) {
+                    return Err(error.into());
+                }
                 let test = smt::condition(*cond, &a.text, &b.text, bits);
                 let mut taken = self.clone();
                 taken.constraints.push(test.clone());
@@ -1120,7 +1359,10 @@ impl State {
                         .or_default();
                 }
                 for (index, state) in [taken, fallthrough].into_iter().enumerate() {
-                    let feasible = state.satisfiable()?;
+                    let feasible = match state.satisfiable() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     if let Some(observations) = &self.branch_observations {
                         observations
                             .borrow_mut()
@@ -1140,7 +1382,10 @@ impl State {
                 default,
                 ..
             } => {
-                let index = self.eval(binary, index)?;
+                let index = match self.eval(binary, index) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let mut states = Vec::new();
                 let mut otherwise = self.clone();
                 for &(value, target) in cases {
@@ -1148,14 +1393,22 @@ impl State {
                     otherwise.constraints.push(format!("(not {test})"));
                     let mut state = self.clone();
                     state.constraints.push(test);
-                    if state.satisfiable()? {
+                    let satisfiable = match state.satisfiable() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    if satisfiable {
                         if let Err(error) = state.jump(binary, target) {
                             state.stop = Some(error.to_string());
                         }
                         states.push(state);
                     }
                 }
-                if otherwise.satisfiable()? {
+                let satisfiable = match otherwise.satisfiable() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                if satisfiable {
                     match default {
                         Some(target) => {
                             if let Err(error) = otherwise.jump(binary, *target) {
@@ -1171,10 +1424,22 @@ impl State {
             Stmt::Br {
                 target: Some(target),
                 ..
-            } => self.jump(binary, *target)?,
+            } => match self.jump(binary, *target) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            },
             Stmt::BrIndirect { target, .. } => {
-                let target = self.resolve(self.eval(binary, target)?)?;
-                self.jump(binary, target)?;
+                let evaluated = match self.eval(binary, target) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let target = match self.resolve(evaluated) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = self.jump(binary, target) {
+                    return Err(error.into());
+                }
             }
             Stmt::Call {
                 kind,
@@ -1205,19 +1470,40 @@ impl State {
                                 .next()
                                 .is_some()
                             {
-                                self.resolve(self.eval(binary, expression)?)?
+                                let evaluated = match self.eval(binary, expression) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error),
+                                };
+                                match self.resolve(evaluated) {
+                                    Ok(value) => value,
+                                    Err(error) => return Err(error),
+                                }
                             } else {
                                 *slot
                             }
                         }
-                        Some(expression) => self.resolve(self.eval(binary, expression)?)?,
+                        Some(expression) => {
+                            let evaluated = match self.eval(binary, expression) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            };
+                            match self.resolve(evaluated) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error),
+                            }
+                        }
                         None => return Err(invalid("unsupported call target").into()),
                     },
                 };
-                self.call(binary, target, *convention, *kind, outputs, until)?;
+                if let Err(error) = self.call(binary, target, *convention, *kind, outputs, until) {
+                    return Err(error);
+                }
             }
             Stmt::Ret { value, .. } => {
-                let value = self.eval(binary, value)?;
+                let value = match self.eval(binary, value) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 self.registers.insert(crate::arch::RETURN, value);
                 return self.return_from_call(binary, /* machine_return */ true);
             }
@@ -1234,10 +1520,17 @@ impl State {
                 }
                 let mut args = Vec::with_capacity(inputs.len());
                 for input in inputs {
-                    args.push(self.eval(binary, input)?);
+                    let evaluated = match self.eval(binary, input) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    args.push(evaluated);
                 }
                 let address = match args.first() {
-                    Some(address) => self.resolve(address.clone())?,
+                    Some(address) => match self.resolve(address.clone()) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    },
                     None => return Err(invalid("missing atomic memory address").into()),
                 };
                 if outputs.len() == 2 {
@@ -1248,29 +1541,49 @@ impl State {
                     let Some(upper) = address.checked_add(u64::from(half)) else {
                         return Err(invalid("atomic memory address overflows").into());
                     };
-                    let low = self.eval(
+                    let low = match self.eval(
                         binary,
                         &Expr::Load {
                             addr: Box::new(Expr::Const(address)),
                             width: half,
                             signed: false,
                         },
-                    )?;
-                    let high = self.eval(
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let high = match self.eval(
                         binary,
                         &Expr::Load {
                             addr: Box::new(Expr::Const(upper)),
                             width: half,
                             signed: false,
                         },
-                    )?;
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     let bits = u32::from(half) * 8;
-                    let low_expected = self.low(&args[2], bits)?;
-                    let high_expected = self.low(&args[4], bits)?;
-                    self.require_defined(&low, bits)?;
-                    self.require_defined(&high, bits)?;
-                    self.require_defined(&low_expected, bits)?;
-                    self.require_defined(&high_expected, bits)?;
+                    let low_expected = match self.low(&args[2], bits) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    let high_expected = match self.low(&args[4], bits) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    if let Err(error) = self.require_defined(&low, bits) {
+                        return Err(error.into());
+                    }
+                    if let Err(error) = self.require_defined(&high, bits) {
+                        return Err(error.into());
+                    }
+                    if let Err(error) = self.require_defined(&low_expected, bits) {
+                        return Err(error.into());
+                    }
+                    if let Err(error) = self.require_defined(&high_expected, bits) {
+                        return Err(error.into());
+                    }
                     let matches = match (
                         low.concrete,
                         high.concrete,
@@ -1284,57 +1597,105 @@ impl State {
                     };
                     if matches != Some(false) {
                         if matches == Some(true) {
-                            self.store(binary.image(), address, &args[1], half)?;
-                            self.store(binary.image(), upper, &args[3], half)?;
+                            if let Err(error) = self.store(binary.image(), address, &args[1], half)
+                            {
+                                return Err(error.into());
+                            }
+                            if let Err(error) = self.store(binary.image(), upper, &args[3], half) {
+                                return Err(error.into());
+                            }
                         } else {
-                            let low_replacement = self.low(&args[1], bits)?;
-                            let high_replacement = self.low(&args[3], bits)?;
+                            let low_replacement = match self.low(&args[1], bits) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
+                            let high_replacement = match self.low(&args[3], bits) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
                             let condition = format!(
                                 "(and (= {} {}) (= {} {}))",
                                 low.text, low_expected.text, high.text, high_expected.text
                             );
-                            let low_value = self.bind(format!(
+                            let low_half = match self.bind(format!(
                                 "(ite {condition} {} {})",
                                 low_replacement.text, low.text
-                            ))?;
-                            let high_value = self.bind(format!(
+                            )) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
+                            let high_half = match self.bind(format!(
                                 "(ite {condition} {} {})",
                                 high_replacement.text, high.text
-                            ))?;
-                            self.store(binary.image(), address, &low_value, half)?;
-                            self.store(binary.image(), upper, &high_value, half)?;
+                            )) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            };
+                            if let Err(error) = self.store(binary.image(), address, &low_half, half)
+                            {
+                                return Err(error.into());
+                            }
+                            if let Err(error) = self.store(binary.image(), upper, &high_half, half)
+                            {
+                                return Err(error.into());
+                            }
                         }
                     }
-                    let low_result = self.low(&low, u32::from(outputs[0].width))?;
-                    let high_result = self.low(&high, u32::from(outputs[1].width))?;
+                    let low_result = match self.low(&low, u32::from(outputs[0].width)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    let high_result = match self.low(&high, u32::from(outputs[1].width)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     self.registers.insert(outputs[0].index, low_result);
                     self.registers.insert(outputs[1].index, high_result);
                 } else {
                     let bits = u32::from(*width) * 8;
-                    let old = self.low(
-                        &self.eval(
-                            binary,
-                            &Expr::Load {
-                                addr: Box::new(Expr::Const(address)),
-                                width: *width,
-                                signed: false,
-                            },
-                        )?,
-                        bits,
-                    )?;
+                    let evaluated = match self.eval(
+                        binary,
+                        &Expr::Load {
+                            addr: Box::new(Expr::Const(address)),
+                            width: *width,
+                            signed: false,
+                        },
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let old = match self.low(&evaluated, bits) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     let operand = match args.get(1) {
-                        Some(operand) => self.low(operand, bits)?,
+                        Some(operand) => match self.low(operand, bits) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        },
                         None => Term::constant(0),
                     };
-                    self.require_defined(&old, bits)?;
-                    self.require_defined(&operand, bits)?;
+                    if let Err(error) = self.require_defined(&old, bits) {
+                        return Err(error.into());
+                    }
+                    if let Err(error) = self.require_defined(&operand, bits) {
+                        return Err(error.into());
+                    }
                     let expected = match args.get(2) {
-                        Some(expected) => self.low(expected, bits)?,
+                        Some(expected) => match self.low(expected, bits) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        },
                         None => Term::constant(0),
                     };
-                    self.require_defined(&expected, bits)?;
+                    if let Err(error) = self.require_defined(&expected, bits) {
+                        return Err(error.into());
+                    }
                     if let Some(output) = outputs.first() {
-                        let result = self.low(&old, u32::from(output.width))?;
+                        let result = match self.low(&old, u32::from(output.width)) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        };
                         self.registers.insert(output.index, result);
                     }
                     let value = match (op, old.concrete, operand.concrete) {
@@ -1359,13 +1720,16 @@ impl State {
                                 operand
                             }
                             (Some(_), Some(_)) => old,
-                            _ => self.bind(smt::low(
+                            _ => match self.bind(smt::low(
                                 &format!(
                                     "(ite (= {} {}) {} {})",
                                     old.text, expected.text, operand.text, old.text
                                 ),
                                 bits,
-                            ))?,
+                            )) {
+                                Ok(value) => value,
+                                Err(error) => return Err(error.into()),
+                            },
                         }
                     } else if let Some(value) = value {
                         Term::constant(value & semantics::mask(bits))
@@ -1383,10 +1747,15 @@ impl State {
                             ),
                             AtomicOp::Load => old.text,
                         };
-                        self.bind(smt::low(&expression, bits))?
+                        match self.bind(smt::low(&expression, bits)) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        }
                     };
-                    if *op != AtomicOp::Load {
-                        self.store(binary.image(), address, &value, *width)?;
+                    if *op != AtomicOp::Load
+                        && let Err(error) = self.store(binary.image(), address, &value, *width)
+                    {
+                        return Err(error.into());
                     }
                 }
             }
@@ -1402,10 +1771,16 @@ impl State {
             } if self.isa == Isa::AArch64 => {
                 let register = crate::arch::aarch64::TPIDR_EL0;
                 if *write {
-                    let value = self.eval(binary, &inputs[0])?;
+                    let value = match self.eval(binary, &inputs[0]) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     self.registers.insert(register, value);
                 } else {
-                    let value = self.read_register(register)?;
+                    let value = match self.read_register(register) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
                     self.registers.insert(outputs[0].index, value);
                 }
             }
@@ -1444,7 +1819,11 @@ impl State {
             scanned_values.push(value);
         }
         let mut choose = |term: &Term| -> Result<u64> {
-            let Some(value) = state.extreme(term, &state.constraints, /* maximum */ false)? else {
+            let extreme = match state.extreme(term, &state.constraints, /* maximum */ false) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let Some(value) = extreme else {
                 return Err(invalid("reached state is unsatisfiable"));
             };
             state
@@ -1455,7 +1834,11 @@ impl State {
         for (path, terms) in &self.input_files {
             let mut bytes = Vec::new();
             for term in terms {
-                bytes.push(choose(term)? as u8);
+                let chosen = match choose(term) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                bytes.push(chosen as u8);
             }
             result.files.insert(path.clone(), bytes);
         }
@@ -1473,7 +1856,11 @@ impl State {
             result.stdin.push(if scanned_bytes[index] {
                 0
             } else {
-                choose(byte)? as u8
+                let chosen = match choose(byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                chosen as u8
             });
         }
         for (scanned, value) in self.scanned_integers.iter().zip(scanned_values) {
@@ -1522,32 +1909,52 @@ impl State {
         for argument in &self.argv {
             let mut bytes = Vec::new();
             for byte in argument {
-                bytes.push(choose(byte)? as u8);
+                let chosen = match choose(byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                bytes.push(chosen as u8);
             }
             result.argv.push(bytes);
         }
         for (&index, term) in &self.arguments {
-            result
-                .arguments
-                .insert(index, crate::addr::format(choose(term)?));
+            let chosen = match choose(term) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            result.arguments.insert(index, crate::addr::format(chosen));
         }
         for (&address, term) in &self.input_memory {
+            let chosen = match choose(term) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             result
                 .memory
-                .insert(crate::addr::format(address), choose(term)? as u8);
+                .insert(crate::addr::format(address), chosen as u8);
         }
         for (&index, term) in &self.input_registers {
-            result
-                .registers
-                .insert(index, crate::addr::format(choose(term)?));
+            let chosen = match choose(term) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            result.registers.insert(index, crate::addr::format(chosen));
         }
         for byte in &self.stdout {
-            result.stdout.push(choose(byte)? as u8);
+            let chosen = match choose(byte) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            result.stdout.push(chosen as u8);
         }
         for (path, terms) in &self.files.committed {
             let mut bytes = Vec::new();
             for term in terms {
-                bytes.push(choose(term)? as u8);
+                let chosen = match choose(term) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                bytes.push(chosen as u8);
             }
             result.file_outputs.insert(path.clone(), bytes);
         }
@@ -1561,16 +1968,24 @@ impl State {
                 "find addresses and return conditions are mutually exclusive",
             ));
         }
-        let find: Vec<u64> = options
+        let find: Vec<u64> = match options
             .find
             .iter()
             .map(crate::emulation::Word::value)
-            .collect::<Result<_>>()?;
-        let avoid: Vec<u64> = options
+            .collect::<Result<_>>()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let avoid: Vec<u64> = match options
             .avoid
             .iter()
             .map(crate::emulation::Word::value)
-            .collect::<Result<_>>()?;
+            .collect::<Result<_>>()
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if find.is_empty() && options.returns.is_none() {
             return Err(invalid("at least one find address is required"));
         }
@@ -1590,10 +2005,17 @@ impl State {
                 break;
             }
             report.paths += 1;
-            if !state.satisfiable()? {
+            let is_satisfiable = match state.satisfiable() {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if !is_satisfiable {
                 continue;
             }
-            let step = state.step(binary, &until)?;
+            let step = match state.step(binary, &until) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             for diagnostic in &state.model_diagnostics {
                 if !report.diagnostics.contains(diagnostic) {
                     report.diagnostics.push(diagnostic.clone());
@@ -1606,7 +2028,11 @@ impl State {
                 Step::Reached => {
                     report.found = true;
                     report.reason = "found".to_owned();
-                    report.inputs = Some(state.inputs()?);
+                    let inputs = match state.inputs() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    report.inputs = Some(inputs);
                     report.path = state.path;
                     report.path.push(crate::addr::format(state.address));
                     return Ok(report);
@@ -1616,13 +2042,30 @@ impl State {
                     let Some(condition) = &options.returns else {
                         continue;
                     };
-                    let (cond, value) = condition.comparison()?;
-                    let returned = state.read_register(crate::arch::RETURN)?;
-                    state.constrain(cond, &returned, &Term::constant(value), 64)?;
-                    if state.satisfiable()? {
+                    let (cond, value) = match condition.comparison() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let returned = match state.read_register(crate::arch::RETURN) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if let Err(error) = state.constrain(cond, &returned, &Term::constant(value), 64)
+                    {
+                        return Err(error);
+                    }
+                    let satisfiable = match state.satisfiable() {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if satisfiable {
                         report.found = true;
                         report.reason = "found".into();
-                        report.inputs = Some(state.inputs()?);
+                        let found_inputs = match state.inputs() {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        report.inputs = Some(found_inputs);
                         report.path = state.path;
                         return Ok(report);
                     }
@@ -1728,7 +2171,11 @@ impl State {
                     .and_then(|function| function.name.as_deref())
             });
         let identification = if name.is_none() && !until.contains(&target) {
-            binary.symbolic_identifications()?.get(&target)
+            let identifications = match binary.symbolic_identifications() {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            identifications.get(&target)
         } else {
             None
         };
@@ -1772,13 +2219,19 @@ impl State {
                     Err(failure) => return Err(failure),
                 }
             } else {
-                self.libc(binary, name, convention)?
+                match self.libc(binary, name, convention) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
             };
             if self.stop.is_some() {
                 return Ok(());
             }
             let result = if self.isa == Isa::I386 {
-                self.low(&result, 32)?
+                match self.low(&result, 32) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                }
             } else {
                 result
             };
@@ -1786,7 +2239,10 @@ impl State {
                 if kind == CallKind::Tail && self.isa == Isa::AArch64 && register == 30 {
                     continue;
                 }
-                let mut unknown = self.symbolic()?;
+                let mut unknown = match self.symbolic() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
                 unknown.defined = 0;
                 self.registers.insert(register, unknown);
             }
@@ -1798,23 +2254,32 @@ impl State {
             for (dest, value) in values {
                 match value {
                     Some(value) => {
-                        self.registers
-                            .insert(dest.index, self.low(&value, u32::from(dest.width))?);
+                        let low = match self.low(&value, u32::from(dest.width)) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error.into()),
+                        };
+                        self.registers.insert(dest.index, low);
                     }
                     None => {
                         self.registers.remove(&dest.index);
                     }
                 }
             }
-            if kind == CallKind::Tail
-                && let Some(Step::Stopped(reason)) =
-                    self.return_from_call(binary, /* machine_return */ false)?
-            {
-                self.stop = Some(reason);
+            if kind == CallKind::Tail {
+                let step = match self.return_from_call(binary, /* machine_return */ false) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if let Some(Step::Stopped(reason)) = step {
+                    self.stop = Some(reason);
+                }
             }
             return Ok(());
         }
-        let blocks = lift(image, target)?;
+        let blocks = match lift(image, target) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
         if let Some(observations) = &self.branch_observations {
             record_branches(observations, &blocks);
         }
@@ -1830,20 +2295,32 @@ impl State {
             return Ok(());
         }
         let sp = crate::arch::stack_pointer(image.isa);
-        let old_sp = self.resolve(self.read_register(sp)?)?;
+        let stack_pointer = match self.read_register(sp) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        let old_sp = match self.resolve(stack_pointer) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let pushed = convention.pushed_by_call() as u64;
         let Some(stack) = old_sp.checked_sub(pushed) else {
             return Err(invalid("call stack underflows").into());
         };
         if pushed != 0 {
             let instruction =
-                super::emulation::x86_instruction_at(image, self.address).map_err(invalid)?;
-            self.store(
+                match super::emulation::x86_instruction_at(image, self.address).map_err(invalid) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+            if let Err(error) = self.store(
                 image,
                 stack,
                 &Term::constant(instruction.next_ip()),
                 pushed as u8,
-            )?;
+            ) {
+                return Err(error.into());
+            }
         }
         let mut temporaries = BTreeMap::new();
         for (&index, value) in &self.registers {
@@ -1860,13 +2337,25 @@ impl State {
             outputs: outputs.to_vec(),
             pushed,
             return_address: if pushed != 0 {
-                super::emulation::x86_instruction_at(image, self.address)
-                    .map_err(invalid)?
-                    .next_ip()
+                let x86_instruction_at_value = match super::emulation::x86_instruction_at(
+                    image,
+                    self.address,
+                )
+                .map_err(invalid)
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                x86_instruction_at_value.next_ip()
             } else {
-                self.address
+                match self
+                    .address
                     .checked_add(4)
-                    .ok_or_else(|| invalid("return address overflows"))?
+                    .ok_or_else(|| invalid("return address overflows"))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                }
             },
         });
         self.cursor = Cursor {
@@ -1890,20 +2379,39 @@ impl State {
         };
         if frame.pushed != 0 {
             let sp = crate::arch::stack_pointer(binary.image().isa);
-            let stack = self.resolve(self.read_register(sp)?)?;
-            let target = self.eval(
+            let stack_pointer = match self.read_register(sp) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            let stack = match self.resolve(stack_pointer) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let target = match self.eval(
                 binary,
                 &Expr::Load {
                     addr: Box::new(Expr::Const(stack)),
                     width: frame.pushed as u8,
                     signed: false,
                 },
-            )?;
-            if self.resolve(target)? != frame.return_address {
+            ) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let return_address = match self.resolve(target) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if return_address != frame.return_address {
                 return Err(invalid("unsupported changed return address").into());
             }
-            let instruction = super::emulation::x86_instruction_at(binary.image(), self.address)
-                .map_err(invalid)?;
+            let instruction =
+                match super::emulation::x86_instruction_at(binary.image(), self.address)
+                    .map_err(invalid)
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
             let cleanup = if machine_return
                 && instruction.mnemonic() == iced_x86::Mnemonic::Ret
                 && instruction.op_count() != 0
@@ -1912,17 +2420,25 @@ impl State {
             } else {
                 0
             };
-            let stack = stack
+            let stack = match stack
                 .checked_add(frame.pushed)
                 .and_then(|value| value.checked_add(cleanup))
-                .ok_or_else(|| invalid("return stack overflows"))?;
+                .ok_or_else(|| invalid("return stack overflows"))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             self.registers.insert(sp, Term::constant(stack));
         }
         if binary.image().isa == Isa::AArch64 {
-            let bytes = binary
+            let bytes = match binary
                 .image()
                 .read_vaddr(self.address, 4)
-                .ok_or_else(|| invalid("missing return instruction"))?;
+                .ok_or_else(|| invalid("missing return instruction"))
+            {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             let word = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
             if machine_return && word & 0xffff_fc1f != 0xd65f_0000 {
                 return Err(invalid("unsupported authenticated return").into());
@@ -1932,7 +2448,14 @@ impl State {
             } else {
                 30
             };
-            let target = self.resolve(self.read_register(register)?)?;
+            let return_register = match self.read_register(register) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            let target = match self.resolve(return_register) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if target != frame.return_address {
                 return Err(invalid("unsupported changed return address").into());
             }
@@ -1948,8 +2471,11 @@ impl State {
         for (dest, value) in outputs {
             match value {
                 Some(value) => {
-                    self.registers
-                        .insert(dest.index, self.low(&value, u32::from(dest.width))?);
+                    let low = match self.low(&value, u32::from(dest.width)) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error.into()),
+                    };
+                    self.registers.insert(dest.index, low);
                 }
                 None => {
                     self.registers.remove(&dest.index);

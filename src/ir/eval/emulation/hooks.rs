@@ -247,9 +247,13 @@ impl Runner<'_> {
     ) -> Result<u64, Stop> {
         match hook {
             Hook::Sleep => {
-                let ticks = (first as u32 as u64)
+                let ticks = match (first as u32 as u64)
                     .checked_mul(1_000_000_000)
-                    .ok_or_else(|| Stop::Error("sleep duration overflows".to_owned()))?;
+                    .ok_or_else(|| Stop::Error("sleep duration overflows".to_owned()))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if !self.advance_clock(ticks) {
                     return Err(Stop::Error("emulated clock overflows".to_owned()));
                 }
@@ -260,9 +264,13 @@ impl Runner<'_> {
                 if microseconds >= 1_000_000 {
                     return self.error_result(22);
                 }
-                let ticks = microseconds
+                let ticks = match microseconds
                     .checked_mul(1_000)
-                    .ok_or_else(|| Stop::Error("usleep duration overflows".to_owned()))?;
+                    .ok_or_else(|| Stop::Error("usleep duration overflows".to_owned()))
+                {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if !self.advance_clock(ticks) {
                     return Err(Stop::Error("emulated clock overflows".to_owned()));
                 }
@@ -275,8 +283,14 @@ impl Runner<'_> {
                         "nanosleep request address overflows".to_owned(),
                     ));
                 };
-                let seconds = self.read_integer(first, width)?;
-                let nanoseconds = self.read_integer(nanoseconds_address, width)?;
+                let seconds = match self.read_integer(first, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let nanoseconds = match self.read_integer(nanoseconds_address, width) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let seconds = if width == 4 {
                     seconds as u32 as i32 as i64
                 } else {
@@ -300,7 +314,10 @@ impl Runner<'_> {
             Hook::GetResourceLimit => self.resource_limit(first, convention, kind, false),
             Hook::SetResourceLimit => self.resource_limit(first, convention, kind, true),
             Hook::Socket => {
-                let descriptor = self.next_socket_descriptor()?;
+                let descriptor = match self.next_socket_descriptor() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 self.sockets.insert(
                     descriptor,
                     super::SocketState {
@@ -316,13 +333,21 @@ impl Runner<'_> {
                 if !self.sockets.contains_key(&descriptor) {
                     return self.error_result(9);
                 }
-                let address = self.argument(1, convention, kind)?;
-                let length = self.argument(2, convention, kind)?;
+                let address = match self.argument(1, convention, kind) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let length = match self.argument(2, convention, kind) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if address != 0 && length != 0 {
                     if length > 128 {
                         return self.error_result(22);
                     }
-                    self.check_memory_range(address, length, false)?;
+                    if let Err(error) = self.check_memory_range(address, length, false) {
+                        return Err(error);
+                    }
                 }
                 let Some(socket) = self.sockets.get_mut(&descriptor) else {
                     return self.error_result(9);
@@ -358,29 +383,49 @@ impl Runner<'_> {
                 if !socket.listening {
                     return self.error_result(22);
                 }
-                let address = self.argument(1, convention, kind)?;
-                let length_pointer = self.argument(2, convention, kind)?;
+                let address = match self.argument(1, convention, kind) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let length_pointer = match self.argument(2, convention, kind) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if address != 0 {
                     if length_pointer == 0 {
                         return self.error_result(14);
                     }
-                    let length = self.read_integer(length_pointer, 4)?;
+                    let length = match self.read_integer(length_pointer, 4) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     let written = length.min(16);
-                    self.check_memory_range(address, written, true)?;
+                    if let Err(error) = self.check_memory_range(address, written, true) {
+                        return Err(error);
+                    }
                     for offset in 0..written {
                         let Some(at) = address.checked_add(offset) else {
                             return Err(Stop::Error(
                                 "accepted socket address overflows".to_owned(),
                             ));
                         };
-                        self.write_byte(at, 0)?;
+                        if let Err(error) = self.write_byte(at, 0) {
+                            return Err(error);
+                        }
                     }
-                    if written >= 2 {
-                        self.write_byte(address, 2)?;
+                    if written >= 2
+                        && let Err(error) = self.write_byte(address, 2)
+                    {
+                        return Err(error);
                     }
-                    self.write_integer(length_pointer, 4, 16)?;
+                    if let Err(error) = self.write_integer(length_pointer, 4, 16) {
+                        return Err(error);
+                    }
                 }
-                let descriptor = self.next_socket_descriptor()?;
+                let descriptor = match self.next_socket_descriptor() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 self.sockets.insert(
                     descriptor,
                     super::SocketState {
@@ -400,19 +445,27 @@ impl Runner<'_> {
     }
 
     fn error_result(&mut self, error: u32) -> Result<u64, Stop> {
-        self.set_errno(error)?;
+        if let Err(error) = self.set_errno(error) {
+            return Err(error);
+        }
         Ok(u64::from(u32::MAX))
     }
 
     fn read_integer(&mut self, address: u64, width: u8) -> Result<u64, Stop> {
-        self.check_memory_range(address, u64::from(width), false)?;
+        if let Err(error) = self.check_memory_range(address, u64::from(width), false) {
+            return Err(error);
+        }
         let value = self.machine.load(address, width);
-        self.memory_error()?;
+        if let Err(error) = self.memory_error() {
+            return Err(error);
+        }
         Ok(value)
     }
 
     fn write_integer(&mut self, address: u64, width: u8, value: u64) -> Result<(), Stop> {
-        self.check_memory_range(address, u64::from(width), true)?;
+        if let Err(error) = self.check_memory_range(address, u64::from(width), true) {
+            return Err(error);
+        }
         self.machine.store(address, value, width);
         self.memory_error()
     }
@@ -423,7 +476,10 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> Result<u64, Stop> {
-        let locale = self.argument(1, convention, kind)?;
+        let locale = match self.argument(1, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let max_category = if self.image.format == crate::loader::Format::MachO {
             5
         } else {
@@ -433,7 +489,10 @@ impl Runner<'_> {
             return Ok(0);
         }
         if locale != 0 {
-            let name = self.bytes_at(locale, None)?;
+            let name = match self.bytes_at(locale, None) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if name != b"C" && name != b"POSIX" {
                 return Ok(0);
             }
@@ -445,8 +504,12 @@ impl Runner<'_> {
         if address == 0 {
             return Err(Stop::Error("locale string allocation failed".to_owned()));
         }
-        self.write_byte(address, b'C')?;
-        self.write_byte(address + 1, 0)?;
+        if let Err(error) = self.write_byte(address, b'C') {
+            return Err(error);
+        }
+        if let Err(error) = self.write_byte(address + 1, 0) {
+            return Err(error);
+        }
         self.locale = Some(address);
         Ok(address)
     }
@@ -458,7 +521,10 @@ impl Runner<'_> {
         kind: CallKind,
         update: bool,
     ) -> Result<u64, Stop> {
-        let pointer = self.argument(1, convention, kind)?;
+        let pointer = match self.argument(1, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         let resource = resource as u32;
         let valid = if self.image.format == crate::loader::Format::MachO {
             matches!(resource, 0..=5 | 7..=8)
@@ -473,8 +539,14 @@ impl Runner<'_> {
             return Err(Stop::Error("resource limit address overflows".to_owned()));
         };
         if update {
-            let current = self.read_integer(pointer, width)?;
-            let maximum = self.read_integer(hard_address, width)?;
+            let current = match self.read_integer(pointer, width) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let maximum = match self.read_integer(hard_address, width) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if current > maximum {
                 return self.error_result(22);
             }
@@ -493,15 +565,22 @@ impl Runner<'_> {
                 .get(&resource)
                 .copied()
                 .unwrap_or((u64::MAX, u64::MAX));
-            self.write_integer(pointer, width, limit.0)?;
-            self.write_integer(hard_address, width, limit.1)?;
+            if let Err(error) = self.write_integer(pointer, width, limit.0) {
+                return Err(error);
+            }
+            if let Err(error) = self.write_integer(hard_address, width, limit.1) {
+                return Err(error);
+            }
         }
         Ok(0)
     }
 
     fn next_socket_descriptor(&mut self) -> Result<u64, Stop> {
         loop {
-            let descriptor = self.files.reserve_descriptor().map_err(Stop::Error)?;
+            let descriptor = match self.files.reserve_descriptor().map_err(Stop::Error) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if !self.options.stdin_descriptors.contains(&descriptor) {
                 return Ok(u64::from(descriptor));
             }
@@ -521,31 +600,50 @@ impl Runner<'_> {
         if !socket.connected {
             return self.error_result(107);
         }
-        let buffer = self.argument(1, convention, kind)?;
-        let count = self.argument(2, convention, kind)?;
-        let flags = self.argument(3, convention, kind)? as u32;
+        let buffer = match self.argument(1, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let count = match self.argument(2, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let argument = match self.argument(3, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let flags = argument as u32;
         if count > HEAP_SIZE {
             return self.error_result(90);
         }
         if matches!(hook, Hook::Send) {
-            self.check_memory_range(buffer, count, false)?;
+            if let Err(error) = self.check_memory_range(buffer, count, false) {
+                return Err(error);
+            }
             for offset in 0..count {
                 let Some(address) = buffer.checked_add(offset) else {
                     return Err(Stop::Error("socket send address overflows".to_owned()));
                 };
-                let _ = self.read_byte(address)?;
+                let _ = match self.read_byte(address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
             }
             return Ok(count);
         }
         let remaining = self.socket_peer.len().saturating_sub(self.socket_position);
         let length = (count as usize).min(remaining);
-        self.check_memory_range(buffer, length as u64, true)?;
+        if let Err(error) = self.check_memory_range(buffer, length as u64, true) {
+            return Err(error);
+        }
         for offset in 0..length {
             let Some(address) = buffer.checked_add(offset as u64) else {
                 return Err(Stop::Error("socket receive address overflows".to_owned()));
             };
             let byte = self.socket_peer[self.socket_position + offset];
-            self.write_byte(address, byte)?;
+            if let Err(error) = self.write_byte(address, byte) {
+                return Err(error);
+            }
         }
         if flags & 2 == 0 {
             self.socket_position = self.socket_position.saturating_add(length);
@@ -733,7 +831,10 @@ impl Runner<'_> {
             return Err(Stop::StackCheckFail);
         }
         if let Hook::Io(super::io::Operation::Close) = hook {
-            let descriptor = self.argument(0, convention, kind)?;
+            let descriptor = match self.argument(0, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if self.sockets.remove(&descriptor).is_some() {
                 return Ok(0);
             }
@@ -1390,13 +1491,18 @@ impl Runner<'_> {
             Ok(value) => value,
             Err(stop) => return Err(stop),
         };
-        let stream = self.argument(2, convention, kind)?;
+        let stream = match self.argument(2, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         if stream == 0 || stream != self.streams[0] {
             return Err(Stop::Error("unsupported getline stream".into()));
         }
         let mut bytes = Vec::new();
         while let Some(byte) = super::io::next_input(&self.input, &mut self.input_position) {
-            self.tick()?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             bytes.push(byte);
             if byte == 10 {
                 break;
@@ -1409,7 +1515,9 @@ impl Runner<'_> {
         bytes.push(0);
         let mut destination = self.machine.load(pointer, width);
         let capacity = self.machine.load(capacity_pointer, width);
-        self.memory_error()?;
+        if let Err(error) = self.memory_error() {
+            return Err(error);
+        }
         if destination == 0 || capacity < bytes.len() as u64 {
             destination = self.allocate(bytes.len() as u64);
             if destination == 0 {
@@ -1418,13 +1526,17 @@ impl Runner<'_> {
             self.machine.store(pointer, destination, width);
             self.machine
                 .store(capacity_pointer, bytes.len() as u64, width);
-            self.memory_error()?;
+            if let Err(error) = self.memory_error() {
+                return Err(error);
+            }
         }
         for (offset, byte) in bytes.into_iter().enumerate() {
             let Some(address) = destination.checked_add(offset as u64) else {
                 return Err(Stop::Error("getline destination overflows".into()));
             };
-            self.write_byte(address, byte)?;
+            if let Err(error) = self.write_byte(address, byte) {
+                return Err(error);
+            }
         }
         Ok(length as u64)
     }

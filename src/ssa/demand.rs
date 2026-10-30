@@ -96,12 +96,13 @@ pub(super) fn demanded_bits(
     let mut demand: HashMap<u16, u64> = HashMap::new();
     loop {
         let mut next: HashMap<u16, u64> = HashMap::new();
-        for (position, stmt) in ssa.ir.blocks.iter().enumerate().flat_map(|(block, body)| {
+        let positioned_statements = ssa.ir.blocks.iter().enumerate().flat_map(|(block, body)| {
             body.stmts
                 .iter()
                 .enumerate()
                 .map(move |(at, stmt)| ((block, at), stmt))
-        }) {
+        });
+        for (position, stmt) in positioned_statements {
             match stmt {
                 Stmt::Store {
                     addr, value, width, ..
@@ -198,8 +199,13 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
         if !(1..=8).contains(&width) {
             return None;
         }
-        let start = slot(addr, frame, sp)?;
-        Some((start, start.checked_add(i64::from(width))?))
+        let Some(start) = slot(addr, frame, sp) else {
+            return None;
+        };
+        let Some(end) = start.checked_add(i64::from(width)) else {
+            return None;
+        };
+        Some((start, end))
     }
     fn loads(expr: &Expr, frame: i64, sp: u16, read: &mut Vec<(i64, i64)>) -> Option<()> {
         if let Expr::Load { addr, width, .. } = expr {

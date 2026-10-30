@@ -259,7 +259,8 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     let mut objects = Vec::new();
     let mut pointer_parameters = Vec::new();
     let mut captures = Vec::new();
-    for (parameter, ((object, _), value)) in params.iter().zip(&abi.arguments).enumerate() {
+    let parameter_values = params.iter().zip(&abi.arguments).enumerate();
+    for (parameter, ((object, _), value)) in parameter_values {
         match &value.passing {
             Passing::Direct(pieces) => {
                 let mut stack_base = None;

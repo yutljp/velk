@@ -226,7 +226,10 @@ fn origin(expr: &Expr, state: &State) -> Option<Origin> {
             rhs,
         } => match (lhs.as_ref(), rhs.as_ref()) {
             (value, Expr::Const(offset)) | (Expr::Const(offset), value) => {
-                offset_origin(origin(value, state)?, *offset as i64)
+                let Some(base_origin) = origin(value, state) else {
+                    return None;
+                };
+                offset_origin(base_origin, *offset as i64)
             }
             _ => None,
         },
@@ -236,7 +239,13 @@ fn origin(expr: &Expr, state: &State) -> Option<Origin> {
             rhs,
         } => match rhs.as_ref() {
             Expr::Const(offset) => {
-                offset_origin(origin(lhs, state)?, (*offset as i64).checked_neg()?)
+                let Some(left_origin) = origin(lhs, state) else {
+                    return None;
+                };
+                let Some(negated) = (*offset as i64).checked_neg() else {
+                    return None;
+                };
+                offset_origin(left_origin, negated)
             }
             _ => None,
         },
@@ -246,8 +255,18 @@ fn origin(expr: &Expr, state: &State) -> Option<Origin> {
 
 fn offset_origin(value: Origin, offset: i64) -> Option<Origin> {
     Some(match value {
-        Origin::Object(object, base) => Origin::Object(object, base.checked_add(offset)?),
-        Origin::Stack(base) => Origin::Stack(base.checked_add(offset)?),
+        Origin::Object(object, base) => {
+            let Some(sum) = base.checked_add(offset) else {
+                return None;
+            };
+            Origin::Object(object, sum)
+        }
+        Origin::Stack(base) => {
+            let Some(sum) = base.checked_add(offset) else {
+                return None;
+            };
+            Origin::Stack(sum)
+        }
         Origin::Unknown => Origin::Unknown,
     })
 }

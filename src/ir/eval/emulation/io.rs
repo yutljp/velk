@@ -101,7 +101,8 @@ impl Runner<'_> {
                 if location == 0 {
                     return Err("argv strings exceed heap capacity".into());
                 }
-                for (offset, byte) in text.bytes().chain([0]).enumerate() {
+                let terminated_bytes = text.bytes().chain([0]).enumerate();
+                for (offset, byte) in terminated_bytes {
                     self.machine
                         .store(location + offset as u64, u64::from(byte), 1);
                 }
@@ -226,8 +227,14 @@ impl Runner<'_> {
         let mut bytes = Vec::new();
         for offset in 0..length.unwrap_or(HEAP_SIZE as usize) {
             // Invalid memory aborts this whole operation.
-            let location = address(base, offset)?;
-            let byte = self.read_byte(location)?;
+            let location = match address(base, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let byte = match self.read_byte(location) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if length.is_none() && byte == 0 {
                 return Ok(bytes);
             }
@@ -241,9 +248,17 @@ impl Runner<'_> {
 
     pub(super) fn store_bytes(&mut self, base: u64, bytes: &[u8]) -> Result<(), Stop> {
         // A failed range check or write aborts the whole hook.
-        self.check_memory_range(base, bytes.len() as u64, /* write */ true)?;
+        if let Err(error) = self.check_memory_range(base, bytes.len() as u64, /* write */ true) {
+            return Err(error);
+        }
         for (offset, &byte) in bytes.iter().enumerate() {
-            self.write_byte(address(base, offset)?, byte)?;
+            let field_address = match address(base, offset) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = self.write_byte(field_address, byte) {
+                return Err(error);
+            }
         }
         Ok(())
     }
@@ -259,7 +274,11 @@ impl Runner<'_> {
         if self.recovery.is_some() {
             return Err(error("I/O calls require explicit emulation"));
         }
-        if let Some(result) = self.file_hook(operation, convention, kind)? {
+        let handled = match self.file_hook(operation, convention, kind) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Some(result) = handled {
             return Ok(result);
         }
         let (operation, uses_va_list) = match operation {
@@ -295,7 +314,10 @@ impl Runner<'_> {
             }
             return Ok(u64::from(u32::MAX));
         }
-        let first = args.next(self, pointer_bytes)?;
+        let first = match args.next(self, pointer_bytes) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         match operation {
             Printf | Fprintf | Sprintf | Snprintf => {
                 let mut capacity = None;
@@ -303,31 +325,68 @@ impl Runner<'_> {
                 let format = match operation {
                     Printf => first,
                     Fprintf => {
-                        stream = self.stream(first, /* input */ false)?;
-                        args.next(self, pointer_bytes)?
+                        stream = match self.stream(first, /* input */ false) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     }
-                    Sprintf => args.next(self, pointer_bytes)?,
+                    Sprintf => match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    },
                     Snprintf => {
-                        capacity = Some(args.next(self, pointer_bytes)?);
-                        args.next(self, pointer_bytes)?
+                        let value = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        capacity = Some(value);
+                        match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        }
                     }
                     _ => unreachable!(),
                 };
                 if uses_va_list {
-                    let list = args.next(self, pointer_bytes)?;
-                    args.set_list(self, list)?;
+                    let list = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if let Err(error) = args.set_list(self, list) {
+                        return Err(error);
+                    }
                 }
-                let format = self.bytes_at(format, None)?;
-                let bytes = self.format_output(&format, &mut args)?;
+                let format = match self.bytes_at(format, None) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let bytes = match self.format_output(&format, &mut args) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if matches!(operation, Sprintf | Snprintf) {
                     let size = capacity.unwrap_or(bytes.len() as u64 + 1);
                     if size != 0 {
                         let count = bytes.len().min((size - 1).min(HEAP_SIZE) as usize);
-                        self.store_bytes(first, &bytes[..count])?;
-                        self.store_bytes(address(first, count)?, &[0])?;
+                        if let Err(error) = self.store_bytes(first, &bytes[..count]) {
+                            return Err(error);
+                        }
+                        let end_address = match address(first, count) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = self.store_bytes(end_address, &[0]) {
+                            return Err(error);
+                        }
                     }
                 } else {
-                    self.windows_crt_write(stream, &bytes)?;
+                    if let Err(error) = self.windows_crt_write(stream, &bytes) {
+                        return Err(error);
+                    }
                 }
                 Ok(bytes.len() as u64)
             }
@@ -335,17 +394,29 @@ impl Runner<'_> {
                 let mut bytes = if matches!(operation, Putchar) {
                     vec![first as u8]
                 } else {
-                    self.bytes_at(first, None)?
+                    match self.bytes_at(first, None) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 };
                 let stream = if matches!(operation, Fputs) {
-                    self.stream(args.next(self, pointer_bytes)?, /* input */ false)?
+                    let argument = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    match self.stream(argument, /* input */ false) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     1
                 };
                 if matches!(operation, Puts) {
                     bytes.push(b'\n');
                 }
-                self.windows_crt_write(stream, &bytes)?;
+                if let Err(error) = self.windows_crt_write(stream, &bytes) {
+                    return Err(error);
+                }
                 Ok(if matches!(operation, Putchar) {
                     u64::from(first as u8)
                 } else {
@@ -358,25 +429,52 @@ impl Runner<'_> {
                     if !matches!(fd, 1 | 2) {
                         return Err(error(format!("unsupported write fd {fd}")));
                     }
-                    let base = args.next(self, pointer_bytes)?;
-                    let count = args.next(self, pointer_bytes)?;
+                    let base = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let count = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     (base, count, count, fd as usize)
                 } else {
-                    let size = args.next(self, pointer_bytes)?;
-                    let count = args.next(self, pointer_bytes)?;
-                    let stream =
-                        self.stream(args.next(self, pointer_bytes)?, /* input */ false)?;
+                    let size = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let count = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let argument = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    let stream = match self.stream(argument, /* input */ false) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     let Some(total) = size.checked_mul(count) else {
                         return Err(error("fwrite size overflows"));
                     };
                     (first, total, if size == 0 { 0 } else { count }, stream)
                 };
-                self.check_memory_range(base, count, /* write */ false)?;
-                let bytes = self.bytes_at(base, Some(count as usize))?;
+                if let Err(error) = self.check_memory_range(base, count, /* write */ false) {
+                    return Err(error);
+                }
+                let bytes = match self.bytes_at(base, Some(count as usize)) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if matches!(operation, Fwrite) {
-                    self.windows_crt_write(stream, &bytes)?;
+                    if let Err(error) = self.windows_crt_write(stream, &bytes) {
+                        return Err(error);
+                    }
                 } else {
-                    self.emit(stream, &bytes)?;
+                    if let Err(error) = self.emit(stream, &bytes) {
+                        return Err(error);
+                    }
                 }
                 Ok(result)
             }
@@ -387,29 +485,57 @@ impl Runner<'_> {
                         if fd != 0 && !self.options.stdin_descriptors.contains(&(fd as u32)) {
                             return Err(error(format!("unsupported read fd {fd}")));
                         }
-                        (
-                            args.next(self, pointer_bytes)?,
-                            args.next(self, pointer_bytes)?,
-                            1,
-                        )
+                        let argument = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let pointer_bytes_argument = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        (argument, pointer_bytes_argument, 1)
                     }
                     Fread => {
-                        let size = args.next(self, pointer_bytes)?;
-                        let count = args.next(self, pointer_bytes)?;
-                        self.stream(args.next(self, pointer_bytes)?, /* input */ true)?;
+                        let size = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let count = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let argument = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = self.stream(argument, /* input */ true) {
+                            return Err(error);
+                        }
                         let Some(total) = size.checked_mul(count) else {
                             return Err(error("fread size overflows"));
                         };
                         (first, total, size)
                     }
                     Fgets => {
-                        let limit = args.next(self, 4)? as u32 as i32;
-                        self.stream(args.next(self, pointer_bytes)?, /* input */ true)?;
+                        let argument = match args.next(self, 4) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        let limit = argument as u32 as i32;
+                        let argument = match args.next(self, pointer_bytes) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
+                        if let Err(error) = self.stream(argument, /* input */ true) {
+                            return Err(error);
+                        }
                         if limit <= 0 {
                             return Ok(0);
                         }
                         if limit == 1 {
-                            self.store_bytes(first, &[0])?;
+                            if let Err(error) = self.store_bytes(first, &[0]) {
+                                return Err(error);
+                            }
                             return Ok(first);
                         }
                         (first, (limit - 1) as u64, 1)
@@ -430,7 +556,9 @@ impl Runner<'_> {
                     let Some(&byte) = self.input.get(self.input_position) else {
                         break;
                     };
-                    self.tick()?;
+                    if let Err(error) = self.tick() {
+                        return Err(error);
+                    }
                     self.input_position += 1;
                     if byte == b'\n' && matches!(operation, Gets) {
                         break;
@@ -447,7 +575,9 @@ impl Runner<'_> {
                 if line {
                     bytes.push(0);
                 }
-                self.store_bytes(base, &bytes)?;
+                if let Err(error) = self.store_bytes(base, &bytes) {
+                    return Err(error);
+                }
                 Ok(if line {
                     base
                 } else {
@@ -458,22 +588,41 @@ impl Runner<'_> {
                 let format = if matches!(operation, Scanf) {
                     first
                 } else {
-                    args.next(self, pointer_bytes)?
+                    match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 };
-                if matches!(operation, Fscanf) {
-                    self.stream(first, /* input */ true)?;
+                if matches!(operation, Fscanf)
+                    && let Err(error) = self.stream(first, /* input */ true)
+                {
+                    return Err(error);
                 }
                 if uses_va_list {
-                    let list = args.next(self, pointer_bytes)?;
-                    args.set_list(self, list)?;
+                    let list = match args.next(self, pointer_bytes) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    if let Err(error) = args.set_list(self, list) {
+                        return Err(error);
+                    }
                 }
-                let format = self.bytes_at(format, None)?;
+                let format = match self.bytes_at(format, None) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 let input = if matches!(operation, Sscanf) {
-                    self.bytes_at(first, None)?
+                    match self.bytes_at(first, None) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    }
                 } else {
                     self.input[self.input_position..].to_vec()
                 };
-                let (result, consumed) = self.scan_input(&format, &input, &mut args)?;
+                let (result, consumed) = match self.scan_input(&format, &input, &mut args) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if !matches!(operation, Sscanf) {
                     self.input_position += consumed;
                 }

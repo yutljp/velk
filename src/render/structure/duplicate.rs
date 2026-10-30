@@ -277,7 +277,12 @@ pub(super) fn threaded(ir: &FunctionIr) -> Option<FunctionIr> {
         .blocks
         .iter()
         .skip(1)
-        .filter_map(|block| Some((block.start, only_jump(&block.stmts)?)))
+        .filter_map(|block| {
+            let Some(jump) = only_jump(&block.stmts) else {
+                return None;
+            };
+            Some((block.start, jump))
+        })
         .collect();
     if jumps.is_empty() {
         return None;

@@ -57,7 +57,9 @@ fn precision(bits: u16) -> Option<Precision> {
 
 pub(super) fn half_immediate(value: f64) -> Option<u64> {
     let bits = value.to_bits();
-    let exponent = ((bits >> 52) & 0x7ff).checked_sub(1008)?;
+    let Some(exponent) = ((bits >> 52) & 0x7ff).checked_sub(1008) else {
+        return None;
+    };
     if !(12..=19).contains(&exponent) || bits & ((1 << 48) - 1) != 0 {
         return None;
     }
@@ -111,11 +113,18 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         Operand::SIMDRegister(a64::SIMDSizeCode::S, number) => {
             ((crate::arch::aarch64::V0 + 2 * number, false, 32), true)
         }
-        operand => (vector(operand)?, false),
+        operand => {
+            let Some(vector_register) = vector(operand) else {
+                return None;
+            };
+            (vector_register, false)
+        }
     };
     let source = |operand: Operand| match operand {
         Operand::SIMDRegister(..) => {
-            let (slot, _) = simd(operand)?;
+            let Some((slot, _)) = simd(operand) else {
+                return None;
+            };
             Some((Expr::reg(slot, 64), Expr::constant(0)))
         }
         operand => source_halves(operand),
@@ -132,8 +141,16 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
     };
     let (low, high) = match ins.opcode {
         O::FADD | O::FSUB | O::FMUL | O::FDIV | O::FABD => {
-            let p = p?;
-            let args = [source(ops[1])?, source(ops[2])?];
+            let Some(p) = p else {
+                return None;
+            };
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            let Some(second_source) = source(ops[2]) else {
+                return None;
+            };
+            let args = [first_source, second_source];
             float_lanes(shape, &args, |mut lane| {
                 let (a, b) = (lane.remove(0), lane.remove(0));
                 match ins.opcode {
@@ -151,9 +168,17 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         // The product added to the destination, or for fmls the first
         // source negated, rounded once.
         O::FMLA | O::FMLS => {
-            let p = p?;
+            let Some(p) = p else {
+                return None;
+            };
             let accumulator = (Expr::reg(dest.0, 64), Expr::reg(dest.0 + 1, 64));
-            let args = [source(ops[1])?, source(ops[2])?, accumulator];
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            let Some(second_source) = source(ops[2]) else {
+                return None;
+            };
+            let args = [first_source, second_source, accumulator];
             float_lanes(shape, &args, |mut lane| {
                 let (n, m, accumulator) = (lane.remove(0), lane.remove(0), lane.remove(0));
                 let n = if ins.opcode == O::FMLS {
@@ -174,15 +199,30 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         | O::FRINTZ
         | O::FRINTX
         | O::FRINTI => {
-            let p = p?;
-            let op = unary_operation(ins.opcode, p)?;
-            float_lanes(shape, &[source(ops[1])?], |lane| apply(op, lane))
+            let Some(p) = p else {
+                return None;
+            };
+            let Some(op) = unary_operation(ins.opcode, p) else {
+                return None;
+            };
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            float_lanes(shape, &[first_source], |lane| apply(op, lane))
         }
         // All ones where the comparison holds; against zero, or the
         // absolute values for the facge and facgt.
         O::FCMEQ | O::FCMGE | O::FCMGT | O::FCMLE | O::FCMLT | O::FACGE | O::FACGT => {
-            let p = p?;
-            let args = [source(ops[1])?, source(ops[2])?];
+            let Some(p) = p else {
+                return None;
+            };
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            let Some(second_source) = source(ops[2]) else {
+                return None;
+            };
+            let args = [first_source, second_source];
             float_lanes(shape, &args, |mut lane| {
                 let (a, b) = (lane.remove(0), lane.remove(0));
                 let abs = |value| apply(Operation::FloatAbs(p), vec![value]);
@@ -200,9 +240,14 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         // A fixed-point source has that many fraction bits; dividing by a
         // power of two adds no rounding.
         O::SCVTF | O::UCVTF => {
-            let p = p?;
+            let Some(p) = p else {
+                return None;
+            };
             let fraction = shift_count(ops[2]).unwrap_or(0) as u32;
-            float_lanes(shape, &[source(ops[1])?], |lane| {
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            float_lanes(shape, &[first_source], |lane| {
                 let converted = apply(
                     Operation::IntToFloat {
                         signed: ins.opcode == O::SCVTF,
@@ -231,10 +276,17 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         | O::FCVTMU
         | O::FCVTPS
         | O::FCVTPU => {
-            let p = p?;
-            let (signed, rounding) = integer_conversion(ins.opcode)?;
+            let Some(p) = p else {
+                return None;
+            };
+            let Some((signed, rounding)) = integer_conversion(ins.opcode) else {
+                return None;
+            };
             let fraction = shift_count(ops[2]).unwrap_or(0) as u32;
-            float_lanes(shape, &[source(ops[1])?], |mut lane| {
+            let Some(first_source) = source(ops[1]) else {
+                return None;
+            };
+            float_lanes(shape, &[first_source], |mut lane| {
                 let value = lane.remove(0);
                 // A fixed-point result keeps that many fraction bits.
                 let value = if fraction > 0 {
@@ -260,9 +312,13 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         // Neighbouring lanes of the two sources taken as one added, or the
         // two lanes of one source for the scalar form.
         O::FADDP => {
-            let p = p?;
+            let Some(p) = p else {
+                return None;
+            };
             let add = |lane: Vec<Expr>| apply(Operation::FloatAdd(p), lane);
-            let a = source(ops[1])?;
+            let Some(a) = source(ops[1]) else {
+                return None;
+            };
             if matches!(ops[2], Operand::Nothing) {
                 let pair = if dest.2 == 64 {
                     (a.0, a.1)
@@ -274,7 +330,9 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
                 };
                 (add(vec![pair.0, pair.1]), Expr::constant(0))
             } else {
-                let b = source(ops[2])?;
+                let Some(b) = source(ops[2]) else {
+                    return None;
+                };
                 let even = unzip(a.clone(), b.clone(), dest.2, dest.1, LaneParity::Even);
                 let odd = unzip(a, b, dest.2, dest.1, LaneParity::Odd);
                 float_lanes(shape, &[even, odd], add)
@@ -282,7 +340,9 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         }
         // Singles to doubles, from the low half or, for fcvtl2, the high one.
         O::FCVTL | O::FCVTL2 if dest.2 == 64 => {
-            let (low, high) = source(ops[1])?;
+            let Some((low, high)) = source(ops[1]) else {
+                return None;
+            };
             let half = if ins.opcode == O::FCVTL2 { high } else { low };
             let widen = |single: Expr| {
                 apply(
@@ -304,7 +364,9 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         }
         // Doubles to singles, into the low half or, for fcvtn2, the high one.
         O::FCVTN | O::FCVTN2 if dest.2 == 32 => {
-            let (low, high) = source(ops[1])?;
+            let Some((low, high)) = source(ops[1]) else {
+                return None;
+            };
             let narrow = |double: Expr| {
                 apply(
                     Operation::FloatConvert {
@@ -333,14 +395,27 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     use a64::Opcode as O;
     let ops = ins.operands;
     let read = |lifter: &Lifter, operand: Operand| -> Option<(Expr, Precision)> {
-        let (slot, bits) = simd(operand)?;
-        Some((lifter.read_simd(slot, bits), precision(bits)?))
+        let Some((slot, bits)) = simd(operand) else {
+            return None;
+        };
+        let Some(precision) = precision(bits) else {
+            return None;
+        };
+        Some((lifter.read_simd(slot, bits), precision))
     };
     let float = |op: Operation, args: Vec<Expr>| Expr::apply(op, args);
     match ins.opcode {
         O::FADD | O::FSUB | O::FMUL | O::FDIV | O::FNMUL => {
-            let (slot, bits) = simd(ops[0])?;
-            let ((a, p), (b, _)) = (read(lifter, ops[1])?, read(lifter, ops[2])?);
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some(first_operand) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some(second_operand) = read(lifter, ops[2]) else {
+                return None;
+            };
+            let ((a, p), (b, _)) = (first_operand, second_operand);
             let value = match ins.opcode {
                 O::FADD => float(Operation::FloatAdd(p), vec![a, b]),
                 O::FSUB => float(Operation::FloatSub(p), vec![a, b]),
@@ -363,20 +438,33 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         | O::FRINTZ
         | O::FRINTX
         | O::FRINTI => {
-            let (slot, bits) = simd(ops[0])?;
-            let (a, p) = read(lifter, ops[1])?;
-            let op = unary_operation(ins.opcode, p)?;
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some((a, p)) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some(op) = unary_operation(ins.opcode, p) else {
+                return None;
+            };
             lifter.write_simd(slot, bits, (float(op, vec![a]), Expr::constant(0)));
         }
         // fmadd d, n, m, a is a + n * m; fmsub negates the product, fnmadd
         // both the product and the addend, and fnmsub the addend.
         O::FMADD | O::FMSUB | O::FNMADD | O::FNMSUB => {
-            let (slot, bits) = simd(ops[0])?;
-            let ((n, p), (m, _), (a, _)) = (
-                read(lifter, ops[1])?,
-                read(lifter, ops[2])?,
-                read(lifter, ops[3])?,
-            );
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some(first_operand) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some(second_operand) = read(lifter, ops[2]) else {
+                return None;
+            };
+            let Some(third_operand) = read(lifter, ops[3]) else {
+                return None;
+            };
+            let ((n, p), (m, _), (a, _)) = (first_operand, second_operand, third_operand);
             let negate = |value| float(Operation::FloatNegate(p), vec![value]);
             let fused = |n, a| float(Operation::FloatMulAdd(p), vec![n, m.clone(), a]);
             let value = match ins.opcode {
@@ -388,10 +476,17 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             lifter.write_simd(slot, bits, (value, Expr::constant(0)));
         }
         O::FCMP | O::FCMPE => {
-            let (a, p) = read(lifter, ops[0])?;
+            let Some((a, p)) = read(lifter, ops[0]) else {
+                return None;
+            };
             let b = match ops[1] {
                 Operand::ImmediateDouble(_) => Expr::constant(0),
-                operand => read(lifter, operand)?.0,
+                operand => {
+                    let Some(operand_register) = read(lifter, operand) else {
+                        return None;
+                    };
+                    operand_register.0
+                }
             };
             lifter.last_compare = Some(Flags::float_compare(a, b, p));
         }
@@ -402,16 +497,30 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 Operand::ConditionCode(code) => lifter.test_code(code),
                 _ => return None,
             };
+            let Some(destination_operand) = read(lifter, ops[0]) else {
+                return None;
+            };
+            let Some(first_operand) = read(lifter, ops[1]) else {
+                return None;
+            };
             let ((a, p), (b, _), Operand::Immediate(nzcv)) =
-                (read(lifter, ops[0])?, read(lifter, ops[1])?, ops[2])
+                (destination_operand, first_operand, ops[2])
             else {
                 return None;
             };
             lifter.last_compare = Flags::float_compare(a, b, p).chosen_by(earlier, nzcv as u8);
         }
         O::FCSEL => {
-            let (slot, bits) = simd(ops[0])?;
-            let ((a, _), (b, _)) = (read(lifter, ops[1])?, read(lifter, ops[2])?);
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some(first_operand) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some(second_operand) = read(lifter, ops[2]) else {
+                return None;
+            };
+            let ((a, _), (b, _)) = (first_operand, second_operand);
             let Operand::ConditionCode(code) = ops[3] else {
                 return None;
             };
@@ -423,17 +532,31 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             }
         }
         O::FCVT => {
-            let (slot, bits) = simd(ops[0])?;
-            let (a, from) = read(lifter, ops[1])?;
-            let to = precision(bits)?;
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some((a, from)) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some(to) = precision(bits) else {
+                return None;
+            };
             let value = float(Operation::FloatConvert { from, to }, vec![a]);
             lifter.write_simd(slot, bits, (value, Expr::constant(0)));
         }
         O::SCVTF | O::UCVTF => {
-            let (slot, bits) = simd(ops[0])?;
-            let to = precision(bits)?;
-            let source = register_width(ops[1])?;
-            let value = lifter.operand(ops[1], source)?;
+            let Some((slot, bits)) = simd(ops[0]) else {
+                return None;
+            };
+            let Some(to) = precision(bits) else {
+                return None;
+            };
+            let Some(source) = register_width(ops[1]) else {
+                return None;
+            };
+            let Some(value) = lifter.operand(ops[1], source) else {
+                return None;
+            };
             let converted = float(
                 Operation::IntToFloat {
                     signed: ins.opcode == O::SCVTF,
@@ -463,8 +586,12 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         | O::FCVTMU
         | O::FCVTPS
         | O::FCVTPU => {
-            let (a, from) = read(lifter, ops[1])?;
-            let (signed, rounding) = integer_conversion(ins.opcode)?;
+            let Some((a, from)) = read(lifter, ops[1]) else {
+                return None;
+            };
+            let Some((signed, rounding)) = integer_conversion(ins.opcode) else {
+                return None;
+            };
             // A fixed-point result keeps that many fraction bits.
             let a = match ops[2] {
                 Operand::Immediate(fraction) if fraction > 0 => float(
@@ -473,10 +600,13 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 ),
                 _ => a,
             };
+            let Some(width) = register_width(ops[0]) else {
+                return None;
+            };
             let converted = float(
                 Operation::FloatToInt {
                     signed,
-                    bits: register_width(ops[0])?,
+                    bits: width,
                     from,
                     saturating: true,
                     rounding,
@@ -489,28 +619,48 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         }
         O::FMOV => match (ops[0], ops[1]) {
             (Operand::SIMDRegister(..), Operand::SIMDRegister(..)) => {
-                let ((slot, bits), (from, _)) = (simd(ops[0])?, simd(ops[1])?);
+                let Some(destination) = simd(ops[0]) else {
+                    return None;
+                };
+                let Some(source) = simd(ops[1]) else {
+                    return None;
+                };
+                let ((slot, bits), (from, _)) = (destination, source);
                 let value = lifter.read_simd(from, bits);
                 lifter.write_simd(slot, bits, (value, Expr::constant(0)));
             }
             (Operand::SIMDRegister(..), Operand::Register(..)) => {
-                let (slot, bits) = simd(ops[0])?;
-                let value = lifter.operand(ops[1], bits as u8)?;
+                let Some((slot, bits)) = simd(ops[0]) else {
+                    return None;
+                };
+                let Some(value) = lifter.operand(ops[1], bits as u8) else {
+                    return None;
+                };
                 lifter.write_simd(slot, bits, (value, Expr::constant(0)));
             }
             (Operand::Register(..), Operand::SIMDRegister(..)) => {
-                let (from, bits) = simd(ops[1])?;
+                let Some((from, bits)) = simd(ops[1]) else {
+                    return None;
+                };
                 let value = lifter.read_simd(from, bits);
                 if let Some(dest) = destination(ops[0]) {
                     lifter.assign(dest, value);
                 }
             }
             (Operand::SIMDRegister(..), Operand::ImmediateDouble(value)) => {
-                let (slot, bits) = simd(ops[0])?;
+                let Some((slot, bits)) = simd(ops[0]) else {
+                    return None;
+                };
                 let pattern = if bits == 16 {
-                    half_immediate(value)?
+                    match half_immediate(value) {
+                        Some(value) => value,
+                        None => return None,
+                    }
                 } else {
-                    match precision(bits)? {
+                    let Some(precision) = precision(bits) else {
+                        return None;
+                    };
+                    match precision {
                         Precision::Double => value.to_bits(),
                         Precision::Single => u64::from((value as f32).to_bits()),
                     }
@@ -519,8 +669,13 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             }
             // The constant in every lane.
             (Operand::SIMDRegisterElements(..), Operand::ImmediateDouble(value)) => {
-                let dest = vector(ops[0])?;
-                let pattern = match precision(u16::from(dest.2))? {
+                let Some(dest) = vector(ops[0]) else {
+                    return None;
+                };
+                let Some(precision) = precision(u16::from(dest.2)) else {
+                    return None;
+                };
+                let pattern = match precision {
                     Precision::Double => value.to_bits(),
                     Precision::Single => u64::from((value as f32).to_bits()),
                 };
@@ -529,7 +684,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             }
             // The upper half of a 128-bit register, which the rest keeps.
             (Operand::SIMDRegisterElementsLane(_, number, a64::SIMDSizeCode::D, 1), source) => {
-                let value = lifter.operand(source, 64)?;
+                let Some(value) = lifter.operand(source, 64) else {
+                    return None;
+                };
                 let slot = crate::arch::aarch64::V0 + 2 * number + 1;
                 lifter.assign(
                     RegRef {
@@ -549,7 +706,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         },
         // A lane read out to a scalar or general register.
         O::DUP | O::UMOV | O::SMOV if lane(ops[1]).is_some() && vector(ops[0]).is_none() => {
-            let source = lane(ops[1])?;
+            let Some(source) = lane(ops[1]) else {
+                return None;
+            };
             let value = lane_value(source);
             match simd(ops[0]) {
                 Some((slot, bits)) if u64::from(bits) == source.2 => {
@@ -574,10 +733,15 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // A lane written from a general register or another lane; the rest
         // of the register stays.
         O::INS => {
-            let (slot, shift, bits) = lane(ops[0])?;
+            let Some((slot, shift, bits)) = lane(ops[0]) else {
+                return None;
+            };
             let value = match lane(ops[1]) {
                 Some(source) => lane_value(source),
-                None => lifter.operand(ops[1], bits as u8)?,
+                None => match lifter.operand(ops[1], bits as u8) {
+                    Some(value) => value,
+                    None => return None,
+                },
             };
             let ones = if bits == 64 {
                 u64::MAX
@@ -612,8 +776,12 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // Zero, or a 64-bit pattern in each half.
         // A shifted immediate (or its complement) in every lane.
         O::MOVI | O::MVNI if matches!(ops[1], Operand::ImmShift(..) | Operand::ImmShiftMSL(..)) => {
-            let dest = vector(ops[0])?;
-            let lane = immediate_lane(ops[1], ins.opcode == O::MVNI, dest.2)?;
+            let Some(dest) = vector(ops[0]) else {
+                return None;
+            };
+            let Some(lane) = immediate_lane(ops[1], ins.opcode == O::MVNI, dest.2) else {
+                return None;
+            };
             let half = Expr::constant(replicated(lane, dest.2));
             lifter.write_vector(dest, half.clone(), half);
         }

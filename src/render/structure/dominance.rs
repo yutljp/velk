@@ -78,7 +78,8 @@ fn forest_order(successors: &[Vec<usize>]) -> (Vec<usize>, Vec<usize>) {
             }
         }
     }
-    for (number, block) in postorder.iter().rev().enumerate() {
+    let reversed_postorder = postorder.iter().rev().enumerate();
+    for (number, block) in reversed_postorder {
         order[*block] = number;
     }
     (order, roots)
@@ -883,7 +884,8 @@ fn labels_in(nodes: &[Node], found: &mut Vec<u64>) {
                 labels_in(body, found);
             }
             Node::Switch { arms, default, .. } => {
-                for body in arms.iter().map(|(_, body)| body).chain(default.iter()) {
+                let arm_bodies = arms.iter().map(|(_, body)| body).chain(default.iter());
+                for body in arm_bodies {
                     labels_in(body, found);
                 }
             }

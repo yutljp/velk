@@ -51,7 +51,10 @@ pub struct Outcome {
 impl Engine {
     /// Creates a runtime with a memory limit and an empty analysis session.
     pub fn new() -> Result<Self> {
-        let runtime = Runtime::new().map_err(Error::Engine)?;
+        let runtime = match Runtime::new().map_err(Error::Engine) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         runtime.set_memory_limit(MEMORY_LIMIT);
         let deadline = Rc::new(Cell::new(None::<Instant>));
         let watched_deadline = Rc::clone(&deadline);
@@ -81,10 +84,16 @@ impl Engine {
 
     /// Creates a context whose globals and handles persist across evaluations.
     pub fn session(&self) -> Result<ScriptSession<'_>> {
-        let context = Context::full(&self.runtime).map_err(Error::Engine)?;
-        context
+        let context = match Context::full(&self.runtime).map_err(Error::Engine) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = context
             .with(|ctx| self.install(&ctx))
-            .map_err(Error::Engine)?;
+            .map_err(Error::Engine)
+        {
+            return Err(error);
+        }
         Ok(ScriptSession {
             engine: self,
             context,
@@ -231,12 +240,16 @@ impl Engine {
         let session = Rc::clone(&self.session);
         let deadline = Rc::clone(&self.deadline);
         let symbols = RefCell::new(symbolic::Registry::default());
-        let native = Function::new(
+        let native = match Function::new(
             ctx.clone(),
             move |ctx: Ctx<'js>, request: String| -> rquickjs::Result<String> {
-                let value: serde_json::Value = serde_json::from_str(&request).map_err(|error| {
-                    Exception::throw_type(&ctx, &format!("invalid request: {error}"))
-                })?;
+                let value: serde_json::Value =
+                    match serde_json::from_str(&request).map_err(|error| {
+                        Exception::throw_type(&ctx, &format!("invalid request: {error}"))
+                    }) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                 let deadline = deadline.get();
                 if deadline.is_some_and(|deadline| Instant::now() > deadline) {
                     return Err(Exception::throw_message(&ctx, &Error::TimedOut.to_string()));
@@ -246,17 +259,25 @@ impl Engine {
                 {
                     symbolic::handle(&mut session.borrow_mut(), &mut symbols.borrow_mut(), value)
                 } else {
-                    let request = serde_json::from_value(value).map_err(|error| {
+                    let request = match serde_json::from_value(value).map_err(|error| {
                         Exception::throw_type(&ctx, &format!("invalid request: {error}"))
-                    })?;
+                    }) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
                     ops::handle(&mut session.borrow_mut(), request, deadline)
                 };
                 result
                     .map(|value| value.to_string())
                     .map_err(|error| Exception::throw_message(&ctx, &error.to_string()))
             },
-        )?;
-        ctx.globals().set("__velk", native)?;
+        ) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = ctx.globals().set("__velk", native) {
+            return Err(error);
+        }
         eval_named(ctx, PRELUDE, PRELUDE_NAME)
     }
 }

@@ -31,7 +31,10 @@ impl Runner<'_> {
         let second = if matches!(hook, Hook::Integer) {
             0
         } else {
-            self.argument(1, convention, kind)?
+            match self.argument(1, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         };
         let source = if matches!(hook, Hook::StringCopyN) {
             second
@@ -39,7 +42,10 @@ impl Runner<'_> {
             first
         };
         let maximum = if matches!(hook, Hook::StringCopyN) {
-            self.argument(2, convention, kind)?
+            match self.argument(2, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else if matches!(hook, Hook::LengthN) {
             second
         } else {
@@ -54,7 +60,14 @@ impl Runner<'_> {
             let Some(address) = source.checked_add(offset) else {
                 return Err(Stop::Error("string address overflows".into()));
             };
-            let byte = if ended { 0 } else { self.read_byte(address)? };
+            let byte = if ended {
+                0
+            } else {
+                match self.read_byte(address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
+            };
             if matches!(hook, Hook::Character | Hook::ReverseCharacter) && byte == second as u8 {
                 if matches!(hook, Hook::Character) {
                     return Ok(address);
@@ -65,7 +78,9 @@ impl Runner<'_> {
                 let Some(destination) = first.checked_add(offset) else {
                     return Err(Stop::Error("string destination overflows".into()));
                 };
-                self.write_byte(destination, byte)?;
+                if let Err(error) = self.write_byte(destination, byte) {
+                    return Err(error);
+                }
             }
             if byte == 0 {
                 if matches!(hook, Hook::LengthN) {
@@ -97,8 +112,15 @@ impl Runner<'_> {
         kind: CallKind,
     ) -> Result<u64, Stop> {
         if matches!(hook, Hook::FindByteReverse) {
-            let character = self.argument(1, convention, kind)? as u8;
-            let count = self.argument(2, convention, kind)?;
+            let argument = match self.argument(1, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let character = argument as u8;
+            let count = match self.argument(2, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if count > HEAP_SIZE {
                 return Err(Stop::Error("memory search exceeds 16 MiB".into()));
             }
@@ -107,21 +129,31 @@ impl Runner<'_> {
                 let Some(address) = first.checked_add(offset) else {
                     return Err(Stop::Error("memory search address overflows".into()));
                 };
-                if self.read_byte(address)? == character {
+                let byte = match self.read_byte(address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if byte == character {
                     found = Some(address);
                 }
             }
             return Ok(found.unwrap_or(0));
         }
         if matches!(hook, Hook::FindSubstring) {
-            let needle = self.argument(1, convention, kind)?;
+            let needle = match self.argument(1, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             let mut needle_bytes = Vec::new();
             let mut needle_ended = false;
             for offset in 0..HEAP_SIZE {
                 let Some(address) = needle.checked_add(offset) else {
                     return Err(Stop::Error("substring address overflows".into()));
                 };
-                let byte = self.read_byte(address)?;
+                let byte = match self.read_byte(address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if byte == 0 {
                     needle_ended = true;
                     break;
@@ -138,17 +170,24 @@ impl Runner<'_> {
                 let Some(address) = first.checked_add(offset) else {
                     return Err(Stop::Error("substring address overflows".into()));
                 };
-                let byte = self.read_byte(address)?;
+                let byte = match self.read_byte(address) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
                 if byte == 0 {
                     return Ok(0);
                 }
                 if byte == needle_bytes[0] {
                     let mut matched = true;
-                    for (index, expected) in needle_bytes.iter().enumerate().skip(1) {
+                    let remaining_needle_bytes = needle_bytes.iter().enumerate().skip(1);
+                    for (index, expected) in remaining_needle_bytes {
                         let Some(candidate) = address.checked_add(index as u64) else {
                             return Err(Stop::Error("substring address overflows".into()));
                         };
-                        let candidate_byte = self.read_byte(candidate)?;
+                        let candidate_byte = match self.read_byte(candidate) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
+                        };
                         if candidate_byte == 0 || candidate_byte != *expected {
                             matched = false;
                             break;
@@ -162,7 +201,10 @@ impl Runner<'_> {
             return Err(Stop::Error("string exceeds 16 MiB".into()));
         }
         let requested_limit = if matches!(hook, Hook::DuplicateN) {
-            self.argument(1, convention, kind)?
+            match self.argument(1, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else {
             HEAP_SIZE
         };
@@ -173,7 +215,10 @@ impl Runner<'_> {
             let Some(address) = first.checked_add(offset) else {
                 return Err(Stop::Error("string address overflows".into()));
             };
-            let byte = self.read_byte(address)?;
+            let byte = match self.read_byte(address) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if byte == 0 {
                 string_ended = true;
                 break;
@@ -187,11 +232,14 @@ impl Runner<'_> {
         if address == 0 {
             return Ok(0);
         }
-        for (offset, byte) in bytes.iter().copied().chain([0]).enumerate() {
+        let terminated_bytes = bytes.iter().copied().chain([0]).enumerate();
+        for (offset, byte) in terminated_bytes {
             let Some(destination) = address.checked_add(offset as u64) else {
                 return Err(Stop::Error("string destination overflows".into()));
             };
-            self.write_byte(destination, byte)?;
+            if let Err(error) = self.write_byte(destination, byte) {
+                return Err(error);
+            }
         }
         Ok(address)
     }
@@ -211,12 +259,18 @@ impl Runner<'_> {
                 | Hook::UnsignedLongLongIntegerEnd
         );
         let end_address = if end_pointer {
-            self.argument(1, convention, kind)?
+            match self.argument(1, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else {
             0
         };
         let requested_base = if end_pointer {
-            self.argument(2, convention, kind)?
+            match self.argument(2, convention, kind) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            }
         } else {
             10
         };
@@ -231,7 +285,10 @@ impl Runner<'_> {
             let Some(address) = first.checked_add(offset) else {
                 return Err(Stop::Error("integer string address overflows".into()));
             };
-            let byte = self.read_byte(address)?;
+            let byte = match self.read_byte(address) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
             if byte == 0 {
                 ended = true;
                 break;
@@ -329,13 +386,18 @@ impl Runner<'_> {
                 address,
                 crate::arch::pointer_bytes(self.image.isa),
             );
-            self.memory_error()?;
+            if let Err(error) = self.memory_error() {
+                return Err(error);
+            }
         }
         if position == digit_start {
             return Ok(0);
         }
-        if overflow && end_pointer {
-            self.set_errno(34)?;
+        if overflow
+            && end_pointer
+            && let Err(error) = self.set_errno(34)
+        {
+            return Err(error);
         }
         if overflow {
             return Ok(limit);

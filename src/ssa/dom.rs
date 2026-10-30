@@ -60,7 +60,8 @@ pub(crate) fn dominators(successors: &[Vec<usize>]) -> Dominators {
     };
     loop {
         let mut changed = false;
-        for block in order.iter().copied().skip(1) {
+        let blocks_after_entry = order.iter().copied().skip(1);
+        for block in blocks_after_entry {
             let mut new = None;
             for predecessor in &predecessors[block] {
                 if idom[*predecessor].is_none() {
