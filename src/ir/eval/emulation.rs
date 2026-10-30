@@ -620,6 +620,7 @@ impl Runner<'_> {
                 files.remove(path);
             }
         }
+        let windows_exports = self.windows_exports();
         let report = Report {
             files,
             stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
@@ -644,6 +645,7 @@ impl Runner<'_> {
             api_calls: self.api_calls,
             written_regions,
             executed_addresses,
+            windows_exports,
         };
         (report, self.recovery)
     }

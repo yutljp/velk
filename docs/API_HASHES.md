@@ -7,12 +7,15 @@ small bundled list of Windows and C library export names. It does not identify
 hash routines by instruction bytes or substitute a built-in hash formula.
 
 Results appear in `apiHashes` in function summaries: CLI `--summary`, JavaScript
-`f.summary()`, and MCP `velk_run_script`. Each entry contains the call's
-`block` and `statement`, the `resolver` and hash `routine` addresses, the constant
-`hash`, all matching `candidates`, and `complete`. Statement numbers refer to the
-optimized IR, not instruction addresses. An empty candidate list means no name
-matched. Several candidates mean a collision. `complete: false` means at least
-one evaluation failed or a budget expired; missing results are possible.
+`f.summary()`, MCP `velk_run_script`, and scripts sent to `--serve`. Each entry
+contains the call's `block` and `statement`, the `resolver` and hash `routine`
+addresses, the constant `hash`, matching `candidates`, and `complete`. Statement
+numbers refer to the optimized IR, not instruction addresses. `routine` is the
+hash function for a separate hash call, or the resolver itself when velk emulates
+the whole lookup. An empty candidate list means no name matched. Several
+candidates mean a collision. `complete: false` means the result may omit other
+matching names or a budget prevented full evaluation. Whole-resolver emulation
+reports the name returned by the resolver and does not enumerate collisions.
 `indirectCall` distinguishes an indirect invocation from an i386 function that
 returns the resolver result without invoking it.
 
@@ -21,22 +24,30 @@ A match does not establish which module is loaded, whether an export is forwarde
 or whether the table actually contains that export. velk does not replace the
 call with a direct API call or infer a prototype from the hash.
 
-The current analysis requires a direct resolver call with a constant argument,
-a loop with an equality comparison between that argument and a direct hash call,
-and an indirect call through the resolver's result, or a returned lookup result
-on i386. The hash routine must take one pointer to a zero-terminated string and
-may take additional integer arguments that are constant at the resolver call
-site. UTF-16 strings are evaluated when the routine reads 16-bit characters.
-Stack slots and register copies are handled through the existing memory and SSA
-analyses. Inlined hashes and combined module/name hashes can remain unrecognized.
-The analysis does not verify a PEB or link-map structure from offsets.
-The supported architectures are x86-64, i386 and AArch64. Go images are skipped.
-i386 indirect calls with unknown argument counts still
-fail decompilation; the i386 fixtures return the lookup result instead.
+The analysis requires a direct resolver call with constant arguments and an
+indirect call through its result, or a returned lookup result on i386. For a
+separate hash function, velk evaluates the function on names in its bundled
+export list. This handles a zero-terminated byte string, constant integer
+arguments, and UTF-16 strings when the routine reads 16-bit characters.
 
-Each scan allows 2,000,000 IR statements and name evaluations in total. Each
-export-name evaluation allows 10,000 IR statements, within the caller's deadline. No host API or
-system call executes. The bundled list is in `src/api_hashes/exports.txt`.
+When the hash calculation is inlined, velk can emulate the whole resolver and
+read the name associated with its returned address. This also handles a resolver
+that walks an ELF dynamic symbol table. For 32-bit and 64-bit Windows images, the
+emulator provides a synthetic PEB loader list and module export tables, so a
+resolver can walk those structures and return a named export. Emulation uses the
+image and synthetic process state; it does not inspect a live process. These
+results identify the export selected in that state and do not establish which
+modules a real process has loaded. Stack arguments are recovered from the call
+site when they are constant. The supported architectures are x86-64, i386 and
+AArch64 for ELF; Windows resolver emulation supports x86-64 and i386. Go images
+are skipped. i386 indirect calls with unknown argument counts still fail
+decompilation; the i386 fixtures return the lookup result instead.
+
+Each scan allows 2,000,000 IR statements and name evaluations in total. A
+whole-resolver evaluation allows at most 200,000 IR steps and 100 ms, within the
+caller's deadline. Separate hash-name evaluations allow 10,000 IR statements
+each. No host API or system call executes. The bundled list for separate hash
+functions is in `src/api_hashes/exports.txt`.
 
 Build the source fixtures before running these examples:
 
@@ -53,6 +64,6 @@ b.getFunction("case_ror13").summary().apiHashes;
 
 For MCP, pass that JavaScript as `code` to `velk_run_script`. Its text result contains
 the same JSON array. The fixtures include ROR13, djb2, FNV-1a, seeded and UTF-16
-FNV-1a, CRC32, a custom hash, collisions, unknown hashes, PE export directories
-and ELF dynamic symbols.
+FNV-1a, CRC32, a custom hash, collisions, unknown hashes, PE export directories,
+PEB resolver walks, inlined hashes, and ELF dynamic symbols.
 They are compiled as position-independent code for x86-64, i386 and AArch64.

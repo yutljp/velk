@@ -24,6 +24,23 @@ fn fixtures() -> &'static Path {
     })
 }
 
+fn assert_decompiled_code_compiles(binary: &mut Binary, address: u64, label: &str) {
+    let code = binary
+        .decompile(address, None, None)
+        .unwrap_or_else(|error| panic!("{label}: {error}"));
+    let output = common::compiler::run(
+        Command::new("clang").args([
+            "-x",
+            "c",
+            "-fsyntax-only",
+            "-Werror=implicit-function-declaration",
+            "-",
+        ]),
+        Some(&code),
+    );
+    assert!(output.status.success(), "{label}: {output:?}\n{code}");
+}
+
 #[test]
 fn hash_comparisons_reach_indirect_calls() {
     for architecture in ["x86_64", "i386", "aarch64"] {
@@ -113,6 +130,59 @@ fn collisions_and_unknown_names_remain_explicit() {
 }
 
 #[test]
+fn inlined_and_dynamic_symbol_resolvers_are_emulated() {
+    let reference = Command::new(fixtures().join("resolvers-reference"))
+        .status()
+        .expect("running the native resolver reference");
+    assert!(
+        reference.success(),
+        "native resolver reference failed: {reference}"
+    );
+    for architecture in ["x86_64", "i386", "aarch64"] {
+        for optimization in ["O0", "O2"] {
+            let path = fixtures().join(format!("resolvers.{architecture}.{optimization}.elf"));
+            let mut binary = Binary::open(&path).unwrap();
+            for (name, candidate, complete) in [
+                ("case_inline", json!(["puts"]), false),
+                ("case_dynamic", json!(["puts"]), false),
+                ("case_dynamic_unknown", json!([]), true),
+            ] {
+                let address = binary.find(name).unwrap().addr;
+                let summary = binary.summary(address, None).unwrap();
+                let hashes = summary["apiHashes"].as_array().unwrap();
+                assert_eq!(
+                    hashes.len(),
+                    1,
+                    "{architecture} {optimization} {name}: {summary}"
+                );
+                assert_eq!(hashes[0]["candidates"], candidate);
+                assert_eq!(hashes[0]["complete"], complete);
+                let code = binary.decompile(address, None, None).unwrap();
+                if name != "case_dynamic_unknown" {
+                    assert!(code.contains("candidates puts"), "{code}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn peb_resolver_uses_synthetic_windows_exports() {
+    for architecture in ["win64", "win32"] {
+        let path = fixtures().join(format!("windows.{architecture}.dll"));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find("case_pe").unwrap().addr;
+        let summary = binary.summary(address, None).unwrap();
+        let hashes = summary["apiHashes"].as_array().unwrap();
+        assert_eq!(hashes.len(), 1, "{architecture}: {summary}");
+        assert_eq!(hashes[0]["candidates"], json!(["GetCurrentProcessId"]));
+        assert_eq!(hashes[0]["complete"], false);
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(code.contains("candidates GetCurrentProcessId"), "{code}");
+    }
+}
+
+#[test]
 fn long_hash_stops_consistently() {
     for architecture in ["x86_64", "i386", "aarch64"] {
         let path = fixtures().join(format!("{architecture}.O0.elf"));
@@ -148,12 +218,29 @@ fn public_interfaces_and_documentation_return_the_same_candidates() {
     let summary: Value = serde_json::from_slice(&output.stdout).unwrap();
     let expected = summary["apiHashes"].clone();
     assert_eq!(expected[0]["candidates"], json!(["puts"]));
-    let code = format!("velk.open({path:?}).getFunction('case_ror13').summary().apiHashes");
+    let resolver_path = fixtures().join("resolvers.x86_64.O2.elf");
+    let mut resolver_binary = Binary::open(&resolver_path).unwrap();
+    let resolver_address = resolver_binary.find("case_inline").unwrap().addr;
+    let resolver_summary = resolver_binary.summary(resolver_address, None).unwrap();
+    let resolver_expected = resolver_summary["apiHashes"].clone();
+    assert_eq!(resolver_expected[0]["candidates"], json!(["puts"]));
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--summary", resolver_path.to_str().unwrap(), "case_inline"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let cli_summary: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(cli_summary["apiHashes"], resolver_expected);
+    let interface_expected = json!([expected, resolver_expected]);
+    let code = format!(
+        "[velk.open({path:?}).getFunction('case_ror13').summary().apiHashes, \
+         velk.open({resolver_path:?}).getFunction('case_inline').summary().apiHashes]"
+    );
     let outcome = velk::script::Engine::new().unwrap().run(&code, None);
     assert!(outcome.error.is_none(), "{:?}", outcome.error);
     assert_eq!(
         serde_json::from_str::<Value>(&outcome.output).unwrap(),
-        expected
+        interface_expected
     );
 
     let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
@@ -170,7 +257,29 @@ fn public_interfaces_and_documentation_return_the_same_candidates() {
     let response: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(response["result"]["isError"], false, "{response}");
     let text = response["result"]["content"][0]["text"].as_str().unwrap();
-    assert_eq!(serde_json::from_str::<Value>(text).unwrap(), expected);
+    assert_eq!(
+        serde_json::from_str::<Value>(text).unwrap(),
+        interface_expected
+    );
+
+    let serve_script =
+        format!("velk.open({resolver_path:?}).getFunction('case_inline').summary().apiHashes");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--serve")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("serve process");
+    writeln!(
+        child.stdin.take().unwrap(),
+        "{}",
+        json!({"id": 1, "code": serve_script})
+    )
+    .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(response["result"], resolver_expected);
 
     for document in ["docs/API_HASHES.md", "docs/API_HASHES.ja.md"] {
         let text = std::fs::read_to_string(common::root().join(document)).unwrap();
@@ -299,6 +408,26 @@ fn every_fixture_function_compiles_as_c() {
                 );
             }
         }
+    }
+    for architecture in ["x86_64", "i386", "aarch64"] {
+        for optimization in ["O0", "O2"] {
+            let path = fixtures().join(format!("resolvers.{architecture}.{optimization}.elf"));
+            let mut binary = Binary::open(&path).unwrap();
+            for name in ["case_inline", "case_dynamic", "case_dynamic_unknown"] {
+                let address = binary.find(name).unwrap().addr;
+                assert_decompiled_code_compiles(
+                    &mut binary,
+                    address,
+                    &format!("{architecture} {optimization} {name}"),
+                );
+            }
+        }
+    }
+    for architecture in ["win64", "win32"] {
+        let path = fixtures().join(format!("windows.{architecture}.dll"));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find("case_pe").unwrap().addr;
+        assert_decompiled_code_compiles(&mut binary, address, architecture);
     }
 }
 

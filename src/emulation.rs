@@ -344,6 +344,8 @@ pub struct Report {
     pub(crate) written_regions: Vec<(u64, u64)>,
     #[serde(skip)]
     pub(crate) executed_addresses: Vec<u64>,
+    #[serde(skip)]
+    pub(crate) windows_exports: BTreeMap<u64, String>,
 }
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {

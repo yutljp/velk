@@ -14,6 +14,22 @@ for architecture in x86_64 i386 aarch64; do
             -fno-stack-protector -fno-optimize-sibling-calls -fno-builtin \
             -fuse-ld=lld -Wl,-Bsymbolic -Wl,--build-id=none \
             tests/api_hashes/fixtures.c -o "$out/$architecture.$optimization.elf"
+        clang --target="$triple" "-$optimization" -nostdlib -fno-pie -no-pie \
+            -fno-stack-protector -fno-optimize-sibling-calls -fno-builtin \
+            -fuse-ld=lld -Wl,--export-dynamic -Wl,--hash-style=sysv \
+            -Wl,--build-id=none -Wl,-e,case_inline \
+            tests/api_hashes/resolvers.c -o "$out/resolvers.$architecture.$optimization.elf"
     done
 done
+for architecture in win64 win32; do
+    case "$architecture" in
+        win64) triple=x86_64-w64-windows-gnu; machine=x64; export=case_pe ;;
+        win32) triple=i686-w64-windows-gnu; machine=x86; export=case_pe ;;
+    esac
+    clang --target="$triple" -O0 -fno-stack-protector -c \
+        tests/api_hashes/windows.c -o "$out/windows.$architecture.obj"
+    lld-link /dll /noentry /nodefaultlib "/machine:$machine" "/export:$export" \
+        "/out:$out/windows.$architecture.dll" "$out/windows.$architecture.obj"
+done
 clang -O2 -DNATIVE tests/api_hashes/fixtures.c -o "$out/reference"
+clang -O2 -DNATIVE -fno-builtin tests/api_hashes/resolvers.c -o "$out/resolvers-reference"

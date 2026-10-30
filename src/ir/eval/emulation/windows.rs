@@ -137,6 +137,17 @@ fn module_name(name: &str) -> String {
 }
 
 impl Runner<'_> {
+    pub(super) fn windows_exports(&self) -> BTreeMap<u64, String> {
+        let Some(process) = &self.windows else {
+            return BTreeMap::new();
+        };
+        process
+            .exports
+            .iter()
+            .map(|(&address, export)| (address, format!("{}!{}", export.dll, export.name)))
+            .collect()
+    }
+
     fn windows_state(&self) -> &Process {
         self.windows
             .as_ref()
