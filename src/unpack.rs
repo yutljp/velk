@@ -1241,7 +1241,7 @@ fn intersect(start: u64, end: u64, region_start: u64, region_size: u64) -> Optio
     };
     let overlap_start = start.max(region_start);
     let overlap_end = end.min(region_end);
-    (overlap_start < overlap_end).then_some((overlap_start, overlap_end - overlap_start))
+    (overlap_start < overlap_end).then(|| (overlap_start, overlap_end - overlap_start))
 }
 
 fn heap_segments(
