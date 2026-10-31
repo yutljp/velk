@@ -270,12 +270,12 @@ fn aarch64_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
         if adrp & 0x9f00_001f != 0x9000_0010 || ldr & 0xffc0_03ff != 0xf940_0211 {
             continue;
         }
-        let pc = base + 4 * index as u64;
+        let pc = base.wrapping_add(4 * index as u64);
         let immediate = (((adrp >> 5) & 0x7_ffff) << 2 | (adrp >> 29) & 0x3) as i64;
         let pages = (immediate << 43) >> 43;
         let page = (pc & !0xfff).wrapping_add((pages << 12) as u64);
         let offset = u64::from((ldr >> 10) & 0xfff) * 8;
-        slots.push((pc, page + offset));
+        slots.push((pc, page.wrapping_add(offset)));
     }
     slots
 }
@@ -364,6 +364,41 @@ mod tests {
             invalid[index] ^= 1 << 16;
             let code: Vec<u8> = invalid.iter().flat_map(|word| word.to_le_bytes()).collect();
             assert!(super::arm_slots(&code, 0x1000).is_empty());
+        }
+    }
+}
+
+#[cfg(kani)]
+mod proofs {
+    /// Each matched pair gives the slot the Arm definition of ADRP and of
+    /// LDR (unsigned offset, 64-bit) names, written here from the bit
+    /// fields rather than from `aarch64_slots`; other pairs give nothing.
+    #[kani::proof]
+    #[kani::unwind(4)]
+    fn aarch64_slots_follow_adrp_and_ldr() {
+        let adrp: u32 = kani::any();
+        let ldr: u32 = kani::any();
+        let base: u64 = kani::any();
+        let mut bytes = [0; 8];
+        bytes[..4].copy_from_slice(&adrp.to_le_bytes());
+        bytes[4..].copy_from_slice(&ldr.to_le_bytes());
+        let slots = super::aarch64_slots(&bytes, base);
+        // ADRP: op=1, Rd=x16. LDR: size=11, opc=01, Rn=x16, Rt=x17.
+        let is_adrp = adrp >> 31 == 1 && (adrp >> 24) & 0x1f == 0x10 && adrp & 0x1f == 16;
+        let is_ldr = ldr >> 22 == 0x3e5 && (ldr >> 5) & 0x1f == 16 && ldr & 0x1f == 17;
+        if is_adrp && is_ldr {
+            let immediate = ((adrp >> 29) & 0x3) | ((adrp >> 3) & 0x1f_fffc);
+            let signed = if immediate & (1 << 20) != 0 {
+                i128::from(immediate) - (1 << 21)
+            } else {
+                i128::from(immediate)
+            };
+            let page = i128::from(base & !0xfff) + signed * 4096;
+            let slot = page + i128::from((ldr >> 10) & 0xfff) * 8;
+            assert_eq!(slots, [(base, slot.rem_euclid(1 << 64) as u64)]);
+            kani::cover!(signed < 0 && base < 0x1000, "the page wraps below zero");
+        } else {
+            assert!(slots.is_empty());
         }
     }
 }

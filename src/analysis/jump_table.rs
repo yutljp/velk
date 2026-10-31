@@ -1,3 +1,4 @@
+use crate::ir::semantics::mask;
 use crate::ir::{BinOp, Block, Expr, Stmt};
 use crate::loader::Image;
 
@@ -72,7 +73,7 @@ fn recover_once(
     recovered
 }
 
-pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
+pub(crate) fn bound(block: &Block) -> Option<Bound> {
     let Some(last) = block.stmts.last() else {
         return None;
     };
@@ -97,13 +98,17 @@ pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
     let environment = environment_from(block, std::collections::HashMap::new());
     let resolved = cancel(resolve(lhs, &environment));
     let checked = unwrap_mask(&resolved);
+    let bits = match crate::ir::semantics::width(&resolved) {
+        0 => 64,
+        bits => bits.min(64),
+    };
     let (minimum, switch_base) = match checked {
         Expr::Bin {
             op: BinOp::Sub,
             lhs: value,
             rhs: offset,
         } => match constant(offset) {
-            Some(offset) => (offset as i64, (**value).clone()),
+            Some(offset) => (lowest_case(Adjustment::Sub(offset)), (**value).clone()),
             None => (0, checked.clone()),
         },
         Expr::Bin {
@@ -111,17 +116,86 @@ pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
             lhs: value,
             rhs: offset,
         } => match constant(offset) {
-            Some(offset) => (-(offset as i64), (**value).clone()),
+            Some(offset) => (lowest_case(Adjustment::Add(offset)), (**value).clone()),
             None => (0, checked.clone()),
         },
         _ => (0, checked.clone()),
     };
-    Option::Some((
-        *limit as i64 + 1,
-        Option::Some(*target),
+    // A count that does not fit stays a recognized check with no cases, so
+    // the table is rejected rather than sized by scanning.
+    let inclusive = *cond == crate::ir::Cond::Hi;
+    let count = case_count(inclusive, *limit & mask(bits)).unwrap_or(0);
+    Option::Some(Bound {
+        count,
+        default: Option::Some(*target),
         minimum,
         switch_base,
-    ))
+    })
+}
+
+/// What a bounds check before a table jump tells: how many cases pass it,
+/// where the others go, the switch value of case 0 and the expression it is
+/// read from.
+pub(crate) struct Bound {
+    count: i64,
+    default: Option<u64>,
+    minimum: i64,
+    switch_base: Expr,
+}
+
+/// The constant a bounds check takes off or adds to the switch value
+/// before comparing it with the case count.
+#[derive(Clone, Copy)]
+enum Adjustment {
+    Sub(u64),
+    Add(u64),
+}
+
+/// The switch value of case 0. Cases name values of the 64-bit expressions
+/// the switch reads, so they wrap at 64 bits like the IR's arithmetic; a
+/// check at a narrower width names them modulo its width.
+fn lowest_case(adjustment: Adjustment) -> i64 {
+    match adjustment {
+        Adjustment::Sub(offset) => offset as i64,
+        Adjustment::Add(offset) => (offset as i64).wrapping_neg(),
+    }
+}
+
+/// The number of values an unsigned check lets through to the table, when
+/// it fits the signed count the cases use: `value > limit` (inclusive)
+/// passes `0..=limit`, `value >= limit` passes `0..limit`.
+fn case_count(inclusive: bool, limit: u64) -> Option<i64> {
+    let Ok(limit) = i64::try_from(limit) else {
+        return None;
+    };
+    if inclusive {
+        limit.checked_add(1)
+    } else {
+        Some(limit)
+    }
+}
+
+/// The switch value of the case at `position`.
+fn case_value(minimum: i64, position: i64) -> i64 {
+    minimum.wrapping_add(position)
+}
+
+/// The address of entry `position` in a table of `entry_bytes`-byte entries,
+/// unless it passes the end of the address space.
+fn entry_address(table: u64, position: u64, entry_bytes: u64) -> Option<u64> {
+    let Some(distance) = position.checked_mul(entry_bytes) else {
+        return None;
+    };
+    table.checked_add(distance)
+}
+
+/// A byte entry shifted into its offset from the base, unless the shift
+/// amount is outside a 64-bit value.
+fn byte_offset(byte: u8, scale: i64) -> Option<i64> {
+    let Ok(scale) = u32::try_from(scale) else {
+        return None;
+    };
+    i64::from(byte).checked_shl(scale)
 }
 
 pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
@@ -358,39 +432,22 @@ pub(crate) fn referenced_addresses(image: &Image) -> std::collections::HashSet<u
         };
         match image.isa {
             crate::loader::Isa::X86_64 => {
-                for at in 0..bytes.len().saturating_sub(6) {
-                    if bytes[at] & 0xf8 != 0x48
-                        || bytes[at + 1] != 0x8d
-                        || bytes[at + 2] & 0xc7 != 0x05
+                for (at, window) in bytes.windows(7).enumerate() {
+                    if let Some(address) =
+                        rip_relative_lea(window, section.vaddr.wrapping_add(at as u64))
                     {
-                        continue;
+                        out.insert(address);
                     }
-                    let displacement =
-                        i32::from_le_bytes(bytes[at + 3..at + 7].try_into().expect("four bytes"));
-                    out.insert(
-                        (section.vaddr + at as u64 + 7).wrapping_add(displacement as i64 as u64),
-                    );
                 }
             }
             crate::loader::Isa::AArch64 => {
                 let words = bytes.as_chunks::<4>().0;
                 for (index, pair) in words.windows(2).enumerate() {
                     let (adrp, add) = (u32::from_le_bytes(pair[0]), u32::from_le_bytes(pair[1]));
-                    // ADRP xd, then ADD xd', xd, #imm12 without a shift.
-                    if adrp & 0x9f00_0000 != 0x9000_0000
-                        || add & 0xffc0_0000 != 0x9100_0000
-                        || (add >> 5) & 0x1f != adrp & 0x1f
-                    {
-                        continue;
+                    let site = section.vaddr.wrapping_add(index as u64 * 4);
+                    if let Some(address) = adrp_add(adrp, add, site) {
+                        out.insert(address);
                     }
-                    let page = (((adrp >> 29) & 3) | (((adrp >> 5) & 0x7ffff) << 2)) as u64;
-                    let page = ((page << 43) as i64 >> 31) as u64;
-                    let site = section.vaddr + index as u64 * 4;
-                    out.insert(
-                        (site & !0xfff)
-                            .wrapping_add(page)
-                            .wrapping_add(u64::from((add >> 10) & 0xfff)),
-                    );
                 }
             }
             crate::loader::Isa::Arm32
@@ -399,6 +456,38 @@ pub(crate) fn referenced_addresses(image: &Image) -> std::collections::HashSet<u
         }
     }
     out
+}
+
+/// The address `lea r64, [rip + d]` at `site` computes.
+fn rip_relative_lea(bytes: &[u8], site: u64) -> Option<u64> {
+    if bytes[0] & 0xf8 != 0x48 || bytes[1] != 0x8d || bytes[2] & 0xc7 != 0x05 {
+        return None;
+    }
+    let displacement = i32::from_le_bytes([bytes[3], bytes[4], bytes[5], bytes[6]]);
+    Some(
+        site.wrapping_add(7)
+            .wrapping_add(displacement as i64 as u64),
+    )
+}
+
+/// The address `adrp xd, page` at `site` followed by `add xd', xd, #imm12`
+/// (no shift) computes. An ADRP into the zero register pairs with no ADD,
+/// whose register 31 is the stack pointer.
+fn adrp_add(adrp: u32, add: u32, site: u64) -> Option<u64> {
+    if adrp & 0x9f00_0000 != 0x9000_0000
+        || adrp & 0x1f == 31
+        || add & 0xffc0_0000 != 0x9100_0000
+        || (add >> 5) & 0x1f != adrp & 0x1f
+    {
+        return None;
+    }
+    let page = (((adrp >> 29) & 3) | (((adrp >> 5) & 0x7ffff) << 2)) as u64;
+    let page = ((page << 43) as i64 >> 31) as u64;
+    Some(
+        (site & !0xfff)
+            .wrapping_add(page)
+            .wrapping_add(u64::from((add >> 10) & 0xfff)),
+    )
 }
 
 /// The registers the block's assignments leave, as expressions of the
@@ -420,7 +509,7 @@ fn recognize(
     block: &Block,
     target: &Expr,
     image: &Image,
-    bound: Option<(i64, Option<u64>, i64, Expr)>,
+    bound: Option<Bound>,
     checked_block: Option<&Block>,
     limits: &Limits,
 ) -> Option<Recovered> {
@@ -443,7 +532,10 @@ fn recognize(
     let read_case = |position: u64| -> Option<u64> {
         let offset = match entry {
             Entry::Absolute => {
-                let Some(vaddr) = image.read_vaddr(table + position * 8, 8) else {
+                let Some(at) = entry_address(table, position, 8) else {
+                    return None;
+                };
+                let Some(vaddr) = image.read_vaddr(at, 8) else {
                     return None;
                 };
                 let Some(entry_bytes) = vaddr.try_into().ok() else {
@@ -452,16 +544,25 @@ fn recognize(
                 u64::from_le_bytes(entry_bytes) as i64
             }
             Entry::Offset32 => {
-                let Some(bytes) = image.read_vaddr(table + position * 4, 4) else {
+                let Some(at) = entry_address(table, position, 4) else {
+                    return None;
+                };
+                let Some(bytes) = image.read_vaddr(at, 4) else {
                     return None;
                 };
                 i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
             Entry::Byte => {
-                let Some(entry_bytes) = image.read_vaddr(table + position, 1) else {
+                let Some(at) = entry_address(table, position, 1) else {
                     return None;
                 };
-                i64::from(entry_bytes[0]) << scale
+                let Some(entry_bytes) = image.read_vaddr(at, 1) else {
+                    return None;
+                };
+                let Some(offset) = byte_offset(entry_bytes[0], scale) else {
+                    return None;
+                };
+                offset
             }
         };
         let case = base.wrapping_add(offset as u64);
@@ -477,16 +578,19 @@ fn recognize(
         let Some(case) = read_case(value) else {
             return None;
         };
+        let Some(at) = entry_address(table, value, entry_bytes) else {
+            return None;
+        };
         return Some(Recovered {
             block_start: block.start,
             index: Expr::Const(value),
             cases: vec![(value as i64, case)],
             default: None,
-            table: (table + value * entry_bytes, entry_bytes),
+            table: (at, entry_bytes),
         });
     }
     let (count, default, minimum, switch_base) = match bound {
-        Some(bound) => bound,
+        Some(bound) => (bound.count, bound.default, bound.minimum, bound.switch_base),
         // An index masked to its low bits, or otherwise bounded, takes
         // every value up to its largest.
         None if let largest = largest(&index)
@@ -497,7 +601,9 @@ fn recognize(
         None => {
             let count = (0..4096u64)
                 .take_while(|position| {
-                    let at = table + position * entry_bytes;
+                    let Some(at) = entry_address(table, *position, entry_bytes) else {
+                        return false;
+                    };
                     (*position == 0 || !limits.tables.contains(&at))
                         && read_case(*position).is_some_and(|case| limits.extent.contains(&case))
                 })
@@ -529,7 +635,7 @@ fn recognize(
         let Some(case) = read_case(position as u64) else {
             return None;
         };
-        cases.push((minimum + position, case));
+        cases.push((case_value(minimum, position), case));
     }
 
     // The value the bounds check tested before taking the cases' lowest
@@ -788,6 +894,54 @@ mod tests {
     use super::*;
 
     #[test]
+    fn bounds_checks_with_extreme_constants_do_not_overflow() {
+        let check_at = |cond, bits, op, offset: u64, limit: u64| Block {
+            start: 0,
+            stmts: vec![Stmt::Brif {
+                cond,
+                lhs: Expr::bin(op, Expr::reg(0, bits), Expr::Const(offset)),
+                rhs: Expr::Const(limit),
+                target: 8,
+                at: None,
+            }],
+        };
+        let check = |op, offset, limit| check_at(crate::ir::Cond::Hi, 64, op, offset, limit);
+        let counted = |block| {
+            let bound = bound(&block).unwrap();
+            (bound.count, bound.minimum)
+        };
+        assert_eq!(counted(check(BinOp::Add, 1 << 63, 3)), (4, i64::MIN));
+        assert_eq!(counted(check(BinOp::Sub, 5, i64::MAX as u64)), (0, 5));
+        assert_eq!(counted(check(BinOp::Sub, 5, u64::MAX)).0, 0);
+        assert_eq!(case_value(i64::MAX, 2), i64::MIN + 1);
+        // `x >= 6` takes the default, so six cases pass; `x > 6` passes seven.
+        assert_eq!(
+            counted(check_at(crate::ir::Cond::Cs, 64, BinOp::Sub, 5, 6)),
+            (6, 5)
+        );
+        assert_eq!(
+            counted(check_at(crate::ir::Cond::Hi, 64, BinOp::Sub, 5, 6)),
+            (7, 5)
+        );
+        // A 32-bit check counts at its own width.
+        assert_eq!(
+            counted(check_at(
+                crate::ir::Cond::Hi,
+                32,
+                BinOp::Sub,
+                5,
+                0x1_0000_0003
+            ))
+            .0,
+            4
+        );
+        assert_eq!(byte_offset(1, 64), None);
+        assert_eq!(byte_offset(1, -1), None);
+        assert_eq!(byte_offset(3, 2), Some(12));
+        assert_eq!(entry_address(u64::MAX - 7, 1, 8), None);
+    }
+
+    #[test]
     fn direct_control_flow_does_not_scan_table_addresses() {
         for isa in [
             crate::loader::Isa::X86_64,
@@ -890,5 +1044,122 @@ mod tests {
         );
         drop_data(&mut exceptional, &[table], &[(10, vec![(0, 1)])]);
         assert_eq!(exceptional.len(), 3);
+    }
+}
+
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    /// `lea` and `adrp`/`add` give the address the instruction definitions
+    /// name, written here from the bit fields, at every site address.
+    #[kani::proof]
+    fn referenced_addresses_follow_the_encodings() {
+        let bytes: [u8; 7] = kani::any();
+        let site: u64 = kani::any();
+        let lea =
+            bytes[0] & 0xf8 == 0x48 && bytes[1] == 0x8d && bytes[2] >> 6 == 0 && bytes[2] & 7 == 5;
+        let displacement = i128::from(i32::from_le_bytes([bytes[3], bytes[4], bytes[5], bytes[6]]));
+        let expected = (i128::from(site) + 7 + displacement).rem_euclid(1 << 64) as u64;
+        assert_eq!(rip_relative_lea(&bytes, site), lea.then_some(expected));
+
+        let adrp: u32 = kani::any();
+        let add: u32 = kani::any();
+        // ADRP: op=1 and bits 28..24 = 10000. ADD (immediate): sf=1, op=0, S=0,
+        // bits 28..23 = 100010, sh=0, Rn the ADRP's Rd.
+        let pair = adrp >> 31 == 1
+            && (adrp >> 24) & 0x1f == 0x10
+            && add >> 22 == 0x244
+            && adrp & 0x1f != 31
+            && (add >> 5) & 0x1f == adrp & 0x1f;
+        let immediate = ((adrp >> 29) & 0x3) | ((adrp >> 3) & 0x1f_fffc);
+        let pages = if immediate & (1 << 20) != 0 {
+            i128::from(immediate) - (1 << 21)
+        } else {
+            i128::from(immediate)
+        };
+        let target = i128::from(site & !0xfff) + pages * 4096 + i128::from((add >> 10) & 0xfff);
+        let target = target.rem_euclid(1 << 64) as u64;
+        assert_eq!(adrp_add(adrp, add, site), pair.then_some(target));
+        kani::cover!(pair && pages < 0, "a page below the site");
+    }
+
+    /// At every width, for every constant a check may add or take off and
+    /// both unsigned checks, the values that pass are exactly the case
+    /// positions `0..count`, and each gets back its own switch value modulo
+    /// the check's width (exactly, at 64 bits).
+    #[kani::proof]
+    fn case_values_name_the_checked_value() {
+        let bits: u32 = kani::any();
+        kani::assume((1..=64).contains(&bits));
+        let limit: u64 = kani::any();
+        let offset: u64 = kani::any();
+        let value: u64 = kani::any();
+        kani::assume(value & mask(bits) == value);
+        let subtract: bool = kani::any();
+        let inclusive: bool = kani::any();
+        let cond = if inclusive {
+            crate::ir::Cond::Hi
+        } else {
+            crate::ir::Cond::Cs
+        };
+        let (adjustment, checked) = if subtract {
+            (Adjustment::Sub(offset), value.wrapping_sub(offset))
+        } else {
+            (Adjustment::Add(offset), value.wrapping_add(offset))
+        };
+        let checked = checked & mask(bits);
+        let minimum = lowest_case(adjustment);
+        let Some(count) = case_count(inclusive, limit & mask(bits)) else {
+            assert!(
+                limit & mask(bits) > i64::MAX as u64
+                    || (inclusive && limit & mask(bits) == i64::MAX as u64)
+            );
+            return;
+        };
+        let passes = !crate::ir::semantics::holds(cond, checked, limit, bits);
+        assert_eq!(passes, (checked as i64) < count && checked < 1 << 63);
+        if passes {
+            let case = case_value(minimum, checked as i64) as u64;
+            assert_eq!(case & mask(bits), value);
+            if bits == 64 {
+                assert_eq!(case, value);
+            }
+            kani::cover!(
+                bits == 32 && offset > 0xffff_0000,
+                "a 32-bit negative constant"
+            );
+            kani::cover!(!inclusive && count > 0, "an exclusive check");
+        }
+        let position: u64 = kani::any();
+        if (position as i64) < count && position < 1 << 63 {
+            assert!(!crate::ir::semantics::holds(cond, position, limit, bits));
+        }
+    }
+
+    #[kani::proof]
+    fn table_entries_stay_in_the_address_space() {
+        let table: u64 = kani::any();
+        let position: u64 = kani::any();
+        let entry_bytes: u64 = kani::any();
+        let exact = u128::from(table) + u128::from(position) * u128::from(entry_bytes);
+        match entry_address(table, position, entry_bytes) {
+            Some(at) => assert_eq!(u128::from(at), exact),
+            None => {
+                assert!(exact > u128::from(u64::MAX));
+            }
+        }
+        let byte: u8 = kani::any();
+        let scale: i64 = kani::any();
+        match byte_offset(byte, scale) {
+            Some(offset) => {
+                assert!((0..64).contains(&scale));
+                assert_eq!(offset as u64, (u64::from(byte)).wrapping_shl(scale as u32));
+                kani::cover!(scale > 56 && byte > 1, "high bits leave the value");
+            }
+            None => {
+                assert!(!(0..64).contains(&scale));
+            }
+        }
     }
 }
