@@ -254,17 +254,51 @@ Kani 0.68.0 と CBMC 6.11.0 を使い、3 並列で検証しました。`x86_bra
 | `headers_from_arbitrary_bytes` | 任意の 312 バイト、PE ヘッダーのオフセット 0–8。受け付けたヘッダーのセクション表は入力内にあり、データディレクトリは表の終わりより前にある。 | 80.27 | pass |
 | `bit_reads` | 4 バイトの入力上の任意の読み取り状態から、NRV のビット読み取りと整数の延長を 1 回ずつ行う。語は 1 バイトまたは 4 バイト。ビットは 0 か 1 で、位置は入力内に収まり、延長した整数は上限を超えない。 | 4.04 | pass |
 | `match_copies` | 0–4 バイトのブロック、全一致距離と全長さ、ブロック以上で 0–6 のサイズ。受け付けた一致はサイズに収まり、各バイトを指定距離だけ前からコピーする。失敗した一致はブロックを変えない。 | 135.38 | pass |
-| `x86_branch_filters` | フィルター 0x26、0x46、0x49 を、任意のバイトと分岐先バイトを持つ長さ 0–7 のすべての入力に適用する。パニックせずに成功する。 | 25.26 | pass |
-| `arm_branch_filter` | フィルター 0x50 を同じ入力に適用する。 | 3.98 | pass |
-| `aarch64_branch_filter` | フィルター 0x52 を同じ入力に適用する。 | 3.15 | pass |
+| `x86_branch_filters` | フィルター 0x26、0x46、0x49 を、任意のバイトと分岐先バイトを持つ長さ 0–12 のすべての入力に適用する。パニックせずに成功し、6 バイト以上のある入力で呼び出しを書き換える。 | 230.81 | pass |
+| `arm_branch_filter` | フィルター 0x50 を同じ入力に適用する。長さ 0–13 では、BL のフィールドから別に書いた詰める側の変換を復号が打ち消す。先頭以外の各 BL 語には語の番号が加わり、他のバイトは変わらない。 | 19.83 | pass |
+| `aarch64_branch_filter` | フィルター 0x52 を同じ入力に、B/BL のフィールドで適用する。 | 15.88 | pass |
 | `page_ranges_cover_the_request` | 全 64 ビットのアドレスとサイズ。返る範囲はページ境界に揃い、要求を覆い、両端に余分なページを含まない。失敗するのは空の要求かオーバーフローする要求だけ。 | 0.18 | pass |
 
-NRV のハーネスはデコーダーの 1 ステップを確認するもので、ストリーム全体は対象外です。
-フィルターのハーネスは書き換えた分岐先の正しさを確認しません。その計算は SMT テスト
-`smt_modular_branch_targets_round_trip` で別に確認します。ELF ヘッダーの読み取りには
+分岐フィルターの 3 行は、2026-10-31 UTC に同じ版の Kani と CBMC を使い、AArch64 macOS 上で
+5 並列で検証し直しました。NRV のハーネスはデコーダーの 1 ステップを確認するもので、
+ストリーム全体は対象外です。x86 のフィルターのハーネスは書き換えた呼び出し先を確認しません。
+その計算は SMT テスト `smt_modular_branch_targets_round_trip` で確認します。往復の検証で使う
+詰める側の変換は、復号と同じくバッファーの最後のバイトを除きます。この境界は、分岐で終わる
+UPX の回帰用フィクスチャでだけ確認しています。ELF ヘッダーの読み取りには
 Kani のハーネスがありません。プログラムヘッダーの配置を固定し、任意のバイトを 1 個だけに
 しても、CBMC は 300 秒以内に終わりませんでした。LZMA の展開とファイル全体の再構成は
 UPX の回帰テストで確認しており、これらのハーネスの対象外です。
+
+### ジャンプテーブル、PLT のスロット、値の範囲
+
+これらのハーネスは 2026-10-31 UTC に AArch64 macOS 上で Kani 0.68.0 と CBMC 6.11.0 を使い、
+5 並列で検証しました。秒数にコンパイルと準備の時間は含みません。
+
+| ハーネス | 入力範囲と追加の表明 | 検証秒数 | 結果 |
+| --- | --- | ---: | --- |
+| `case_values_name_the_checked_value` | 幅 1–64、全定数・上限・値、定数の加算と減算、符号なしの 2 種類の境界チェック（default へ進む条件が `>` と `>=`）。通る値はちょうど case の位置で、各 case の値は幅を法として switch の値と一致する（64 ビットでは厳密に一致）。 | 1.39 | pass |
+| `table_entries_stay_in_the_address_space` | 全表アドレス・位置・要素サイズ。要素のアドレスは 2^64 を超えないときに限り返る。全バイトと全シフト量。バイト要素のオフセットはシフト量 0–63 のときに限り返る。 | 9.47 | pass |
+| `referenced_addresses_follow_the_encodings` | 全 7 バイトと全位置。`lea r64, [rip + d]` は次の命令のアドレスに `d` を足した値になる。ADRP と ADD（即値）の全語の組。アドレスは Arm のフィールド定義に従い、ゼロレジスターへの ADRP は組にしない。 | 0.41 | pass |
+| `aarch64_slots_follow_adrp_and_ldr` | ADRP と LDR の全語の組と全ベースアドレス。スロットは ADRP と、符号なしオフセットを持つ 64 ビット LDR の Arm のフィールド定義に従う。他の組はスロットを返さない。 | 2.36 | pass |
+| `facts_keep_every_member` | 既知の 0、既知の 1、下限、上限のすべて。4 つを満たす値は `Fact::new` の結果に残る。 | 1.15 | pass |
+| `joins_and_meets_are_sound` | 任意の 2 つの事実と要素。結合は要素を残し、交わりは両方の要素を残す。 | 12.49 | pass |
+| `sums_are_sound`、`differences_are_sound` | 任意の 2 つの事実とその要素。和と差は結果に残る。すべての結果が回り込む場合も含む。 | 4.89、12.02 | pass |
+| `bitwise_operations_are_sound` | AND、OR、XOR について同じ性質。 | 2.88 | pass |
+| `left_shifts_are_sound`、`right_shifts_are_sound`、`signed_right_shifts_are_sound` | シフトについて同じ性質。算術シフトは幅 1–64 のすべて。 | 10.90、8.57、104.88 | pass |
+| `remainders_are_sound`、`signed_remainders_are_sound` | 任意の事実の符号なし剰余。符号付き剰余は `expression` を通して幅 8、16、32、64 で確認する。 | 3.66、14.59 | pass |
+| `truncations_and_sign_extensions_are_sound` | 任意の事実、要素、幅 1–64。 | 25.12 | pass |
+| `decided_comparisons_hold_for_every_member` | 任意の 2 つの事実、要素、条件、幅 1–64。決まった比較は要素でも同じ結果になる。 | 214.85 | pass |
+| `*_refines_soundly`（11 個） | 条件ごとに 1 個、フラグの 4 条件はまとめて 1 個。任意の 2 つの事実、要素、幅 1–64。要素で条件が成り立つとき、絞り込んだ事実が存在し、左の要素をその幅で残す。 | 33.58–188.82 | pass |
+| `swapped_and_inverted_comparisons_agree` | 全条件、全オペランド、全幅。`swapped` でオペランドを入れ替えても、`invert` で否定しても結果が保たれる。 | 9.00 | pass |
+| `constrained_reads_keep_every_member` | 幅 1–64 の読み取りの任意の事実、制約、制約する下位の幅。下位ビットが制約を満たす値は残る。 | 33.95 | pass |
+
+積、符号なし・符号付きの商、上位の積にはハーネスがありません。64 ビットの乗算器と除算器のため、
+MiniSat でも CaDiCaL でも CBMC が 30 分以内に終わりませんでした。代わりにシードを固定したテスト
+`every_operation_keeps_the_values_it_can_produce` が、抽出した事実で確認します。テスト
+`every_bitfield_move_matches_the_architecture` は、両方のサイズの SBFM、BFM、UBFM のすべての
+エンコーディングを、Arm のビットマスクの定義から書いた参照と比べます。
+`smt_accepted_magic_numbers_divide_every_32_bit_value` は、[SMT_RULES.ja.md](SMT_RULES.ja.md)
+に書いた逆数乗算による除算の定理を証明します。
 
 ### ファズ対象と再現可能なシード
 

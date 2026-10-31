@@ -1539,3 +1539,6 @@ fn rewrite(expr: &mut Expr, ranges: &Ranges, block: usize, sensitive: bool, chan
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(kani)]
+mod proofs;

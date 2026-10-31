@@ -277,6 +277,8 @@ mod proofs {
             word_bytes,
         };
         if let Ok(bit) = bits.bit() {
+            kani::cover!(remaining == 0, "a bit is read after a refill");
+            kani::cover!(remaining > 0, "a bit is read from the current word");
             assert!(bit <= 1);
             assert!(bits.remaining < word_bytes * 8);
         }
@@ -284,6 +286,7 @@ mod proofs {
         let value: usize = kani::any();
         let limit: usize = kani::any();
         if let Ok(extended) = bits.extend(value, limit) {
+            kani::cover!(extended > value, "an integer is extended");
             assert!(
                 extended <= limit,
                 "an extended integer never exceeds its limit"
@@ -305,11 +308,16 @@ mod proofs {
         // Decode stops adding literals once the block reaches its size.
         kani::assume(length <= size);
         if copy_match(&mut output, offset, count, size) {
+            kani::cover!(
+                count > offset && offset > 0,
+                "a match overlaps the bytes it copies"
+            );
             assert!(output.len() == length + count && output.len() <= size);
             for index in length..output.len() {
                 assert!(output[index] == output[index - offset]);
             }
         } else {
+            kani::cover!(length > 0 && count > 0, "a non-empty match is rejected");
             assert!(
                 output[..] == start[..length],
                 "a rejected match leaves the block unchanged"

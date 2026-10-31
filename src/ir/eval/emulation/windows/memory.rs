@@ -418,6 +418,10 @@ mod proofs {
         let size: u64 = kani::any();
         match super::page_range(address, size) {
             Some((start, end)) => {
+                kani::cover!(
+                    address % 0x1000 != 0 && end - start > 0x1000,
+                    "an unaligned request spans pages"
+                );
                 let request_end = address + size;
                 assert!(
                     start % 0x1000 == 0 && end % 0x1000 == 0,
@@ -436,14 +440,17 @@ mod proofs {
                     "no page follows the last touched page"
                 );
             }
-            None => assert!(
-                size == 0
-                    || address
-                        .checked_add(size)
-                        .and_then(|end| end.checked_add(0xfff))
-                        .is_none(),
-                "only empty or overflowing requests are rejected"
-            ),
+            None => {
+                kani::cover!(size != 0, "a non-empty request overflows");
+                assert!(
+                    size == 0
+                        || address
+                            .checked_add(size)
+                            .and_then(|end| end.checked_add(0xfff))
+                            .is_none(),
+                    "only empty or overflowing requests are rejected"
+                )
+            }
         }
     }
 }

@@ -270,17 +270,52 @@ with Kani 0.68.0 and CBMC 6.11.0 on x86-64 Linux, three workers at a time except
 | `headers_from_arbitrary_bytes` | 312 arbitrary bytes, PE header offsets 0–8; an accepted header has its section table inside the input and its data directories before the end of the table. | 80.27 | pass |
 | `bit_reads` | One NRV bit read and one integer extension from any reader state over 4 input bytes, with 1- or 4-byte words; bits are 0 or 1, the position stays inside the input and an extended integer never exceeds its limit. | 4.04 | pass |
 | `match_copies` | A 0–4 byte block, every match distance and length, block sizes 0–6 not smaller than the block; an accepted match fits the size and copies each byte from the given distance back; a rejected match leaves the block unchanged. | 135.38 | pass |
-| `x86_branch_filters` | Filters 0x26, 0x46 and 0x49 on every length 0–7 with arbitrary bytes and branch target byte; decoding succeeds without a panic. | 25.26 | pass |
-| `arm_branch_filter` | Filter 0x50 on the same inputs. | 3.98 | pass |
-| `aarch64_branch_filter` | Filter 0x52 on the same inputs. | 3.15 | pass |
+| `x86_branch_filters` | Filters 0x26, 0x46 and 0x49 on every length 0–12 with arbitrary bytes and branch target byte; decoding succeeds without a panic and rewrites a call on some input of six bytes or more. | 230.81 | pass |
+| `arm_branch_filter` | Filter 0x50 on the same inputs; on lengths 0–13, decoding undoes the packer's transform, written separately from the BL field: every BL word after the first gains its word index, and other bytes are unchanged. | 19.83 | pass |
+| `aarch64_branch_filter` | Filter 0x52 on the same inputs, with the B/BL field. | 15.88 | pass |
 | `page_ranges_cover_the_request` | Every 64-bit address and size; a returned range is page aligned, covers the request and has no extra page at either end; only empty or overflowing requests are rejected. | 0.18 | pass |
 
-The NRV harnesses check single steps of the decoder, not whole streams, and the filter
-harnesses do not check that the rewritten branch addresses are correct; the SMT test
-`smt_modular_branch_targets_round_trip` checks that arithmetic separately. The ELF header
+The three branch filter rows were verified again on 2026-10-31 UTC with the same Kani and
+CBMC versions on AArch64 macOS, five workers at a time. The NRV harnesses check single
+steps of the decoder, not whole streams. The x86 filter harness does not check the
+rewritten call addresses; the SMT test `smt_modular_branch_targets_round_trip` checks that
+arithmetic. The packer's transform in the round trips excludes the last byte of the buffer
+as the decoder does; that bound is checked only by the UPX regression fixtures, which end
+in a branch. The ELF header
 reader has no Kani harness: with a fixed program-header layout and a single arbitrary byte,
 CBMC still did not finish within 300 seconds. LZMA decoding and whole-file reconstruction
 are covered by the UPX regression tests, not by these harnesses.
+
+### Jump tables, PLT slots and value ranges
+
+These harnesses were verified on 2026-10-31 UTC with Kani 0.68.0 and CBMC 6.11.0 on
+AArch64 macOS, five workers at a time. Times exclude compilation and preparation.
+
+| Harness | Input domain and additional assertions | Verification seconds | Result |
+| --- | --- | ---: | --- |
+| `case_values_name_the_checked_value` | Every width 1–64, constant, limit and value, an added or subtracted constant, and both unsigned bounds checks (`>` and `>=` to the default); the values that pass are exactly the case positions, and each case value equals the switched value modulo the width (exactly at 64 bits). | 1.39 | pass |
+| `table_entries_stay_in_the_address_space` | Every table address, position and entry size: an entry address is returned exactly when it does not pass 2^64. Every byte and shift amount: a byte entry's offset is returned exactly for shifts 0–63. | 9.47 | pass |
+| `referenced_addresses_follow_the_encodings` | Every 7-byte window and site address: `lea r64, [rip + d]` gives the next instruction's address plus `d`. Every ADRP and ADD (immediate) word pair: the address follows the Arm field definitions, and an ADRP into the zero register is not paired. | 0.41 | pass |
+| `aarch64_slots_follow_adrp_and_ldr` | Every ADRP and LDR word pair and base address; the slot follows the Arm field definitions of ADRP and of a 64-bit LDR with an unsigned offset; other pairs give no slot. | 2.36 | pass |
+| `facts_keep_every_member` | Every known-zero, known-one, lower and upper bound; a value satisfying all four is kept by `Fact::new`. | 1.15 | pass |
+| `joins_and_meets_are_sound` | Any two facts and a member; joins keep it, and meets keep a member of both. | 12.49 | pass |
+| `sums_are_sound`, `differences_are_sound` | Any two facts and members of them; the sum or difference is kept, including when every result wraps. | 4.89, 12.02 | pass |
+| `bitwise_operations_are_sound` | The same for AND, OR and XOR. | 2.88 | pass |
+| `left_shifts_are_sound`, `right_shifts_are_sound`, `signed_right_shifts_are_sound` | The same for shifts, at every width 1–64 for arithmetic shifts. | 10.90, 8.57, 104.88 | pass |
+| `remainders_are_sound`, `signed_remainders_are_sound` | Unsigned remainders of any facts; signed remainders through `expression` at widths 8, 16, 32 and 64. | 3.66, 14.59 | pass |
+| `truncations_and_sign_extensions_are_sound` | Any fact, member and width 1–64. | 25.12 | pass |
+| `decided_comparisons_hold_for_every_member` | Any two facts, members, condition and width 1–64; a decided comparison has the same outcome for the members. | 214.85 | pass |
+| `*_refines_soundly` (eleven harnesses) | One harness per condition, with the four flag conditions together; any two facts, members and width 1–64. When the condition holds for the members, the refined fact exists and keeps the left member at the width. | 33.58–188.82 | pass |
+| `swapped_and_inverted_comparisons_agree` | Every condition, operands and width; exchanging the operands with `swapped`, or negating with `invert`, keeps the outcome. | 9.00 | pass |
+| `constrained_reads_keep_every_member` | Any fact of a read of width 1–64, constraint and constrained low width; a value whose low bits meet the constraint is kept. | 33.95 | pass |
+
+Products, unsigned and signed quotients and high products have no harness: their 64-bit
+multipliers and dividers kept CBMC from finishing in 30 minutes with either MiniSat or
+CaDiCaL. The seeded test `every_operation_keeps_the_values_it_can_produce` checks them on
+sampled facts instead. The test `every_bitfield_move_matches_the_architecture` compares
+every SBFM, BFM and UBFM encoding at both sizes with a reference written from the Arm
+bit-mask definition, and `smt_accepted_magic_numbers_divide_every_32_bit_value` proves the
+reciprocal division theorem described in [SMT_RULES.md](SMT_RULES.md).
 
 ### Fuzz targets and reproducible seeds
 

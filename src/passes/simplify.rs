@@ -1199,6 +1199,41 @@ mod magic_tests {
             }
         }
     }
+
+    /// The condition `magic_divisor` accepts makes the multiply and shift an
+    /// exact division for every magic number, divisor and value below 2^32,
+    /// at every shift it allows.
+    #[test]
+    fn smt_accepted_magic_numbers_divide_every_32_bit_value() {
+        use crate::ir::smt::Proofs;
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for shift in 32..64u32 {
+            let power = 1u128 << shift;
+            let slack = 1u128 << (shift - 32);
+            let accepted = format!(
+                "(and (>= d 2) (>= m 1) (<= m 4294967295) (<= {power} (* m d)) (<= (* m d) (+ {power} {slack})))"
+            );
+            let x = "(+ (* q d) r)";
+            let domain = format!("(and (>= q 0) (>= r 0) (< r d) (< {x} 4294967296))");
+            let exact =
+                format!("(and (<= (* q {power}) (* {x} m)) (< (* {x} m) (* (+ q 1) {power})))");
+            proofs.predicate(
+                format!("magic divisor at shift {shift}"),
+                "true",
+                &format!("(forall ((m Int) (d Int)) (=> (and {accepted} {domain}) {exact}))"),
+            );
+        }
+        // Without the upper bound on the product the shift may round up.
+        proofs.counterexample(
+            "magic divisor without the error bound",
+            "true",
+            "(forall ((m Int) (d Int)) (=> (and (>= d 2) (>= m 1) (<= m 4294967295) (<= 8589934592 (* m d)) (>= q 0) (>= r 0) (< r d) (< (+ (* q d) r) 4294967296)) (and (<= (* q 8589934592) (* (+ (* q d) r) m)) (< (* (+ (* q d) r) m) (* (+ q 1) 8589934592)))))",
+        );
+        proofs.check();
+    }
 }
 
 #[cfg(test)]

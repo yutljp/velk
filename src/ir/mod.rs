@@ -51,6 +51,7 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 pub enum Cond {
     Eq,
     Ne,

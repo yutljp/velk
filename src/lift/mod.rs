@@ -2427,6 +2427,80 @@ mod tests {
         );
     }
 
+    /// Every SBFM, BFM and UBFM encoding at both sizes, against the Arm
+    /// definition of the instructions written from `DecodeBitMasks`.
+    #[test]
+    fn every_bitfield_move_matches_the_architecture() {
+        fn ones(count: u64) -> u64 {
+            if count >= 64 {
+                u64::MAX
+            } else {
+                (1 << count) - 1
+            }
+        }
+        fn rotate_right(value: u64, amount: u64, size: u64) -> u64 {
+            if amount == 0 {
+                return value;
+            }
+            ((value >> amount) | (value << (size - amount))) & ones(size)
+        }
+        fn reference(opc: u32, size: u64, immr: u64, imms: u64, old: u64, source: u64) -> u64 {
+            let (old, source) = (old & ones(size), source & ones(size));
+            let wmask = rotate_right(ones(imms + 1), immr, size);
+            let tmask = ones((imms.wrapping_sub(immr) & (size - 1)) + 1);
+            let rotated = rotate_right(source, immr, size);
+            let (top, bottom) = match opc {
+                0 => (
+                    if (source >> imms) & 1 == 1 {
+                        ones(size)
+                    } else {
+                        0
+                    },
+                    rotated & wmask,
+                ),
+                1 => (old, (old & !wmask) | (rotated & wmask)),
+                _ => (0, rotated & wmask),
+            };
+            ((top & !tmask) | (bottom & tmask)) & ones(size)
+        }
+        let ret = 0xd65f_03c0;
+        let values = [
+            (0xa5a5_5a5a_c3c3_3c3c, 0x0123_4567_89ab_cdef),
+            (0x5a5a_a5a5_3c3c_c3c3, 0xfedc_ba98_7654_3210),
+            (0, 0x8000_0000_8000_0001),
+            (u64::MAX, 0x7fff_ffff_7fff_fffe),
+        ];
+        for sf in [0u32, 1] {
+            let size = if sf == 1 { 64 } else { 32 };
+            for opc in 0..3u32 {
+                for immr in 0..size {
+                    for imms in 0..size {
+                        // sf opc 100110 N immr imms Rn=x1 Rd=x0
+                        let word = sf << 31
+                            | opc << 29
+                            | 0b100110 << 23
+                            | sf << 22
+                            | (immr as u32) << 16
+                            | (imms as u32) << 10
+                            | 1 << 5;
+                        for (old, source) in values {
+                            let actual = returns(
+                                Isa::AArch64,
+                                words(&[word, ret]),
+                                &[(0, old), (1, source)],
+                            );
+                            let expected = reference(opc, size, immr, imms, old, source);
+                            assert_eq!(
+                                actual, expected,
+                                "{word:08x} opc={opc} sf={sf} immr={immr} imms={imms} old={old:x} source={source:x}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn bitfield_moves_extract_and_insert() {
         let ret = 0xd65f_03c0;

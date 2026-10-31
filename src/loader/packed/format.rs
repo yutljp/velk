@@ -76,15 +76,26 @@ mod proofs {
             .is_some_and(|end| end <= bytes.len());
         match slice(&bytes, offset, length) {
             Ok(field) => {
+                kani::cover!(
+                    length > 0 && offset + length == bytes.len(),
+                    "a field ends at the input end"
+                );
                 assert!(in_range, "a field is returned only inside the input");
                 assert_eq!(field, &bytes[offset..offset + length]);
             }
-            Err(_) => assert!(!in_range, "an in-range field is always returned"),
+            Err(_) => {
+                kani::cover!(
+                    offset < bytes.len(),
+                    "a field starting inside the input runs past it"
+                );
+                assert!(!in_range, "an in-range field is always returned")
+            }
         }
         // Callers read fields of at most eight bytes.
         kani::assume(length <= 8);
         match number(&bytes, offset, length) {
             Ok(value) => {
+                kani::cover!(length == 8, "an eight-byte number is read");
                 let mut wide = [0; 8];
                 wide[..length].copy_from_slice(&bytes[offset..offset + length]);
                 assert_eq!(value as u64, u64::from_le_bytes(wide));
@@ -106,6 +117,10 @@ mod proofs {
         kani::assume(u64::from(high) <= 65520 * (index + 1) + 255 * index * (index + 1) / 2);
         let mut checksum = Checksum { low, high };
         checksum.add(kani::any());
+        kani::cover!(
+            index + 1 == CHECKSUM_CHUNK as u64,
+            "the last byte of a chunk is added"
+        );
         let next = index + 1;
         assert!(u64::from(checksum.low) <= 65520 + 255 * next);
         assert!(u64::from(checksum.high) <= 65520 * (next + 1) + 255 * next * (next + 1) / 2);

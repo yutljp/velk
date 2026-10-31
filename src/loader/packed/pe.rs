@@ -774,6 +774,10 @@ mod proofs {
             .is_some_and(|end| end <= bytes.len());
         match put(&mut bytes, offset, value, width) {
             Ok(()) => {
+                kani::cover!(
+                    width == 8 && offset == 0,
+                    "a full-width write fills the image"
+                );
                 assert!(in_range, "a write succeeds only inside the image");
                 assert_eq!(
                     bytes[offset..offset + width],
@@ -783,6 +787,10 @@ mod proofs {
                 assert_eq!(bytes[offset + width..], original[offset + width..]);
             }
             Err(_) => {
+                kani::cover!(
+                    offset < bytes.len(),
+                    "a write starting inside the image runs past it"
+                );
                 assert!(!in_range, "an in-range write always succeeds");
                 assert_eq!(bytes, original);
             }
@@ -803,12 +811,17 @@ mod proofs {
             .is_some_and(|end| end <= bytes.len());
         match copy(&mut bytes, offset, &source[..length]) {
             Ok(()) => {
+                kani::cover!(length == 4 && offset == 4, "a copy ends at the image end");
                 assert!(in_range, "a copy succeeds only inside the image");
                 assert_eq!(bytes[offset..offset + length], source[..length]);
                 assert_eq!(bytes[..offset], original[..offset]);
                 assert_eq!(bytes[offset + length..], original[offset + length..]);
             }
             Err(_) => {
+                kani::cover!(
+                    offset < bytes.len(),
+                    "a copy starting inside the image runs past it"
+                );
                 assert!(!in_range, "an in-range copy always succeeds");
                 assert_eq!(bytes, original);
             }
@@ -822,6 +835,7 @@ mod proofs {
         let offset: usize = kani::any();
         match string(&bytes, offset) {
             Ok(text) => {
+                kani::cover!(text.len() > 1, "a non-empty string is read");
                 let (last, body) = text.split_last().expect("a returned string is terminated");
                 assert_eq!(*last, 0);
                 assert!(
@@ -831,14 +845,20 @@ mod proofs {
                 assert_eq!(text, &bytes[offset..offset + text.len()]);
             }
             Err(_) => {
+                kani::cover!(offset < bytes.len(), "an unterminated string is rejected");
                 assert!(offset > bytes.len() || !bytes[offset..].contains(&0));
             }
         }
         let address: usize = kani::any();
         let base: usize = kani::any();
         match image_offset(address, base) {
-            Ok(offset) => assert_eq!(offset + base, address),
-            Err(_) => assert!(address < base),
+            Ok(offset) => {
+                kani::cover!(offset > 0, "an address past the base is converted");
+                assert_eq!(offset + base, address)
+            }
+            Err(_) => {
+                assert!(address < base);
+            }
         }
     }
 

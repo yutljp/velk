@@ -104,10 +104,15 @@ mod proofs {
         let mut bytes: [u8; N] = kani::any();
         let original = bytes;
         assert!(super::decode(&mut bytes, filter, kani::any()).is_ok());
-        kani::cover!(bytes != original, "a branch is rewritten");
+        // x86 needs one call and its four address bytes before the last byte; the
+        // word filters leave the first word alone, since its distance is zero.
+        let shortest = if matches!(filter, 0x50 | 0x52) { 9 } else { 6 };
+        if N >= shortest {
+            kani::cover!(bytes != original, "a branch is rewritten");
+        }
     }
 
-    // Every length up to seven bytes, including those shorter than one rewritten branch.
+    // Every length up to twelve bytes, including those shorter than one rewritten branch.
     fn decode_every_length(filter: u8) {
         decode_length::<0>(filter);
         decode_length::<1>(filter);
@@ -117,10 +122,66 @@ mod proofs {
         decode_length::<5>(filter);
         decode_length::<6>(filter);
         decode_length::<7>(filter);
+        decode_length::<8>(filter);
+        decode_length::<9>(filter);
+        decode_length::<10>(filter);
+        decode_length::<11>(filter);
+        decode_length::<12>(filter);
+    }
+
+    /// The packer's direction, written from the instruction formats rather
+    /// than from `decode`: the branch field of word `index` gains `index`
+    /// (the word distance from the buffer start). The last byte of the buffer
+    /// never starts a filtered word.
+    fn encode_words(bytes: &mut [u8], arm: bool) {
+        let words = bytes.len().saturating_sub(1) / 4;
+        for index in 0..words {
+            let at = index * 4;
+            let word = u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]);
+            let encoded = if arm {
+                if bytes[at + 3] != 0xeb {
+                    continue;
+                }
+                (word & 0xff00_0000) | (word.wrapping_add(index as u32) & 0x00ff_ffff)
+            } else {
+                if word & 0x7c00_0000 != 0x1400_0000 {
+                    continue;
+                }
+                (word & 0xfc00_0000) | (word.wrapping_add(index as u32) & 0x03ff_ffff)
+            };
+            bytes[at..at + 4].copy_from_slice(&encoded.to_le_bytes());
+        }
+    }
+
+    /// Decoding undoes the packer's transform on every input of length `N`,
+    /// and some input has a rewritten branch after the first word.
+    fn round_trip<const N: usize>(filter: u8) {
+        let original: [u8; N] = kani::any();
+        let mut bytes = original;
+        encode_words(&mut bytes, filter == 0x50);
+        let encoded = bytes;
+        assert!(super::decode(&mut bytes, filter, 0).is_ok());
+        assert_eq!(bytes, original);
+        if N >= 9 {
+            kani::cover!(
+                encoded != original,
+                "a later word's branch field is encoded"
+            );
+        }
+    }
+
+    fn round_trip_every_length(filter: u8) {
+        round_trip::<0>(filter);
+        round_trip::<4>(filter);
+        round_trip::<5>(filter);
+        round_trip::<8>(filter);
+        round_trip::<9>(filter);
+        round_trip::<12>(filter);
+        round_trip::<13>(filter);
     }
 
     #[kani::proof]
-    #[kani::unwind(9)]
+    #[kani::unwind(14)]
     fn x86_branch_filters() {
         decode_every_length(0x26);
         decode_every_length(0x46);
@@ -128,14 +189,16 @@ mod proofs {
     }
 
     #[kani::proof]
-    #[kani::unwind(11)]
+    #[kani::unwind(14)]
     fn arm_branch_filter() {
         decode_every_length(0x50);
+        round_trip_every_length(0x50);
     }
 
     #[kani::proof]
-    #[kani::unwind(11)]
+    #[kani::unwind(14)]
     fn aarch64_branch_filter() {
         decode_every_length(0x52);
+        round_trip_every_length(0x52);
     }
 }

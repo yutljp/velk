@@ -141,6 +141,12 @@ The added checks call the real lowering, simplifier and remainder matchers:
   32/33/40/61/63 in a 64-bit product. The actual simplifier must emit division
   by 2^(shift-31), and both expressions are proved equal. Halving the divisor
   is a negative control. Non-power-of-two full-width composition remains open.
+- For every shift from 32 to 63, an integer proof covers the condition
+  `magic_divisor` accepts, for any multiplier below 2^32 and any divisor:
+  `2^shift <= magic * d <= 2^shift + 2^(shift-32)` makes `(x * magic) >> shift`
+  equal `x / d` for every `x` below 2^32. Dropping the upper bound is a
+  negative control. This proves the arithmetic, not the matching of the
+  expression in the simplifier.
 
 The ARM32 templates assign a destination distinct from every register read by
 the input and flag expressions. They do not check captures when the destination
