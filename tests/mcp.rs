@@ -590,3 +590,29 @@ fn structure_layout_data_agrees_across_cli_javascript_and_mcp() {
         assert!(checked > 0, "{fixture}: no inferred array layouts");
     }
 }
+
+#[test]
+fn i386_jump_table_matches_cli_javascript_and_mcp() {
+    let path = common::fixtures_dir().join("i386_switch.elf");
+    let code = format!("velk.open({path:?}).getFunction('sw').decompile()");
+    let outcome = velk::script::Engine::new().unwrap().run(&code, None);
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+    assert!(outcome.output.contains("switch ("), "{}", outcome.output);
+    for value in 5..=10 {
+        assert!(outcome.output.contains(&format!("case {value}:")));
+    }
+    let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--cache", "off", "-D"])
+        .arg(&path)
+        .arg("sw")
+        .output()
+        .unwrap();
+    assert!(cli.status.success(), "{cli:?}");
+    assert_eq!(
+        String::from_utf8(cli.stdout).unwrap().trim(),
+        outcome.output.trim()
+    );
+    let responses = exchange(&[script(1, &code)]);
+    assert_eq!(responses[0]["result"]["isError"], false);
+    assert_eq!(text(&responses[0]), outcome.output);
+}

@@ -6490,6 +6490,14 @@ go_stripped_arm64 0x77620: 4for ( 8if ( 12do { 16if ( 20break; 12while ( 8else 8
 go_stripped_arm64 0x77830:
 go_stripped_arm64 0x77840:
 go_stripped_arm64 0x77850: 4if (
+i386_switch.elf 0x401220:
+i386_switch.elf 0x401230:
+i386_switch.elf 0x401240:
+i386_switch.elf 0x401250:
+i386_switch.elf 0x401260:
+i386_switch.elf 0x401270:
+i386_switch.elf 0x401280: 4if ( 4switch ( 4case 4case 4case 4case 4case 4case 4default:
+i386_switch.elf 0x4012e0:
 l0_arith_a64.o 0x0:
 l0_arith_a64.o 0xc:
 l0_arith_a64.o 0x1c:

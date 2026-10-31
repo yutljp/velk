@@ -189,6 +189,15 @@ fn entry_address(table: u64, position: u64, entry_bytes: u64) -> Option<u64> {
     table.checked_add(distance)
 }
 
+/// The address of entry `position` in a table of 4-byte addresses in a
+/// 32-bit address space, unless the entry would pass the end of that space.
+fn entry_address32(table: u64, position: u64) -> Option<u64> {
+    let Some(at) = entry_address(table, position, 4) else {
+        return None;
+    };
+    (at <= u64::from(u32::MAX) - 3).then_some(at)
+}
+
 /// A byte entry shifted into its offset from the base, unless the shift
 /// amount is outside a 64-bit value.
 fn byte_offset(byte: u8, scale: i64) -> Option<i64> {
@@ -526,6 +535,7 @@ fn recognize(
     }
     let entry_bytes = match entry {
         Entry::Absolute => 8,
+        Entry::Absolute32 => 4,
         Entry::Offset32 => 4,
         Entry::Byte => 1,
     };
@@ -542,6 +552,15 @@ fn recognize(
                     return None;
                 };
                 u64::from_le_bytes(entry_bytes) as i64
+            }
+            Entry::Absolute32 => {
+                let Some(at) = entry_address32(table, position) else {
+                    return None;
+                };
+                let Some(bytes) = image.read_vaddr(at, 4) else {
+                    return None;
+                };
+                i64::from(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
             Entry::Offset32 => {
                 let Some(at) = entry_address(table, position, 4) else {
@@ -667,6 +686,8 @@ enum Entry {
     Offset32,
     /// The address itself.
     Absolute,
+    /// An unsigned 32-bit address.
+    Absolute32,
 }
 
 /// `(x - k) + k` and `(x + k) - k` are `x`.
@@ -768,12 +789,41 @@ fn unwrap_mask(expr: &Expr) -> &Expr {
 
 /// Matches `base + (table[index] << scale)` with a byte table,
 /// `base + sext(table[index])` with a 32-bit signed offset table, or
-/// `table[index]` with a table of addresses.
+/// `table[index]` with a table of 8-byte addresses or of 4-byte addresses,
+/// whose address may be masked to 32 bits.
 fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
-    if let Expr::Load { addr, width: 8, .. } = expr
-        && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
+    if let Expr::Load {
+        addr,
+        width,
+        signed,
+    } = expr
+        && (*width == 8 || (*width == 4 && !signed))
     {
-        return Some((0, table, index, 0, Entry::Absolute));
+        let address = match addr.as_ref() {
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } if *width == 4 && constant(rhs) == Some(0xffff_ffff) => lhs.as_ref(),
+            _ => addr,
+        };
+        let (Some(table), Some(index)) = (table_address(address), index_expression(address)) else {
+            return None;
+        };
+        if *width == 4 && !absolute32_address(address) {
+            return None;
+        }
+        let entry = if *width == 4 {
+            Entry::Absolute32
+        } else {
+            Entry::Absolute
+        };
+        let table = if *width == 4 && address != addr.as_ref() {
+            table & 0xffff_ffff
+        } else {
+            table
+        };
+        return Some((0, table, index, 0, entry));
     }
     let Expr::Bin {
         op: BinOp::Add,
@@ -831,6 +881,27 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
     }
 
     Option::None
+}
+
+/// Whether a 4-byte table load reads `table + index * 4` or a constant
+/// address, the forms a table of 4-byte addresses takes.
+fn absolute32_address(address: &Expr) -> bool {
+    let scaled = match address {
+        Expr::Const(_) => return true,
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } if constant(lhs).is_some() => rhs,
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } if constant(rhs).is_some() => lhs,
+        _ => return false,
+    };
+    matches!(scaled.as_ref(), Expr::Bin { op: BinOp::Mul, rhs, .. } if constant(rhs) == Some(4))
+        || matches!(scaled.as_ref(), Expr::Bin { op: BinOp::Shl, rhs, .. } if constant(rhs) == Some(2))
 }
 
 fn table_address(expr: &Expr) -> Option<u64> {
@@ -892,6 +963,57 @@ fn unscale(expr: Expr) -> Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn absolute32_entries_are_unsigned_and_checked() {
+        let start = 0x8000_0000u64;
+        let mut bytes = vec![0; 40];
+        bytes[16..20].copy_from_slice(&((start + 32) as u32).to_le_bytes());
+        let image = Image::from_code(crate::loader::Isa::I386, start, bytes);
+        let block = |table| Block {
+            start,
+            stmts: vec![Stmt::BrIndirect {
+                target: Expr::Load {
+                    addr: Box::new(Expr::Const(table)),
+                    width: 4,
+                    signed: false,
+                },
+                at: None,
+            }],
+        };
+        let recovered = recover(&[block(start + 16)], &image, start..start + 40);
+        assert_eq!(recovered.len(), 1);
+        assert_eq!(recovered[0].cases, [(0, start + 32)]);
+        assert_eq!(recovered[0].table, (start + 16, 4));
+        for table in [start + 20, start + 38, u64::MAX - 1] {
+            assert!(recover(&[block(table)], &image, start..start + 40).is_empty());
+        }
+        assert_eq!(entry_address(u64::MAX - 3, 1, 4), None);
+        for stride in [1, 2, 4, 8] {
+            let target = Expr::Load {
+                addr: Box::new(Expr::bin(
+                    BinOp::And,
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::bin(BinOp::Mul, Expr::reg(0, 32), Expr::Const(stride)),
+                        Expr::Const(0xffff_ffff_8000_0010),
+                    ),
+                    Expr::Const(0xffff_ffff),
+                )),
+                width: 4,
+                signed: false,
+            };
+            let pattern = table_pattern(&target);
+            if stride == 4 {
+                let (_, table, index, _, entry) = pattern.unwrap();
+                assert_eq!(table, start + 16);
+                assert_eq!(index, Expr::reg(0, 32));
+                assert!(entry == Entry::Absolute32);
+            } else {
+                assert!(pattern.is_none());
+            }
+        }
+    }
 
     #[test]
     fn bounds_checks_with_extreme_constants_do_not_overflow() {
@@ -1135,6 +1257,30 @@ mod proofs {
         if (position as i64) < count && position < 1 << 63 {
             assert!(!crate::ir::semantics::holds(cond, position, limit, bits));
         }
+    }
+
+    /// A table of 4-byte addresses read through a 32-bit address `(c + 4p)
+    /// mod 2^32`: the entry is read exactly where that address puts it when
+    /// all four bytes fit below 2^32, and not read otherwise.
+    #[kani::proof]
+    fn absolute32_entries_follow_32_bit_addresses() {
+        let constant: u64 = kani::any();
+        let position: u64 = kani::any();
+        kani::assume(position < 4096);
+        let address = (u128::from(constant & 0xffff_ffff) + u128::from(position) * 4) as u64;
+        let wrapped = constant.wrapping_add(position * 4) & 0xffff_ffff;
+        match entry_address32(constant & 0xffff_ffff, position) {
+            Some(at) => {
+                assert_eq!(at, wrapped);
+                assert!(at + 3 <= u64::from(u32::MAX));
+            }
+            None => assert!(address + 3 > u64::from(u32::MAX)),
+        }
+        kani::cover!(
+            constant > u64::from(u32::MAX)
+                && entry_address32(constant & 0xffff_ffff, position).is_some(),
+            "a sign-extended table address"
+        );
     }
 
     #[kani::proof]

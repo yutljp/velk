@@ -278,6 +278,7 @@ UPX の回帰テストで確認しており、これらのハーネスの対象�
 | --- | --- | ---: | --- |
 | `case_values_name_the_checked_value` | 幅 1–64、全定数・上限・値、定数の加算と減算、符号なしの 2 種類の境界チェック（default へ進む条件が `>` と `>=`）。通る値はちょうど case の位置で、各 case の値は幅を法として switch の値と一致する（64 ビットでは厳密に一致）。 | 1.39 | pass |
 | `table_entries_stay_in_the_address_space` | 全表アドレス・位置・要素サイズ。要素のアドレスは 2^64 を超えないときに限り返る。全バイトと全シフト量。バイト要素のオフセットはシフト量 0–63 のときに限り返る。 | 9.47 | pass |
+| `absolute32_entries_follow_32_bit_addresses` | 32 ビットにマスクした符号拡張の値を含む全表定数と、位置 0–4095。4 バイトのアドレスの表の要素は、4 バイトすべてが 2^32 未満に収まるときに限り `(定数 + 4 * 位置) mod 2^32` から読む。 | 0.06 | pass |
 | `referenced_addresses_follow_the_encodings` | 全 7 バイトと全位置。`lea r64, [rip + d]` は次の命令のアドレスに `d` を足した値になる。ADRP と ADD（即値）の全語の組。アドレスは Arm のフィールド定義に従い、ゼロレジスターへの ADRP は組にしない。 | 0.41 | pass |
 | `aarch64_slots_follow_adrp_and_ldr` | ADRP と LDR の全語の組と全ベースアドレス。スロットは ADRP と、符号なしオフセットを持つ 64 ビット LDR の Arm のフィールド定義に従う。他の組はスロットを返さない。 | 2.36 | pass |
 | `facts_keep_every_member` | 既知の 0、既知の 1、下限、上限のすべて。4 つを満たす値は `Fact::new` の結果に残る。 | 1.15 | pass |

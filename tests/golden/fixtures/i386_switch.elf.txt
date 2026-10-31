@@ -1,0 +1,227 @@
+# i386_switch.elf: elf i386 0x4012e0, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x401220 7 a symtab,unwind
+0x401230 14 b symtab,unwind
+0x401240 8 c symtab,unwind
+0x401250 8 d symtab,unwind
+0x401260 7 e symtab,unwind
+0x401270 8 f symtab,unwind
+0x401280 83 sw symtab,unwind
+0x4012e0 20 main symtab,entry,unwind
+/* velk prelude */
+#include <stdint.h>
+
+extern uint32_t g; /* address: 0x4022f4 */
+
+uint64_t sw();
+void a();
+void b();
+void c();
+void d();
+void e();
+void f();
+/* end velk prelude */
+
+== 0x401220 a
+-- decompile
+/* velk pseudo-C: a @ 0x401220 */
+/* ref: 0x4022f4 .bss */
+void a(void) {
+    g += 1;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn a @ 0x401220 (size 7)
+  blk0 @ 0x401220:
+    store32((load32(#0x4022f4) + #0x1), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401220","approxTokens":108,"blocks":1,"hardReasons":[],"name":"a","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":7,"unsupported":0}
+
+== 0x401230 b
+-- decompile
+/* velk pseudo-C: b @ 0x401230 */
+/* ref: 0x4022f4 .bss */
+void b(void) {
+    uint32_t v1 = g;
+    g = v1 + v1 * 2;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn b @ 0x401230 (size 14)
+  blk0 @ 0x401230:
+    v1 = load32(#0x4022f4)
+    store32(((v1 & #0xffffffff) + ((v1 & #0xffffffff) * #0x2)), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401230","approxTokens":120,"blocks":1,"hardReasons":[],"name":"b","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+
+== 0x401240 c
+-- decompile
+/* velk pseudo-C: c @ 0x401240 */
+/* ref: 0x4022f4 .bss */
+void c(void) {
+    g ^= 7;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn c @ 0x401240 (size 8)
+  blk0 @ 0x401240:
+    store32((load32(#0x4022f4) ^ #0x7), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401240","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x401250 d
+-- decompile
+/* velk pseudo-C: d @ 0x401250 */
+/* ref: 0x4022f4 .bss */
+void d(void) {
+    g += -9;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn d @ 0x401250 (size 8)
+  blk0 @ 0x401250:
+    store32((load32(#0x4022f4) + #0xfffffffffffffff7), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401250","approxTokens":108,"blocks":1,"hardReasons":[],"name":"d","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x401260 e
+-- decompile
+/* velk pseudo-C: e @ 0x401260 */
+/* ref: 0x4022f4 .bss */
+void e(void) {
+    g = g << 1;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn e @ 0x401260 (size 7)
+  blk0 @ 0x401260:
+    store32((load32(#0x4022f4) << #0x1), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401260","approxTokens":108,"blocks":1,"hardReasons":[],"name":"e","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":7,"unsupported":0}
+
+== 0x401270 f
+-- decompile
+/* velk pseudo-C: f @ 0x401270 */
+/* ref: 0x4022f4 .bss */
+void f(void) {
+    g |= 5;
+}
+-- signature
+void ()
+-- references
+0x4022f4 .bss
+-- ir
+fn f @ 0x401270 (size 8)
+  blk0 @ 0x401270:
+    store32((load32(#0x4022f4) | #0x5), #0x4022f4)
+    ret #0x0
+-- card
+{"addr":"0x401270","approxTokens":108,"blocks":1,"hardReasons":[],"name":"f","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x401280 sw
+-- decompile
+/* velk pseudo-C: sw @ 0x401280 */
+/* ref: 0x4022f4 .bss */
+int32_t sw(uint32_t a0) {
+    uint32_t v1 = a0 - 5;
+    if (v1 > 5) {
+        g = 0;
+        return g;
+    }
+    switch (v1 + 5) {
+    case 5:
+        a();
+        return g;
+    case 6:
+        b();
+        return g;
+    case 7:
+        c();
+        return g;
+    case 8:
+        d();
+        return g;
+    case 9:
+        e();
+        return g;
+    case 10:
+        f();
+        return g;
+    default:
+        __builtin_unreachable();
+    }
+    return g;
+}
+-- signature
+int32_t ()
+-- references
+0x4022f4 .bss
+-- ir
+fn sw @ 0x401280 (size 83)
+  blk0 @ 0x401280:
+    v1 = ((load32((esp + #0x4)) + #0xfffffffffffffffb) & #0xffffffff)
+    brif hi (v1 & #0xffffffff), #0x5 -> 0x4012c0
+  blk1 @ 0x40128f:
+    switch ((v1 & #0xffffffff) + #0x5) [5->0x401296, 6->0x4012b2, 7->0x4012a4, 8->0x4012ab, 9->0x40129d, 10->0x4012b9] default <none>
+  blk2 @ 0x401296:
+    call 0x401220()
+    br 0x4012ca
+  blk3 @ 0x40129d:
+    call 0x401260()
+    br 0x4012ca
+  blk4 @ 0x4012a4:
+    call 0x401240()
+    br 0x4012ca
+  blk5 @ 0x4012ab:
+    call 0x401250()
+    br 0x4012ca
+  blk6 @ 0x4012b2:
+    eax = call 0x401230()
+    br 0x4012ca
+  blk7 @ 0x4012b9:
+    call 0x401270()
+    br 0x4012ca
+  blk8 @ 0x4012c0:
+    store32(#0x0, #0x4022f4)
+  blk9 @ 0x4012ca:
+    ret load32(#0x4022f4)
+-- card
+{"addr":"0x401280","approxTokens":144,"blocks":10,"hardReasons":[],"name":"sw","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":83,"unsupported":0}
+
+== 0x4012e0 main
+-- decompile
+/* velk pseudo-C: main @ 0x4012e0 */
+/* ref: 0x4022f4 .bss */
+int main(void) {
+    return ((int32_t)(sw(g)));
+}
+-- signature
+int32_t ()
+-- references
+0x4022f4 .bss
+-- ir
+fn main @ 0x4012e0 (size 20)
+  blk0 @ 0x4012e0:
+    v2:eax, edx = call 0x401280((load32(#0x4022f4) & #0xffffffff))
+    ret (v2 & #0xffffffff)
+-- card
+{"addr":"0x4012e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}

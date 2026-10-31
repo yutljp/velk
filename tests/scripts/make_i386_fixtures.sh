@@ -59,3 +59,6 @@ llvm-dlltool -m i386 -k -d tests/cases/i386/windows_types.def -l target/i386-bui
 clang --target=i686-pc-windows-msvc -O2 -fno-builtin -c tests/cases/i386/windows_types.c -o target/i386-build/windows_types.obj
 lld-link /dll /noentry /nodefaultlib /Brepro /implib:target/i386-build/windows_types_export.lib \
   /out:tests/fixtures/windows_types.pe32.dll target/i386-build/windows_types.obj target/i386-build/windows_types.lib
+
+clang --target=i686-linux-gnu -O2 -fno-pic -fno-pie -nostdlib -static -fuse-ld=lld \
+  -Wl,-e,main tests/cases/i386/switch.c -o tests/fixtures/i386_switch.elf

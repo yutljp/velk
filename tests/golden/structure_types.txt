@@ -162,6 +162,7 @@ go_probe: 861
 go_probe_arm64: 821
 go_stripped: 861
 go_stripped_arm64: 821
+i386_switch.elf: 0
 l0_arith_a64.o: 0
 l0_arith_x64.o: 0
 l1_branch_a64.o: 0

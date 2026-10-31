@@ -162,6 +162,7 @@ go_probe: 61064 lines, 6690 prelude lines, 13762 variables, 11464 casts, 121 reg
 go_probe_arm64: 70293 lines, 7059 prelude lines, 17355 variables, 17588 casts, 693 registers, 0 unsigned, 16 traps, 74 gotos, 123 indirect calls
 go_stripped: 60996 lines, 6688 prelude lines, 13749 variables, 11457 casts, 121 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
 go_stripped_arm64: 70231 lines, 7057 prelude lines, 17344 variables, 17582 casts, 693 registers, 0 unsigned, 16 traps, 74 gotos, 123 indirect calls
+i386_switch.elf: 68 lines, 13 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_a64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l1_branch_a64.o: 12 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

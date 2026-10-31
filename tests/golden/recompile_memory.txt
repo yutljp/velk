@@ -1,10 +1,10 @@
 # functions left out:
-#   calls: 8194
+#   calls: 8196
 #   computes on floats or vectors: 108
 #   computes on registers alone: 1810
 #   has an unsupported instruction: 17
 #   reads a register that is not a parameter: 129
-#   refers to data: 897
+#   refers to data: 903
 #   requires an external machine-state source: 4
 #   returns no integer: 177
 #   takes an argument that is no integer: 99

@@ -275,3 +275,36 @@ fn windows_stdcall_imports_preserve_printed_arguments() {
         "return windows_file(17) != 20 || windows_file(73) != 76;",
     );
 }
+
+#[test]
+fn i386_absolute_jump_table_preserves_cases_and_values() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("i386_switch.elf")).unwrap();
+    let address = binary.find("sw").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains("switch ("), "{code}");
+    for (value, target) in (5..=10).zip(["a", "b", "c", "d", "e", "f"]) {
+        let start = code.find(&format!("case {value}:")).expect("switch case");
+        let body = &code[start..];
+        let end = body[1..].find("case ").map_or(body.len(), |at| at + 1);
+        assert!(body[..end].contains(&format!("{target}();")), "{code}");
+    }
+    assert!(code.contains("g = 0;"), "{code}");
+    let mut definitions = Vec::new();
+    for name in ["a", "b", "c", "d", "e", "f"] {
+        let callee = binary.find(name).unwrap().addr;
+        definitions.push(binary.decompile(callee, None, None).unwrap());
+    }
+    definitions.push(code);
+    let code = velk::render::combine(&definitions.join("\n"));
+    syntax::run_printed(
+        &code,
+        "uint32_t g;",
+        "for (unsigned x=0;x<256;x++) for (unsigned initial=0;initial<128;initial++) {\n\
+         g=initial; unsigned expected=0;\n\
+         switch(x) {case 5:expected=initial+1;break;case 6:expected=initial*3;break;\n\
+         case 7:expected=initial^7;break;case 8:expected=initial-9;break;\n\
+         case 9:expected=initial<<1;break;case 10:expected=initial|5;break;}\n\
+         if ((unsigned)sw(x)!=expected || g!=expected) return 1; }\n\
+         g=17; if(sw(UINT32_MAX)!=0 || g!=0) return 1; return 0;",
+    );
+}

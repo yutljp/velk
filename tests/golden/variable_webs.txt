@@ -166,6 +166,7 @@ Rust: 8106 -> 0; 50985; 708; 189
 # go_probe_arm64 | Go: 1589 -> 0; 7963; 108; 1
 # go_stripped | Go: 1485 -> 0; 6580; 84; 0
 # go_stripped_arm64 | Go: 1588 -> 0; 7961; 108; 1
+# i386_switch.elf | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_x64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l1_branch_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
