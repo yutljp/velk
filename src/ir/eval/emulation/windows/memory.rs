@@ -409,3 +409,41 @@ mod tests {
         proofs.check();
     }
 }
+
+#[cfg(kani)]
+mod proofs {
+    #[kani::proof]
+    fn page_ranges_cover_the_request() {
+        let address: u64 = kani::any();
+        let size: u64 = kani::any();
+        match super::page_range(address, size) {
+            Some((start, end)) => {
+                let request_end = address + size;
+                assert!(
+                    start % 0x1000 == 0 && end % 0x1000 == 0,
+                    "the range is page aligned"
+                );
+                assert!(
+                    start <= address && request_end <= end,
+                    "the range covers the request"
+                );
+                assert!(
+                    address - start < 0x1000,
+                    "no page precedes the first touched page"
+                );
+                assert!(
+                    end - request_end < 0x1000,
+                    "no page follows the last touched page"
+                );
+            }
+            None => assert!(
+                size == 0
+                    || address
+                        .checked_add(size)
+                        .and_then(|end| end.checked_add(0xfff))
+                        .is_none(),
+                "only empty or overflowing requests are rejected"
+            ),
+        }
+    }
+}

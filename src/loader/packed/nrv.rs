@@ -53,6 +53,18 @@ impl Bits<'_> {
     }
 }
 
+/// Appends `length` bytes copied from `offset` bytes back, unless the source precedes the block
+/// or the block would grow past `size`.
+fn copy_match(output: &mut Vec<u8>, offset: usize, length: usize, size: usize) -> bool {
+    if offset == 0 || offset > output.len() || length > size.saturating_sub(output.len()) {
+        return false;
+    }
+    for _ in 0..length {
+        output.push(output[output.len() - offset]);
+    }
+    true
+}
+
 pub(super) fn decode(input: &[u8], size: usize, method: u8) -> Result<Vec<u8>, DecodeError> {
     if !matches!(method, 2 | 3 | 5 | 6 | 8 | 9) {
         return Err(DecodeError::Unsupported(format!("NRV method {method}")));
@@ -200,14 +212,11 @@ pub(super) fn decode(input: &[u8], size: usize, method: u8) -> Result<Vec<u8>, D
         }
         let threshold = if method == 2 { 0xd00 } else { 0x500 };
         length += usize::from(offset > threshold) + 1;
-        if offset > output.len() || length > size.saturating_sub(output.len()) {
+        if !copy_match(&mut output, offset, length, size) {
             return Err(DecodeError::invalid(
                 bits.position,
                 "invalid NRV match distance or length",
             ));
-        }
-        for _ in 0..length {
-            output.push(output[output.len() - offset]);
         }
     }
     if output.len() != size || bits.position != input.len() {
@@ -242,6 +251,69 @@ mod tests {
                 }
                 assert!(decode(&input[..length], usize::MAX, method).is_err());
             }
+        }
+    }
+}
+
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    // One step from any reachable reader state: a word is refilled only when no bits remain.
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn bit_reads() {
+        let input: [u8; 4] = kani::any();
+        let word_bytes: u8 = if kani::any() { 1 } else { 4 };
+        let remaining: u8 = kani::any();
+        kani::assume(remaining <= word_bytes * 8);
+        let position: usize = kani::any();
+        kani::assume(position <= input.len());
+        let mut bits = Bits {
+            input: &input,
+            position,
+            word: kani::any(),
+            remaining,
+            word_bytes,
+        };
+        if let Ok(bit) = bits.bit() {
+            assert!(bit <= 1);
+            assert!(bits.remaining < word_bytes * 8);
+        }
+        assert!(bits.position <= input.len());
+        let value: usize = kani::any();
+        let limit: usize = kani::any();
+        if let Ok(extended) = bits.extend(value, limit) {
+            assert!(
+                extended <= limit,
+                "an extended integer never exceeds its limit"
+            );
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn match_copies() {
+        let start: [u8; 4] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= start.len());
+        let mut output = start[..length].to_vec();
+        let offset: usize = kani::any();
+        let count: usize = kani::any();
+        let size: usize = kani::any();
+        kani::assume(size <= 6);
+        // Decode stops adding literals once the block reaches its size.
+        kani::assume(length <= size);
+        if copy_match(&mut output, offset, count, size) {
+            assert!(output.len() == length + count && output.len() <= size);
+            for index in length..output.len() {
+                assert!(output[index] == output[index - offset]);
+            }
+        } else {
+            assert!(
+                output[..] == start[..length],
+                "a rejected match leaves the block unchanged"
+            );
         }
     }
 }

@@ -9,6 +9,7 @@ mod pe;
 #[cfg(test)]
 mod tests;
 
+use std::borrow::Cow;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -26,13 +27,19 @@ static NEXT_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug)]
 enum DecodeError {
-    Invalid(String),
+    Invalid {
+        offset: usize,
+        cause: Cow<'static, str>,
+    },
     Unsupported(String),
 }
 
 impl DecodeError {
-    fn invalid(offset: usize, cause: &str) -> Self {
-        Self::Invalid(format!("at offset 0x{offset:x}: {cause}"))
+    fn invalid(offset: usize, cause: impl Into<Cow<'static, str>>) -> Self {
+        Self::Invalid {
+            offset,
+            cause: cause.into(),
+        }
     }
 }
 
@@ -289,7 +296,9 @@ pub(super) fn unpack(bytes: &[u8], report: &mut Report) -> Result<Vec<u8>> {
             report.method = "built-in UPX (direct decoder)".to_owned();
             return Ok(output);
         }
-        Err(DecodeError::Invalid(cause)) => return Err(Error::Packed(cause)),
+        Err(DecodeError::Invalid { offset, cause }) => {
+            return Err(Error::Packed(format!("at offset 0x{offset:x}: {cause}")));
+        }
         Err(DecodeError::Unsupported(cause)) => cause,
     };
     report.method = "upx -d (direct decoder fallback)".to_owned();

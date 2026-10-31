@@ -754,3 +754,108 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>, DecodeError> {
     }
     Ok(output)
 }
+
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn image_writes() {
+        let mut bytes: [u8; 8] = kani::any();
+        let original = bytes;
+        let offset: usize = kani::any();
+        let value: usize = kani::any();
+        let width: usize = kani::any();
+        // Callers write fields of at most eight bytes.
+        kani::assume(width <= 8);
+        let in_range = offset
+            .checked_add(width)
+            .is_some_and(|end| end <= bytes.len());
+        match put(&mut bytes, offset, value, width) {
+            Ok(()) => {
+                assert!(in_range, "a write succeeds only inside the image");
+                assert_eq!(
+                    bytes[offset..offset + width],
+                    (value as u64).to_le_bytes()[..width]
+                );
+                assert_eq!(bytes[..offset], original[..offset]);
+                assert_eq!(bytes[offset + width..], original[offset + width..]);
+            }
+            Err(_) => {
+                assert!(!in_range, "an in-range write always succeeds");
+                assert_eq!(bytes, original);
+            }
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn image_copies() {
+        let mut bytes: [u8; 8] = kani::any();
+        let original = bytes;
+        let source: [u8; 4] = kani::any();
+        let length: usize = kani::any();
+        kani::assume(length <= source.len());
+        let offset: usize = kani::any();
+        let in_range = offset
+            .checked_add(length)
+            .is_some_and(|end| end <= bytes.len());
+        match copy(&mut bytes, offset, &source[..length]) {
+            Ok(()) => {
+                assert!(in_range, "a copy succeeds only inside the image");
+                assert_eq!(bytes[offset..offset + length], source[..length]);
+                assert_eq!(bytes[..offset], original[..offset]);
+                assert_eq!(bytes[offset + length..], original[offset + length..]);
+            }
+            Err(_) => {
+                assert!(!in_range, "an in-range copy always succeeds");
+                assert_eq!(bytes, original);
+            }
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn image_strings_and_offsets() {
+        let bytes: [u8; 8] = kani::any();
+        let offset: usize = kani::any();
+        match string(&bytes, offset) {
+            Ok(text) => {
+                let (last, body) = text.split_last().expect("a returned string is terminated");
+                assert_eq!(*last, 0);
+                assert!(
+                    !body.contains(&0),
+                    "the string ends at its first terminator"
+                );
+                assert_eq!(text, &bytes[offset..offset + text.len()]);
+            }
+            Err(_) => {
+                assert!(offset > bytes.len() || !bytes[offset..].contains(&0));
+            }
+        }
+        let address: usize = kani::any();
+        let base: usize = kani::any();
+        match image_offset(address, base) {
+            Ok(offset) => assert_eq!(offset + base, address),
+            Err(_) => assert!(address < base),
+        }
+    }
+
+    // Room for a PE32+ header with one section. Only header offsets 0 through 8 are checked.
+    #[kani::proof]
+    #[kani::unwind(5)]
+    fn headers_from_arbitrary_bytes() {
+        let bytes: [u8; 312] = kani::any();
+        let offset: usize = kani::any();
+        kani::assume(offset <= 8);
+        if let Ok(header) = header(&bytes, offset) {
+            assert!(
+                header.end <= bytes.len(),
+                "the section table lies inside the input"
+            );
+            assert!(header.directories < header.end);
+            kani::cover!(header.word == 8, "a PE32+ header is read");
+        }
+    }
+}

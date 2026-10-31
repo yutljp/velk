@@ -54,7 +54,7 @@ pub(super) fn decode(input: &[u8], size: usize) -> Result<Vec<u8>, DecodeError> 
     if let Err(error) = lzma_rs::lzma_decompress_with_options(&mut reader, &mut output, &options) {
         return Err(DecodeError::invalid(
             reader.position() as usize,
-            &format!("invalid UPX LZMA stream: {error}"),
+            format!("invalid UPX LZMA stream: {error}"),
         ));
     }
     if output.bytes.len() != size || reader.position() as usize != reader.get_ref().len() {

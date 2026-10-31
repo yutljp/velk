@@ -97,3 +97,45 @@ mod tests {
         proofs.check();
     }
 }
+
+#[cfg(kani)]
+mod proofs {
+    fn decode_length<const N: usize>(filter: u8) {
+        let mut bytes: [u8; N] = kani::any();
+        let original = bytes;
+        assert!(super::decode(&mut bytes, filter, kani::any()).is_ok());
+        kani::cover!(bytes != original, "a branch is rewritten");
+    }
+
+    // Every length up to seven bytes, including those shorter than one rewritten branch.
+    fn decode_every_length(filter: u8) {
+        decode_length::<0>(filter);
+        decode_length::<1>(filter);
+        decode_length::<2>(filter);
+        decode_length::<3>(filter);
+        decode_length::<4>(filter);
+        decode_length::<5>(filter);
+        decode_length::<6>(filter);
+        decode_length::<7>(filter);
+    }
+
+    #[kani::proof]
+    #[kani::unwind(9)]
+    fn x86_branch_filters() {
+        decode_every_length(0x26);
+        decode_every_length(0x46);
+        decode_every_length(0x49);
+    }
+
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn arm_branch_filter() {
+        decode_every_length(0x50);
+    }
+
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn aarch64_branch_filter() {
+        decode_every_length(0x52);
+    }
+}

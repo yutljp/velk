@@ -253,6 +253,35 @@ debug data, DIE traversal, executing unwind instructions, complete function
 discovery or applying every format's relocations. No whole-pipeline safety claim
 follows from these proofs.
 
+### UPX decoding and Windows page ranges
+
+These harnesses cover the built-in UPX decoder in `src/loader/packed/` and the page
+rounding used by the Windows virtual-memory calls. They were verified on 2026-10-31 UTC
+with Kani 0.68.0 and CBMC 6.11.0 on x86-64 Linux, three workers at a time except
+`x86_branch_filters`, which ran alone. Times exclude compilation and preparation.
+
+| Harness | Input domain and additional assertions | Verification seconds | Result |
+| --- | --- | ---: | --- |
+| `field_reads` | 8 arbitrary bytes, every `usize` offset and length; a field is returned exactly when it lies inside the input; numeric fields of at most 8 bytes equal their little-endian value. | 5.04 | pass |
+| `checksum_chunk_cannot_overflow` | One byte added at any position inside a 5552-byte checksum chunk, from any state within the bound for that position; the next state stays within the bound, so no addition overflows before the sums are reduced. | 8.09 | pass |
+| `image_writes` | 8-byte image, every `usize` offset and value, widths 0–8; a write succeeds exactly inside the image, stores the little-endian value and leaves other bytes unchanged; a rejected write changes nothing. | 2.15 | pass |
+| `image_copies` | 8-byte image, 0–4 source bytes, every `usize` offset; the same properties for copies. | 2.63 | pass |
+| `image_strings_and_offsets` | 8 arbitrary bytes, every `usize` offset; a returned string ends at its first zero byte and matches the input; a string is rejected only when no zero byte follows the offset. Every address and base; an image offset is returned exactly when the address is not below the base. | 11.81 | pass |
+| `headers_from_arbitrary_bytes` | 312 arbitrary bytes, PE header offsets 0–8; an accepted header has its section table inside the input and its data directories before the end of the table. | 80.27 | pass |
+| `bit_reads` | One NRV bit read and one integer extension from any reader state over 4 input bytes, with 1- or 4-byte words; bits are 0 or 1, the position stays inside the input and an extended integer never exceeds its limit. | 4.04 | pass |
+| `match_copies` | A 0–4 byte block, every match distance and length, block sizes 0–6 not smaller than the block; an accepted match fits the size and copies each byte from the given distance back; a rejected match leaves the block unchanged. | 135.38 | pass |
+| `x86_branch_filters` | Filters 0x26, 0x46 and 0x49 on every length 0–7 with arbitrary bytes and branch target byte; decoding succeeds without a panic. | 25.26 | pass |
+| `arm_branch_filter` | Filter 0x50 on the same inputs. | 3.98 | pass |
+| `aarch64_branch_filter` | Filter 0x52 on the same inputs. | 3.15 | pass |
+| `page_ranges_cover_the_request` | Every 64-bit address and size; a returned range is page aligned, covers the request and has no extra page at either end; only empty or overflowing requests are rejected. | 0.18 | pass |
+
+The NRV harnesses check single steps of the decoder, not whole streams, and the filter
+harnesses do not check that the rewritten branch addresses are correct; the SMT test
+`smt_modular_branch_targets_round_trip` checks that arithmetic separately. The ELF header
+reader has no Kani harness: with a fixed program-header layout and a single arbitrary byte,
+CBMC still did not finish within 300 seconds. LZMA decoding and whole-file reconstruction
+are covered by the UPX regression tests, not by these harnesses.
+
 ### Fuzz targets and reproducible seeds
 
 `fuzz/` has separate `elf`, `pe`, and `macho` opening targets, plus `functions`,
