@@ -2,9 +2,12 @@
 //! from 0 to 2^w - 1 and each operation its exact value modulo 2^w. Linear
 //! integer arithmetic decides products and quotients of constants, such as
 //! a division recovered from a multiplication by its reciprocal, that the
-//! bit-vector strategies give up on. A query with an operation outside that
-//! fragment, a product of two variables, a shift or division by a variable,
-//! or a symbol that is not a Boolean or a bit-vector, has no translation.
+//! bit-vector strategies give up on. Memory is an array of integers, each
+//! standing for its value modulo 2^w, so that reading and writing it keep
+//! their meaning. A query with an operation outside that fragment, a product
+//! of two variables, a shift or division by a variable, an equality of
+//! arrays, or a function of bit-vectors the solver does not model, has no
+//! translation.
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
@@ -51,16 +54,34 @@ fn parse(text: &str) -> Option<Vec<Sexp>> {
 enum Sort {
     Bool,
     Bits(u32),
+    /// An array of `element`-bit values indexed by `index`-bit ones, as
+    /// memory is.
+    Memory {
+        index: u32,
+        element: u32,
+    },
+}
+
+impl Sort {
+    /// The sort's name over integers.
+    fn integer(self) -> &'static str {
+        match self {
+            Self::Bool => "Bool",
+            Self::Bits(_) => "Int",
+            Self::Memory { .. } => "(Array Int Int)",
+        }
+    }
 }
 
 /// What a symbol stands for.
 #[derive(Debug, Clone)]
 enum Symbol {
-    /// A value of the sort, known when it is a constant.
-    Value(Sort, Option<u128>),
+    /// A value of the sort, known when it is a constant, with the bits that
+    /// may be one.
+    Value(Sort, Option<u128>, u128),
     /// A function of the sorts to the sort.
     Function(Vec<Sort>, Sort),
-    /// Something with no translation, such as memory.
+    /// Something with no translation, such as an unmodeled operation.
     Untranslated,
 }
 
@@ -69,6 +90,8 @@ struct Term {
     text: String,
     sort: Sort,
     constant: Option<u128>,
+    /// The bits of a bit-vector that may be one; all of them past `WIDEST`.
+    ones: u128,
 }
 
 /// The widest bit-vector whose constants are followed.
@@ -147,6 +170,9 @@ fn and_constant(text: &str, constant: u128, width: u32) -> String {
 
 struct Translation {
     symbols: HashMap<String, Symbol>,
+    /// Functions of integers standing for operations that are not linear,
+    /// with the number of operands each takes.
+    unknown: std::cell::RefCell<std::collections::BTreeMap<String, usize>>,
 }
 
 impl Translation {
@@ -159,6 +185,14 @@ impl Translation {
                 {
                     let width: u32 = width.parse().ok()?;
                     (width > 0).then_some(Sort::Bits(width))
+                }
+                [Sexp::Atom(array), index, element] if array == "Array" => {
+                    let (Sort::Bits(index), Sort::Bits(element)) =
+                        (Self::sort(index)?, Self::sort(element)?)
+                    else {
+                        return None;
+                    };
+                    Some(Sort::Memory { index, element })
                 }
                 _ => None,
             },
@@ -195,14 +229,20 @@ impl Translation {
             text: value.to_string(),
             sort: Sort::Bits(width),
             constant: Some(value),
+            ones: value,
         }
     }
 
     fn bits(text: String, width: u32) -> Term {
+        Self::bits_with(text, width, mask(width))
+    }
+
+    fn bits_with(text: String, width: u32, ones: u128) -> Term {
         Term {
             text,
             sort: Sort::Bits(width),
             constant: None,
+            ones: ones & mask(width),
         }
     }
 
@@ -211,6 +251,19 @@ impl Translation {
             text,
             sort: Sort::Bool,
             constant: None,
+            ones: 0,
+        }
+    }
+
+    fn other(text: String, sort: Sort) -> Term {
+        Term {
+            text,
+            sort,
+            constant: None,
+            ones: match sort {
+                Sort::Bits(width) => mask(width),
+                _ => 0,
+            },
         }
     }
 
@@ -265,8 +318,12 @@ impl Translation {
                     return None;
                 };
                 let mut term = Self::indexed(op, &indices, &operand, width)?;
-                if let (Some(value), Sort::Bits(wider)) = (operand.constant, term.sort) {
-                    term.constant = Self::folded(op, &indices, value, width, wider);
+                if let Sort::Bits(wider) = term.sort {
+                    term.constant = operand
+                        .constant
+                        .and_then(|value| Self::folded(op, &indices, value, width, wider));
+                    term.ones = Self::folded(op, &indices, operand.ones, width, wider)
+                        .unwrap_or(mask(wider));
                 }
                 Some(term)
             }
@@ -288,24 +345,21 @@ impl Translation {
             return Some(Self::boolean(atom.to_owned()));
         }
         if let Some(sort) = scope.get(atom) {
-            return Some(Term {
-                text: atom.to_owned(),
-                sort: *sort,
-                constant: None,
-            });
+            return Some(Self::other(atom.to_owned(), *sort));
         }
         match self.symbols.get(atom)? {
-            Symbol::Value(sort, constant) => Some(Term {
+            Symbol::Value(sort, constant, ones) => Some(Term {
                 text: atom.to_owned(),
                 sort: *sort,
                 constant: *constant,
+                ones: *ones,
             }),
             Symbol::Function(..) | Symbol::Untranslated => None,
         }
     }
 
-    /// The constant an extraction or extension of the constant `value` is,
-    /// so a product with it stays linear.
+    /// An extraction or extension of the constant `value`, so a product
+    /// with it stays linear; the same for the bits that may be one.
     fn folded(op: &str, indices: &[u32], value: u128, width: u32, result: u32) -> Option<u128> {
         if result > WIDEST {
             return None;
@@ -384,34 +438,88 @@ impl Translation {
                 }
                 Some(Self::boolean(format!("({op} {})", texts.join(" "))))
             }
+            // Arrays over integers may differ where their values agree
+            // modulo 2^w, so their equality has no translation.
             "=" | "distinct" => {
                 let sort = terms.first()?.sort;
-                (terms.len() >= 2 && terms.iter().all(|t| t.sort == sort))
-                    .then(|| Self::boolean(format!("({op} {})", texts.join(" "))))
+                (terms.len() >= 2
+                    && !matches!(sort, Sort::Memory { .. })
+                    && terms.iter().all(|t| t.sort == sort))
+                .then(|| Self::boolean(format!("({op} {})", texts.join(" "))))
+            }
+            "select" => {
+                let [memory, at] = terms else {
+                    return None;
+                };
+                let Sort::Memory { index, element } = memory.sort else {
+                    return None;
+                };
+                // Any integer an array holds stands for its value modulo 2^w.
+                (at.sort == Sort::Bits(index)).then(|| {
+                    Self::bits(
+                        modulo(&format!("(select {} {})", memory.text, at.text), element),
+                        element,
+                    )
+                })
+            }
+            "store" => {
+                let [memory, at, value] = terms else {
+                    return None;
+                };
+                let Sort::Memory { index, element } = memory.sort else {
+                    return None;
+                };
+                (at.sort == Sort::Bits(index) && value.sort == Sort::Bits(element)).then(|| {
+                    Self::other(
+                        format!("(store {} {} {})", memory.text, at.text, value.text),
+                        memory.sort,
+                    )
+                })
             }
             "ite" => {
                 let [condition, then, otherwise] = terms else {
                     return None;
                 };
-                (condition.sort == Sort::Bool && then.sort == otherwise.sort).then(|| Term {
-                    text: format!("(ite {} {} {})", condition.text, then.text, otherwise.text),
-                    sort: then.sort,
-                    constant: None,
+                (condition.sort == Sort::Bool && then.sort == otherwise.sort).then(|| {
+                    let mut term = Self::other(
+                        format!("(ite {} {} {})", condition.text, then.text, otherwise.text),
+                        then.sort,
+                    );
+                    term.ones = then.ones | otherwise.ones;
+                    term
                 })
             }
             _ => {
                 if let Some(Symbol::Function(parameters, result)) = self.symbols.get(op) {
                     let sorts: Vec<Sort> = terms.iter().map(|t| t.sort).collect();
-                    return (sorts == *parameters).then(|| Term {
-                        text: format!("({op} {})", texts.join(" ")),
-                        sort: *result,
-                        constant: None,
-                    });
+                    return (sorts == *parameters)
+                        .then(|| Self::other(format!("({op} {})", texts.join(" ")), *result));
                 }
                 let width = Self::width(terms)?;
                 Self::bit_vector(op, terms, &texts, width)
+                    .or_else(|| self.unknown(op, &texts, width))
             }
         }
+    }
+
+    /// `op` on `texts` as a function of its operands, whatever it is, when
+    /// it is a bit-vector operation that is not linear, such as a product
+    /// of two variables: a proof that holds for every such function holds
+    /// for the operation, and only proofs are taken.
+    fn unknown(&self, op: &str, texts: &[&str], width: u32) -> Option<Term> {
+        const NOT_LINEAR: [&str; 11] = [
+            "bvmul", "bvshl", "bvlshr", "bvashr", "bvudiv", "bvurem", "bvsdiv", "bvsrem", "bvsmod",
+            "bvand", "bvor",
+        ];
+        if !NOT_LINEAR.contains(&op) && op != "bvxor" {
+            return None;
+        }
+        let name = format!("{op}{width}_{}", texts.len());
+        self.unknown.borrow_mut().insert(name.clone(), texts.len());
+        Some(Self::bits(
+            modulo(&format!("({name} {})", texts.join(" ")), width),
+            width,
+        ))
     }
 
     fn bit_vector(op: &str, terms: &[Term], texts: &[&str], width: u32) -> Option<Term> {
@@ -463,6 +571,24 @@ impl Translation {
                 (variables <= 1)
                     .then(|| Self::bits(modulo(&format!("(* {})", texts.join(" ")), width), width))
             }
+            // Operands no bit of which can both be one add up, as they do
+            // when bytes are put together into a word.
+            "bvor" | "bvxor"
+                if width <= WIDEST && terms.iter().filter(|t| t.constant.is_none()).count() > 1 =>
+            {
+                let mut seen = 0u128;
+                for term in terms {
+                    if seen & term.ones != 0 {
+                        return None;
+                    }
+                    seen |= term.ones;
+                }
+                Some(Self::bits_with(
+                    format!("(+ {})", texts.join(" ")),
+                    width,
+                    seen,
+                ))
+            }
             "bvand" | "bvor" | "bvxor" if terms.len() >= 2 => {
                 let mut constant = match op {
                     "bvand" => mask(width),
@@ -486,13 +612,24 @@ impl Translation {
                     return Some(Self::constant(constant, width));
                 };
                 let kept = and_constant(variable, constant, width);
-                Some(Self::bits(
+                let ones =
+                    terms
+                        .iter()
+                        .fold(if op == "bvand" { mask(width) } else { 0 }, |ones, term| {
+                            if op == "bvand" {
+                                ones & term.ones
+                            } else {
+                                ones | term.ones
+                            }
+                        });
+                Some(Self::bits_with(
                     match op {
                         "bvand" => kept,
                         "bvor" => format!("(- (+ {variable} {constant}) {kept})"),
                         _ => format!("(- (+ {variable} {constant}) (* 2 {kept}))"),
                     },
                     width,
+                    ones,
                 ))
             }
             "bvshl" | "bvlshr" | "bvashr" => {
@@ -508,13 +645,21 @@ impl Translation {
                 }
                 let amount = amount as u32;
                 let scale = power(amount);
-                Some(Self::bits(
+                let ones = terms[0].ones;
+                let ones = match op {
+                    _ if width > WIDEST => mask(width),
+                    "bvshl" => ones << amount,
+                    "bvlshr" => ones >> amount,
+                    _ => mask(width),
+                };
+                Some(Self::bits_with(
                     match op {
                         "bvshl" => modulo(&format!("(* {value} {scale})"), width),
                         "bvlshr" => format!("(div {value} {scale})"),
                         _ => modulo(&format!("(div {} {scale})", signed(value, width)), width),
                     },
                     width,
+                    ones,
                 ))
             }
             "bvudiv" | "bvurem" => {
@@ -567,9 +712,15 @@ impl Translation {
                 let Sort::Bits(high) = terms[0].sort else {
                     return None;
                 };
-                Some(Self::bits(
+                let ones = if high + low <= WIDEST {
+                    terms[0].ones << low | terms[1].ones
+                } else {
+                    u128::MAX
+                };
+                Some(Self::bits_with(
                     format!("(+ (* {} {}) {})", texts[0], power(low), texts[1]),
                     high + low,
+                    ones,
                 ))
             }
             _ => None,
@@ -582,6 +733,7 @@ pub(super) fn translate(query: &str) -> Option<String> {
     let commands = parse(query)?;
     let mut translation = Translation {
         symbols: HashMap::new(),
+        unknown: std::cell::RefCell::default(),
     };
     let mut script = String::new();
     for command in &commands {
@@ -605,7 +757,7 @@ pub(super) fn translate(query: &str) -> Option<String> {
                             .expect("writing to a String");
                         translation
                             .symbols
-                            .insert(name.clone(), Symbol::Value(Sort::Bool, None));
+                            .insert(name.clone(), Symbol::Value(Sort::Bool, None, 0));
                     }
                     Some(Sort::Bits(width)) => {
                         writeln!(
@@ -614,9 +766,17 @@ pub(super) fn translate(query: &str) -> Option<String> {
                             power(width)
                         )
                         .expect("writing to a String");
+                        translation.symbols.insert(
+                            name.clone(),
+                            Symbol::Value(Sort::Bits(width), None, mask(width)),
+                        );
+                    }
+                    Some(memory @ Sort::Memory { .. }) => {
+                        writeln!(script, "(declare-const {name} {})", memory.integer())
+                            .expect("writing to a String");
                         translation
                             .symbols
-                            .insert(name.clone(), Symbol::Value(Sort::Bits(width), None));
+                            .insert(name.clone(), Symbol::Value(memory, None, 0));
                     }
                     None => {
                         translation
@@ -646,10 +806,7 @@ pub(super) fn translate(query: &str) -> Option<String> {
                         let sort = Translation::sort(sort)?;
                         scope.insert(parameter.clone(), sort);
                         sorts.push(sort);
-                        declared.push(format!(
-                            "({parameter} {})",
-                            if sort == Sort::Bool { "Bool" } else { "Int" }
-                        ));
+                        declared.push(format!("({parameter} {})", sort.integer()));
                     }
                     let term = translation.term(body, &scope)?;
                     (term.sort == result).then_some((term, result, declared, sorts))
@@ -660,12 +817,12 @@ pub(super) fn translate(query: &str) -> Option<String> {
                             script,
                             "(define-fun {name} ({}) {} {})",
                             declared.join(" "),
-                            if result == Sort::Bool { "Bool" } else { "Int" },
+                            result.integer(),
                             term.text
                         )
                         .expect("writing to a String");
                         let symbol = if parameters.is_empty() {
-                            Symbol::Value(result, term.constant)
+                            Symbol::Value(result, term.constant, term.ones)
                         } else {
                             Symbol::Function(sorts, result)
                         };
@@ -688,7 +845,23 @@ pub(super) fn translate(query: &str) -> Option<String> {
             _ => return None,
         }
     }
-    Some(script)
+    // Options come before the declarations of the unknown functions.
+    let options: String = script
+        .lines()
+        .take_while(|line| line.starts_with("(set-option"))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    let mut translated = options.clone();
+    for (name, arity) in translation.unknown.borrow().iter() {
+        writeln!(
+            translated,
+            "(declare-fun {name} ({}) Int)",
+            vec!["Int"; *arity].join(" ")
+        )
+        .expect("writing to a String");
+    }
+    translated.push_str(&script[options.len()..]);
+    Some(translated)
 }
 
 fn print(sexp: &Sexp) -> String {
@@ -736,9 +909,10 @@ mod tests {
     /// translation has, for every `X` and `Y`.
     fn exact(term: &str) {
         let translation = Translation {
+            unknown: std::cell::RefCell::default(),
             symbols: [
-                ("ix".to_owned(), Symbol::Value(Sort::Bits(8), None)),
-                ("iy".to_owned(), Symbol::Value(Sort::Bits(8), None)),
+                ("ix".to_owned(), Symbol::Value(Sort::Bits(8), None, 0xff)),
+                ("iy".to_owned(), Symbol::Value(Sort::Bits(8), None, 0xff)),
             ]
             .into(),
         };
@@ -751,6 +925,7 @@ mod tests {
         let value = match translated.sort {
             Sort::Bool => term.clone(),
             Sort::Bits(_) => format!("(bv2nat {term})"),
+            Sort::Memory { .. } => panic!("{term} is a value"),
         };
         let script = format!(
             "(declare-const x (_ BitVec 8))\n(declare-const y (_ BitVec 8))\n\
@@ -819,31 +994,90 @@ mod tests {
             "(bvmul ((_ sign_extend 8) X) ((_ sign_extend 8) #xab))",
             "((_ extract 15 8) (bvmul ((_ zero_extend 8) X) (_ bv171 16)))",
             "(and (bvult X Y) (not (= X #x00)))",
+            "(bvor ((_ zero_extend 8) X) (bvshl ((_ zero_extend 8) Y) (_ bv8 16)))",
+            "(bvxor (concat Y #x00) ((_ zero_extend 8) X))",
+            "(bvor (bvand X #x0f) (bvand Y #xf0))",
+            "(bvor (bvlshr X #x04) (bvshl (bvand Y #x03) #x06) #x30)",
         ] {
             exact(term);
         }
     }
 
     #[test]
-    fn what_is_not_linear_or_reads_memory_has_no_translation() {
-        let declared = "(declare-const x (_ BitVec 64))\n(declare-const y (_ BitVec 64))\n\
-                        (declare-const m (Array (_ BitVec 64) (_ BitVec 8)))\n";
-        for assertion in [
-            "(= (bvmul x y) #x0000000000000000)",
-            "(= (bvshl x y) x)",
-            "(= (bvudiv x y) x)",
-            "(= (bvsdiv x #x0000000000000000) x)",
-            "(= (select m x) #x00)",
-            "(= (bvsmod x #x0000000000000003) x)",
-        ] {
+    fn what_is_not_linear_is_any_function_of_its_operands() {
+        let declared = "(set-option :produce-models true)\n\
+                        (declare-const x (_ BitVec 64))\n(declare-const y (_ BitVec 64))\n\
+                        (declare-const m (Array (_ BitVec 64) (_ BitVec 8)))\n\
+                        (declare-fun f ((_ BitVec 64)) (_ BitVec 64))\n";
+        // An equality of arrays, and a function the query leaves open, have
+        // no translation.
+        for assertion in ["(= (store m x #x00) m)", "(= (f x) x)"] {
             assert_eq!(
                 translate(&format!("{declared}(assert {assertion})\n")),
                 None,
                 "{assertion}"
             );
         }
-        // Memory nothing reads does not keep the rest from translating.
-        assert!(translate(&format!("{declared}(assert (= x y))\n")).is_some());
+        if !available() {
+            return;
+        }
+        let check = crate::ir::smt::validate::Strategy::Integer.check();
+        for (claim, proved) in [
+            ("(= (bvmul x y) (bvmul x y))", true),
+            ("(= (bvshl x y) (bvshl x y))", true),
+            (
+                "(=> (= x y) (= (bvudiv #x0000000000000007 x) (bvudiv #x0000000000000007 y)))",
+                true,
+            ),
+            ("(= (bvand x y) (bvand x y))", true),
+            // What holds only of the operation itself is not proved.
+            ("(= (bvmul x y) (bvmul y x))", false),
+            ("(= (bvand x y) (bvand y x))", false),
+            ("(bvule (bvand x y) x)", false),
+        ] {
+            let translated = translate(&format!("{declared}(assert (not {claim}))\n"))
+                .unwrap_or_else(|| panic!("{claim} translates"));
+            let answer = z3(&format!("{translated}{check}\n"));
+            assert_eq!(answer == "unsat", proved, "{claim}: {answer}");
+        }
+    }
+
+    #[test]
+    fn memory_over_integers_reads_back_what_was_written() {
+        if !available() {
+            return;
+        }
+        let declared = "(declare-const x (_ BitVec 64))\n(declare-const y (_ BitVec 64))\n\
+                        (declare-const v (_ BitVec 8))\n\
+                        (declare-const m (Array (_ BitVec 64) (_ BitVec 8)))\n";
+        for (claim, holds) in [
+            ("(= (select (store m x v) x) v)", true),
+            (
+                "(=> (distinct x y) (= (select (store m x v) y) (select m y)))",
+                true,
+            ),
+            ("(= (select (store (store m x v) x #x07) x) #x07)", true),
+            (
+                "(= (select (store m (bvadd x #x0000000000000001) v) (bvadd x #x0000000000000001)) v)",
+                true,
+            ),
+            ("(bvult (select m x) #x00)", false),
+            ("(= (select (store m x v) y) v)", false),
+            ("(= (select m x) #x00)", false),
+        ] {
+            let query = format!("{declared}(assert (not {claim}))\n");
+            let translated = translate(&query).expect("memory translates");
+            let expected = if holds { "unsat" } else { "sat" };
+            assert_eq!(z3(&format!("{query}(check-sat)\n")), expected, "{claim}");
+            assert_eq!(
+                z3(&format!(
+                    "{translated}{}\n",
+                    crate::ir::smt::validate::Strategy::Integer.check()
+                )),
+                expected,
+                "{claim} over integers"
+            );
+        }
     }
 
     #[test]
@@ -859,16 +1093,34 @@ mod tests {
              (define-fun scaled () (_ BitVec 64) (bvlshr (bvmul w #x00000000aaaaaaab) #x0000000000000021))\n\
              (assert (not (= scaled (bvudiv w d))))\n";
         let translated = translate(query).expect("a linear query");
-        assert_eq!(z3(&format!("{translated}(check-sat)\n")), "unsat");
+        assert_eq!(
+            z3(&format!(
+                "{translated}{}\n",
+                crate::ir::smt::validate::Strategy::Integer.check()
+            )),
+            "unsat"
+        );
         // One more than the reciprocal is not one.
         let wrong = query.replace("aaaaaaab", "aaaaaaac");
         let translated = translate(&wrong).expect("a linear query");
-        assert_eq!(z3(&format!("{translated}(check-sat)\n")), "sat");
+        assert_eq!(
+            z3(&format!(
+                "{translated}{}\n",
+                crate::ir::smt::validate::Strategy::Integer.check()
+            )),
+            "sat"
+        );
         // Parameters of a defined function are integers too.
         let count = "(define-fun twice ((v (_ BitVec 8))) (_ BitVec 8) (bvadd v v))\n\
              (declare-const b (_ BitVec 8))\n\
              (assert (not (= (twice b) (bvshl b #x01))))\n";
         let translated = translate(count).expect("a defined function");
-        assert_eq!(z3(&format!("{translated}(check-sat)\n")), "unsat");
+        assert_eq!(
+            z3(&format!(
+                "{translated}{}\n",
+                crate::ir::smt::validate::Strategy::Integer.check()
+            )),
+            "unsat"
+        );
     }
 }

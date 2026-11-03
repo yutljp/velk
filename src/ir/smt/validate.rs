@@ -891,10 +891,11 @@ pub enum Strategy {
     /// of constants that word-level reasoning gives up on; it does not take
     /// memory.
     BitLevel,
-    /// Linear integer arithmetic over the query's exact integer values, for
-    /// a query with no memory, no product of two variables and no shift or
-    /// division by a variable. Only its proofs are taken: a model it finds
-    /// is left to the other strategies.
+    /// Linear integer arithmetic over the query's integer values: each
+    /// linear operation exact, memory an array of integers, and each other
+    /// operation, such as a product of two variables, any function of its
+    /// operands. Only its proofs are taken: a model it finds is left to the
+    /// other strategies.
     Integer,
 }
 
@@ -914,7 +915,9 @@ impl Strategy {
             Self::BitLevel => {
                 "(check-sat-using (then simplify solve-eqs reduce-bv-size simplify bit-blast sat))"
             }
-            Self::Integer => "(check-sat)",
+            Self::Integer => {
+                "(check-sat-using (then simplify solve-eqs propagate-ineqs simplify smt))"
+            }
         }
     }
 

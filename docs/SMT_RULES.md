@@ -309,13 +309,18 @@ time, is decompiled again and checked as a whole:
   clauses each of its applications is a value of its own, equal to another
   where their arguments are equal, so the engine cannot choose the function.
 - A query word-level reasoning leaves undecided, in either phase, is asked again
-  over integers when it reads no memory, multiplies no two variables and shifts
-  or divides only by constants: each bit-vector of width w is then an integer
-  below 2^w and each operation its exact value modulo 2^w. Linear integer
-  arithmetic decides such queries even for a quotient recovered from a
-  multiplication by a reciprocal, which bit-level search gives up on. Only
-  proofs over integers are taken; a model found there is left to the other
-  strategies.
+  over integers. Each bit-vector of width w is an integer below 2^w, and each
+  linear operation, such as a sum, a product or quotient by a constant, a
+  constant shift or mask, or an or of values whose bits cannot overlap, is its
+  exact value modulo 2^w. Memory is an array of integers, each standing for its
+  value modulo 2^8, so reads and writes keep their meaning. Any other operation,
+  such as a product of two variables or a shift by one, is any function of its
+  operands: what is proved for every such function holds for the operation.
+  Linear integer arithmetic decides a quotient recovered from a multiplication
+  by a reciprocal, and addresses masked to 32 bits, which the bit-vector
+  strategies give up on. Only proofs over integers are taken; a model found
+  there is left to the other strategies. A query comparing whole arrays, or
+  with an operation the solver does not model, is not asked over integers.
 - When the equations do not prove an application, it goes to Z3's Horn engine,
   which may find any invariant, ranges included, or report a path from the
   function's start on which an obligation fails. Each relation takes only what
