@@ -129,8 +129,8 @@ codeview/structs.O0.stripped.dll: 65 lines, 6 prelude lines, 9 variables, 26 cas
 codeview/structs.O2.dll: 101 lines, 18 prelude lines, 19 variables, 33 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 codeview/structs.O2.obj: 101 lines, 18 prelude lines, 19 variables, 33 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 codeview/structs.O2.stripped.dll: 74 lines, 21 prelude lines, 13 variables, 21 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-cold_gcc: 96 lines, 27 prelude lines, 17 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-cold_gcc_stripped: 96 lines, 27 prelude lines, 17 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+cold_gcc: 97 lines, 27 prelude lines, 17 variables, 18 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+cold_gcc_stripped: 97 lines, 27 prelude lines, 17 variables, 18 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 com_i686.dll: 72 lines, 61 prelude lines, 11 variables, 53 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 com_x86_64.dll: 49 lines, 61 prelude lines, 0 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 cpp/rtti.debug.dll: 334 lines, 36 prelude lines, 12 variables, 66 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
@@ -158,9 +158,9 @@ flattened_x86_64_O0.o: 57 lines, 3 prelude lines, 11 variables, 1 casts, 0 regis
 flattened_x86_64_O2.o: 86 lines, 3 prelude lines, 13 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 frame_bounds_a64.o: 19 lines, 3 prelude lines, 4 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 frame_bounds_x64.o: 18 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-go_probe: 61064 lines, 6690 prelude lines, 13762 variables, 11464 casts, 121 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
+go_probe: 61069 lines, 6690 prelude lines, 13762 variables, 11472 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
 go_probe_arm64: 70293 lines, 7059 prelude lines, 17355 variables, 17588 casts, 693 registers, 0 unsigned, 16 traps, 74 gotos, 123 indirect calls
-go_stripped: 60996 lines, 6688 prelude lines, 13749 variables, 11457 casts, 121 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
+go_stripped: 61001 lines, 6688 prelude lines, 13749 variables, 11465 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
 go_stripped_arm64: 70231 lines, 7057 prelude lines, 17344 variables, 17582 casts, 693 registers, 0 unsigned, 16 traps, 74 gotos, 123 indirect calls
 i386_switch.elf: 68 lines, 13 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_a64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -511,12 +511,12 @@ predicates_aarch64_O0.o: 46 lines, 3 prelude lines, 5 variables, 0 casts, 0 regi
 predicates_aarch64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 predicates_x86_64_O0.o: 47 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 predicates_x86_64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 52289 lines, 2528 prelude lines, 10328 variables, 10808 casts, 9 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
+rust_demo: 52290 lines, 2527 prelude lines, 10328 variables, 10806 casts, 11 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
 rust_demo_arm64: 50665 lines, 2837 prelude lines, 10520 variables, 9847 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
-rust_probe: 52289 lines, 2528 prelude lines, 10328 variables, 10808 casts, 9 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
+rust_probe: 52290 lines, 2527 prelude lines, 10328 variables, 10806 casts, 11 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
 rust_probe_arm64: 50665 lines, 2837 prelude lines, 10520 variables, 9847 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
 rust_probe_arm64_stripped: 50661 lines, 2828 prelude lines, 10516 variables, 9801 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
-rust_probe_stripped: 52641 lines, 2434 prelude lines, 10485 variables, 10948 casts, 9 registers, 0 unsigned, 31 traps, 1319 gotos, 125 indirect calls
+rust_probe_stripped: 52642 lines, 2433 prelude lines, 10485 variables, 10946 casts, 11 registers, 0 unsigned, 31 traps, 1319 gotos, 125 indirect calls
 seh.O0.dll: 95 lines, 8 prelude lines, 14 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh.O2.dll: 73 lines, 8 prelude lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh_cpp.O0.dll: 27 lines, 5 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -532,7 +532,7 @@ tail_indirect.o: 8 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 
 tail_indirect_stripped.o: 8 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 type_library_arm64: 18 lines, 15 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_linux_arm64: 84 lines, 33 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-type_library_linux_x86_64: 74 lines, 31 prelude lines, 5 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+type_library_linux_x86_64: 75 lines, 31 prelude lines, 5 variables, 3 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_windows.win64.exe: 39 lines, 13 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_x86_64: 18 lines, 15 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 universal_arm64.o: 59 lines, 5 prelude lines, 16 variables, 7 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

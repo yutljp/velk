@@ -6,7 +6,7 @@ mod registers;
 pub(crate) mod smt;
 
 pub use calls::CallAbi;
-pub use convention::{CallKind, Convention};
+pub use convention::{CallKind, Convention, EntryAlignment};
 pub(crate) use print::*;
 pub use registers::{
     EXCEPTION, EXCHANGE, FLAG_CARRIED, FLAG_OPERANDS, Registers, SELECTOR, SWITCH_INDEX, TEMP_BASE,
@@ -1030,6 +1030,8 @@ pub struct FunctionIr {
     /// The lowest offset from the stack pointer on entry that the stack
     /// pointer reaches once its adjustments are gone; 0 while they remain.
     pub frame_bottom: i64,
+    /// What the stack pointer is known to be on entry, when anything is.
+    pub entry_alignment: Option<EntryAlignment>,
     /// The declarations of functions called directly or addressed, from
     /// their debug information, where every parameter and the result is an
     /// integer or a pointer passed whole as the convention orders.
@@ -1069,6 +1071,7 @@ impl FunctionIr {
             pointer_values: Vec::new(),
             saved_slots: Vec::new(),
             frame_bottom: 0,
+            entry_alignment: None,
             callee_signatures: Default::default(),
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),

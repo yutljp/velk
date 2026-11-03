@@ -6,8 +6,85 @@ pub(crate) use i386::settle as settle_i386;
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
 
-use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+use crate::ir::{BinOp, EntryAlignment, Expr, FunctionIr, Stmt};
 use crate::passes::{copies, frame};
+
+/// What a frame displacement is followed with: the stack pointer, what is
+/// known of it on entry, and whether addresses are 32 bits wide.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Stack {
+    pub(crate) sp: u16,
+    alignment: Option<EntryAlignment>,
+    narrow: bool,
+}
+
+/// What a write of the stack pointer does to the frame displacement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Step {
+    /// It moves the stack pointer to this displacement.
+    Moves(i64),
+    /// It moves the stack pointer by an amount the entry alignment does not
+    /// fix, such as a mask finer than what is known.
+    Unknown,
+    /// It sets the stack pointer from something other than itself.
+    Other,
+}
+
+impl Stack {
+    pub(crate) fn of(ir: &FunctionIr) -> Self {
+        Self::at(ir, stack_pointer(ir.isa))
+    }
+
+    /// The same for a function whose stack pointer is followed as `sp`.
+    pub(crate) fn at(ir: &FunctionIr, sp: u16) -> Self {
+        Self {
+            sp,
+            alignment: ir.entry_alignment,
+            narrow: crate::arch::pointer_bytes(ir.isa) == 4,
+        }
+    }
+
+    /// What `sp = value` does at displacement `frame`. Rounding the stack
+    /// pointer down to a multiple of 2^k moves it by what the entry
+    /// alignment says the multiple is off by, when it says that much.
+    pub(crate) fn step(self, frame: i64, value: &Expr) -> Step {
+        let Expr::Bin { op, lhs, rhs } = value else {
+            return Step::Other;
+        };
+        let (Expr::Reg { index, .. }, Expr::Const(constant)) = (lhs.as_ref(), rhs.as_ref()) else {
+            return Step::Other;
+        };
+        if *index != self.sp {
+            return Step::Other;
+        }
+        match op {
+            BinOp::Add => Step::Moves(frame.wrapping_add(*constant as i64)),
+            BinOp::Sub => Step::Moves(frame.wrapping_sub(*constant as i64)),
+            BinOp::And => {
+                // A 32-bit address keeps its value under a mask that clears
+                // only the high half.
+                let mask = if self.narrow {
+                    *constant | 0xffff_ffff_0000_0000
+                } else {
+                    *constant
+                };
+                let low = !mask;
+                match self.alignment {
+                    Some(EntryAlignment { residue, modulus })
+                        if low != u64::MAX
+                            && (low + 1).is_power_of_two()
+                            && modulus.is_multiple_of(low + 1) =>
+                    {
+                        let off = residue.wrapping_add(frame as u64) & low;
+                        Step::Moves(frame.wrapping_sub(off as i64))
+                    }
+                    _ => Step::Unknown,
+                }
+            }
+            _ => Step::Unknown,
+        }
+    }
+}
 
 /// Rewrites every stack access against the entry frame and drops the
 /// adjustments, when the stack pointer is only ever a frame base.
@@ -46,7 +123,8 @@ pub fn settle(ir: &mut FunctionIr) {
 /// Whether a frame slot's address is used as a value, beyond the address of
 /// a load or store, so the code may reach the slot through a pointer.
 fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
-    let sp = stack_pointer(ir.isa);
+    let stack = Stack::of(ir);
+    let sp = stack.sp;
     fn escapes(expr: &Expr, frame: i64, sp: u16) -> bool {
         if frame_slot(expr, frame, sp).is_some() {
             return true;
@@ -66,7 +144,9 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
             if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
-                frame = adjusted_frame_offset(frame, value, sp);
+                if let Step::Moves(next) = stack.step(frame, value) {
+                    frame = next;
+                }
                 continue;
             }
             let operands: Vec<&Expr> = match stmt {
@@ -93,7 +173,8 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
 /// like one addressed through the stack pointer. Other writes may only
 /// restore the caller's value on the way out. Returns whether it rewrote.
 fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool {
-    let sp = stack_pointer(ir.isa);
+    let stack = Stack::of(ir);
+    let sp = stack.sp;
     let fp = if ir.isa == crate::loader::Isa::Arm32
         && ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
             matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == 7 && frame_slot(value, 0, sp).is_some())
@@ -149,7 +230,11 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
                     }
                 }
                 Stmt::Assign { dest, value, .. } if dest.index == sp => {
-                    frame = adjusted_frame_offset(frame, value, sp);
+                    match stack.step(frame, value) {
+                        Step::Moves(next) => frame = next,
+                        Step::Unknown => continue 'find,
+                        Step::Other => {}
+                    }
                 }
                 _ => {}
             }
@@ -244,6 +329,23 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
     if (0..ir.blocks.len()).any(|index| dominated(index) && frames[index].is_none()) {
         return false;
     }
+    // The rewrite follows the displacement through each block it changes.
+    for (index, block) in ir.blocks.iter().enumerate() {
+        let Some(mut frame) = frames[index].filter(|_| dominated(index)) else {
+            continue;
+        };
+        for stmt in &block.stmts {
+            if let Stmt::Assign { dest, value, .. } = stmt
+                && dest.index == sp
+            {
+                match stack.step(frame, value) {
+                    Step::Moves(next) => frame = next,
+                    Step::Unknown => return false,
+                    Step::Other => {}
+                }
+            }
+        }
+    }
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if !dominated(index) {
             continue;
@@ -271,8 +373,9 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             }
             if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
+                && let Step::Moves(next) = stack.step(frame, value)
             {
-                frame = adjusted_frame_offset(frame, value, sp);
+                frame = next;
             }
         }
     }
@@ -280,26 +383,13 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
     true
 }
 
-/// The frame displacement after `sp = value`.
-fn adjusted_frame_offset(frame: i64, value: &Expr, sp: u16) -> i64 {
-    match value {
-        Expr::Bin { op, lhs, rhs } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
-            match (op, rhs.as_ref()) {
-                (BinOp::Add, Expr::Const(delta)) => frame.wrapping_add(*delta as i64),
-                (BinOp::Sub, Expr::Const(delta)) => frame.wrapping_sub(*delta as i64),
-                _ => frame,
-            }
-        }
-        _ => frame,
-    }
-}
-
 /// True when every block has a known frame and the stack pointer is used only
 /// as a frame-slot address and written only by adjustments.
 pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
-    let sp = stack_pointer(ir.isa);
+    let stack = Stack::of(ir);
+    let sp = stack.sp;
     for (position, block) in ir.blocks.iter().enumerate() {
-        let Some(frame) = frames[position] else {
+        let Some(mut frame) = frames[position] else {
             // Code no path reaches, such as padding, may stay as it is
             // unless it uses the stack pointer.
             let uses_sp = block.stmts.iter().any(|stmt| {
@@ -323,8 +413,9 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                 }
                 Stmt::Assign { dest, value, .. } => {
                     if dest.index == sp {
-                        if !is_adjustment(value, sp) {
-                            return false;
+                        match stack.step(frame, value) {
+                            Step::Moves(next) => frame = next,
+                            Step::Unknown | Step::Other => return false,
                         }
                         continue;
                     }
@@ -413,17 +504,11 @@ fn uses_stack_pointer_only_in_frame_addresses(expr: &Expr, frame: i64, sp: u16) 
     }
 }
 
-fn is_adjustment(value: &Expr, sp: u16) -> bool {
-    matches!(
-        value,
-        Expr::Bin { lhs, .. } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp)
-    )
-}
-
 /// Rewrites frame-relative addresses against the entry frame and drops the
 /// adjustments, so each slot has one address everywhere.
 pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
-    let sp = stack_pointer(ir.isa);
+    let stack = Stack::of(ir);
+    let sp = stack.sp;
     let mut bottom = ir.frame_bottom;
     for (position, block) in ir.blocks.iter_mut().enumerate() {
         let Some(mut frame) = frames[position] else {
@@ -438,14 +523,8 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                 }
                 Stmt::Assign { dest, value, .. } => {
                     if dest.index == sp {
-                        if let Expr::Bin { op, rhs, .. } = value
-                            && let Expr::Const(delta) = rhs.as_ref()
-                        {
-                            frame = match op {
-                                BinOp::Add => frame.wrapping_add(*delta as i64),
-                                BinOp::Sub => frame.wrapping_sub(*delta as i64),
-                                _ => frame,
-                            };
+                        if let Step::Moves(next) = stack.step(frame, value) {
+                            frame = next;
                             bottom = bottom.min(frame);
                         }
                         continue;
@@ -475,7 +554,7 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
         // Drop the adjustments now that every access names its slot.
         block
             .stmts
-            .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == sp && is_adjustment(value, sp)));
+            .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == sp && stack.step(0, value) != Step::Other));
     }
     ir.frame_bottom = bottom;
 }
@@ -578,6 +657,7 @@ pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
 /// The frame displacement on entry to each block, propagated over the control
 /// flow; `None` when unreachable or when paths disagree.
 pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
+    let stack = Stack::at(ir, sp);
     let index: HashMap<u64, usize> = ir
         .blocks
         .iter()
@@ -632,16 +712,17 @@ pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<
             let block = &ir.blocks[position];
             let mut exit = entry;
             for stmt in &block.stmts {
+                if exit == i64::MIN {
+                    break;
+                }
                 if let Stmt::Assign { dest, value, .. } = stmt
                     && dest.index == sp
-                    && let Expr::Bin { op, rhs, .. } = value
-                    && let Expr::Const(delta) = rhs.as_ref()
                 {
-                    exit = match op {
-                        BinOp::Add => exit.wrapping_add(*delta as i64),
-                        BinOp::Sub => exit.wrapping_sub(*delta as i64),
-                        _ => exit,
-                    };
+                    match stack.step(exit, value) {
+                        Step::Moves(next) => exit = next,
+                        Step::Unknown => exit = i64::MIN,
+                        Step::Other => {}
+                    }
                 }
             }
             let mut successors: Vec<usize> = Vec::new();
@@ -712,6 +793,59 @@ mod tests {
     use super::settle;
     use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn rounding_the_stack_pointer_moves_it_by_what_the_entry_alignment_fixes() {
+        use super::{Stack, Step};
+        use crate::ir::EntryAlignment;
+        let stack = |isa, alignment: Option<(u64, u64)>| {
+            let mut ir = FunctionIr::single_block(isa, Vec::new());
+            ir.entry_alignment =
+                alignment.map(|(residue, modulus)| EntryAlignment { residue, modulus });
+            Stack::of(&ir)
+        };
+        let sp = |isa| crate::arch::stack_pointer(isa);
+        let with =
+            |isa, op, constant: u64| Expr::bin(op, Expr::reg(sp(isa), 64), Expr::Const(constant));
+        let round = |isa, bytes: u64| with(isa, BinOp::And, bytes.wrapping_neg());
+        let called = stack(Isa::X86_64, Some((8, 16)));
+        // After `push rbp` the stack pointer is aligned already; one slot
+        // lower it is 8 past a multiple of 16.
+        assert_eq!(called.step(-8, &round(Isa::X86_64, 16)), Step::Moves(-8));
+        assert_eq!(called.step(-16, &round(Isa::X86_64, 16)), Step::Moves(-24));
+        // The kernel's entry leaves it aligned: past the argument count it is not.
+        let entered = stack(Isa::X86_64, Some((0, 16)));
+        assert_eq!(entered.step(8, &round(Isa::X86_64, 16)), Step::Moves(0));
+        // A mask finer than what is known, or nothing known.
+        assert_eq!(called.step(-8, &round(Isa::X86_64, 32)), Step::Unknown);
+        assert_eq!(
+            stack(Isa::X86_64, None).step(-8, &round(Isa::X86_64, 16)),
+            Step::Unknown
+        );
+        assert_eq!(
+            called.step(0, &with(Isa::X86_64, BinOp::Sub, 24)),
+            Step::Moves(-24)
+        );
+        assert_eq!(
+            called.step(0, &with(Isa::X86_64, BinOp::Add, 8)),
+            Step::Moves(8)
+        );
+        assert_eq!(
+            called.step(0, &with(Isa::X86_64, BinOp::Or, 8)),
+            Step::Unknown
+        );
+        assert_eq!(called.step(0, &Expr::reg(5, 64)), Step::Other);
+        // A 32-bit mask keeps a 32-bit address's high half.
+        let i386 = stack(Isa::I386, Some((0, 4)));
+        assert_eq!(
+            i386.step(-6, &with(Isa::I386, BinOp::And, 0xffff_fffc)),
+            Step::Moves(-8)
+        );
+        assert_eq!(
+            i386.step(-8, &with(Isa::I386, BinOp::And, 0xffff_fff0)),
+            Step::Unknown
+        );
+    }
 
     #[test]
     fn a_frame_with_stores_through_pointers_settles() {

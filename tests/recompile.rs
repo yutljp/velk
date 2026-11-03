@@ -4082,6 +4082,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         pointer_values: Vec::new(),
         saved_slots: Vec::new(),
         frame_bottom: 0,
+        entry_alignment: None,
         callee_signatures: Default::default(),
         value_types: Default::default(),
         variable_registers: Default::default(),

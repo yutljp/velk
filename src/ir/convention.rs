@@ -30,7 +30,37 @@ pub enum Convention {
     GoAbi0,
 }
 
+/// What a function knows of its stack pointer on entry: it leaves
+/// `residue` when divided by `modulus`, a power of two.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntryAlignment {
+    pub residue: u64,
+    pub modulus: u64,
+}
+
 impl Convention {
+    /// The alignment of the stack pointer on entry to a function the
+    /// convention calls: the processor-specific ABIs align it before the
+    /// call, so on x86-64 the return address leaves it 8 past a multiple of
+    /// 16. None for Go's and the system call conventions, which promise
+    /// nothing a function may rely on.
+    #[must_use]
+    pub fn entry_alignment(self) -> Option<EntryAlignment> {
+        let (residue, modulus) = match self {
+            Self::SysV | Self::Win64 => (8, 16),
+            Self::Aapcs64 => (0, 16),
+            Self::Aapcs32 => (0, 8),
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => (0, 4),
+            Self::GoAmd64
+            | Self::GoAbi0
+            | Self::GoWriteBarrier
+            | Self::SyscallX86
+            | Self::SyscallI386
+            | Self::SyscallArm => return None,
+        };
+        Some(EntryAlignment { residue, modulus })
+    }
+
     #[must_use]
     pub fn of(isa: crate::loader::Isa, format: crate::loader::Format, go: bool) -> Self {
         use crate::loader::{Format, Isa};

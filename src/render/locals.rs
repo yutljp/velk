@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 use crate::ir::CType;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
-use crate::passes::frame_slots::frame_slot;
+use crate::passes::frame_slots::{Stack, Step, frame_slot};
 use crate::render::expr::render_expr;
 use crate::render::expr::{Ctx, type_of};
 
@@ -1448,6 +1448,7 @@ fn slot_types(
         };
         ty_width(&ty).map(|_| ty)
     };
+    let stack = Stack::at(ir, sp);
     let mut walk = Walk {
         frame: 0,
         sp,
@@ -1597,14 +1598,13 @@ fn slot_types(
             }
             if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
-                && let Expr::Bin { op, rhs, .. } = value
-                && let Expr::Const(delta) = rhs.as_ref()
             {
-                walk.frame = match op {
-                    BinOp::Add => walk.frame.wrapping_add(*delta as i64),
-                    BinOp::Sub => walk.frame.wrapping_sub(*delta as i64),
-                    _ => walk.frame,
-                };
+                match stack.step(walk.frame, value) {
+                    Step::Moves(next) => walk.frame = next,
+                    // The rest of the block is in a frame no slot names.
+                    Step::Unknown => break,
+                    Step::Other => {}
+                }
             }
         }
     }
@@ -2081,14 +2081,10 @@ fn frame_accesses(
             if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
-                if let Expr::Bin { op, rhs, .. } = value
-                    && let Expr::Const(delta) = rhs.as_ref()
-                {
-                    frame = match op {
-                        BinOp::Add => frame.wrapping_add(*delta as i64),
-                        BinOp::Sub => frame.wrapping_sub(*delta as i64),
-                        _ => frame,
-                    };
+                match Stack::at(ir, sp).step(frame, value) {
+                    Step::Moves(next) => frame = next,
+                    Step::Unknown => break,
+                    Step::Other => {}
                 }
                 continue;
             }

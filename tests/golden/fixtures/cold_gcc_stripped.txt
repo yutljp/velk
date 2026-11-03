@@ -27,7 +27,6 @@ extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
 extern uint64_t g_2028; /* address: 0x2028 */
 extern uint64_t g_2030; /* address: 0x2030 */
 extern uint64_t g_4008; /* address: 0x4008 */
-extern uint8_t *function_11a0_arg_0; /* entry stack offset: 0x0 */
 extern uint8_t g_4028; /* address: 0x4028 */
 
 int (__fprintf_chk)(FILE *, int, const char *, ...);
@@ -38,6 +37,7 @@ int32_t sub_11d0();
 int32_t sub_1200();
 uint64_t __gmon_start__();
 uint64_t sub_1290();
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
 void (__stack_chk_fail)(void);
 /* end velk prelude */
@@ -194,14 +194,15 @@ fn main @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: sub_11a0 @ 0x11a0 */
 int32_t sub_11a0(int64_t a0, int64_t a1, void (*a2)(void)) {
-    uint8_t *arg_0 = function_11a0_arg_0;
+    uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
     int64_t local_0; /* [sp-8] */
+    int64_t *local_1; /* [sp-10] */
 
-    int64_t v2 = *(uint64_t *)(arg_0);
-    *(uint64_t *)(arg_0) = v1;
-    local_0 = (uintptr_t)(arg_0);
-    /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(arg_0 + 0x8), 0x0, 0x0, a2);
+    int64_t v2 = *(uint64_t *)(rsp);
+    local_0 = v1;
+    local_1 = &local_0;
+    /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void (*)(void) a2)
@@ -211,8 +212,8 @@ int32_t (int64_t a0, int64_t a1, void (*)(void) a2)
 fn <unnamed> @ 0x11a0 (size 38)
   blk0 @ 0x11a0:
     v2 = load64(rsp)
-    store64(rax, rsp)
-    store64(rsp, (rsp + #0xfffffffffffffff8))
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store64((rsp + #0xfffffffffffffff8), (rsp + #0xfffffffffffffff0))
     rax, rdx, xmm0, xmm1 = call *load64(#0x3fd8)(#0x1120, v2, (rsp + #0x8), #0x0, #0x0, rdx)
     trap
 -- card

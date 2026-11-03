@@ -1401,6 +1401,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         pointer_values: Vec::new(),
         saved_slots: Vec::new(),
         frame_bottom: 0,
+        entry_alignment: entry_alignment(image, function.addr),
         callee_signatures: Default::default(),
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
@@ -1447,6 +1448,28 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         has_jump_tables: !tables.is_empty(),
         types,
     })
+}
+
+/// The stack pointer's alignment on entry to the function at `addr`. The
+/// kernel enters an ELF executable at its entry point with the stack pointer
+/// at the argument count, which the x86-64 ABI aligns to 16 bytes; a raw
+/// image's entry point is entered however its loader chose. Every other
+/// function is called as its convention says.
+fn entry_alignment(image: &crate::loader::Image, addr: u64) -> Option<crate::ir::EntryAlignment> {
+    use crate::loader::{Format, Isa};
+    if image.entry == Some(addr) {
+        match image.format {
+            Format::Raw => return None,
+            Format::Elf if image.isa == Isa::X86_64 => {
+                return Some(crate::ir::EntryAlignment {
+                    residue: 0,
+                    modulus: 16,
+                });
+            }
+            _ => {}
+        }
+    }
+    image.convention_of(addr).entry_alignment()
 }
 
 #[cfg(test)]

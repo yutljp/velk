@@ -86,7 +86,7 @@ ec90cb733e966d300da6d3b2ba91f7efa16a1b5d8960749aaf7384d0939676fe  src/passes/div
 52ff54a35102c27db2c7eefc6582be1c00f08c55034d3243563d8558bf7f7c94  src/passes/division/widened.rs	pub(crate) fn widened_signed_site(
 b6271328b4abe57c6133c9a39311569b563c09e257c0be7844ac820792d9ebfa  src/passes/frame.rs	pub fn drop_dead_frame_stores(
 3e52b15819b80cbd7560f6c23f178eb5dad489200d2e432e44da628306dafa82  src/passes/frame_slots.rs	fn rewrite_expr_frame(
-6c7adb5da97efe6a7e5b55e7ccc558bd6a16427d4417e16bcb70ff76763177a3  src/passes/frame_slots.rs	fn substitute_frame_pointer(
+857aa2c3945f3c595a80a81238acc31169419c5567fe1733417e7166c0c0623e  src/passes/frame_slots.rs	fn substitute_frame_pointer(
 b8e5280b11d95fb960372bb9b7c3398c52d527e17239324156eb38b9a94ccec1  src/passes/frame_slots.rs	pub(crate) fn frame_slot(
 895a85431eac94d9b5ff74ede519e3456e63cfef61a4217d82f77abafdf6a68c  src/passes/frame_slots/i386.rs	pub(crate) fn settle(
 352ad9b3fda729b3ddb7079562bb7a7b39abba5f3fa3b92fb76dfda8a366c867  src/passes/mba.rs	fn expression(
@@ -138,7 +138,7 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 7ec18f2b0e972056a5ca88e102e8a63ebe759949b7adc5129fded7112a76beaa  src/render/int.rs	pub(crate) fn assigned(
 194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
-d39a99cfa8154d9297d0ec914cab3fb7f77320831958e65660cc1225cf0ad2fb  src/render/locals.rs	fn slot_types(
+8d1e498c8b2aeb31240fbeb1272b7b38621495fa6d2c4864a22e14913636c55e  src/render/locals.rs	fn slot_types(
 5f01b93a5965e1d86f534f66d7e05d78cdc2506c2632fa254613b9e01b452e64  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 efd49598d2f2a58dbde8597563ca3459d92dc41221597e7c853928187e640d99  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
