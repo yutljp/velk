@@ -298,8 +298,8 @@ time, is decompiled again and checked as a whole:
   assignments one side lacks, and from registers a copy or a renaming joins, at
   every width they are read, written, stored or masked at, and at the low bits
   those widths need of what a register is computed from. The candidates of an
-  edge are asked about together, with word-level queries and then with bounds
-  propagation; those still undecided are asked about in halves with word-level
+  edge are asked about together, with word-level queries, then over integers
+  and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
   is then not proved and a query was left undecided are single candidates asked
   about with bounds propagation too.
@@ -308,6 +308,14 @@ time, is decompiled again and checked as a whole:
   is one unknown function of its arguments, the same on both sides; in the Horn
   clauses each of its applications is a value of its own, equal to another
   where their arguments are equal, so the engine cannot choose the function.
+- A query word-level reasoning leaves undecided, in either phase, is asked again
+  over integers when it reads no memory, multiplies no two variables and shifts
+  or divides only by constants: each bit-vector of width w is then an integer
+  below 2^w and each operation its exact value modulo 2^w. Linear integer
+  arithmetic decides such queries even for a quotient recovered from a
+  multiplication by a reciprocal, which bit-level search gives up on. Only
+  proofs over integers are taken; a model found there is left to the other
+  strategies.
 - When the equations do not prove an application, it goes to Z3's Horn engine,
   which may find any invariant, ranges included, or report a path from the
   function's start on which an obligation fails. Each relation takes only what

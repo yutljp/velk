@@ -14,6 +14,7 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+mod integer;
 pub mod product;
 
 use super::{Value, condition, constant, low, memory_value};
@@ -890,6 +891,11 @@ pub enum Strategy {
     /// of constants that word-level reasoning gives up on; it does not take
     /// memory.
     BitLevel,
+    /// Linear integer arithmetic over the query's exact integer values, for
+    /// a query with no memory, no product of two variables and no shift or
+    /// division by a variable. Only its proofs are taken: a model it finds
+    /// is left to the other strategies.
+    Integer,
 }
 
 impl Strategy {
@@ -908,6 +914,15 @@ impl Strategy {
             Self::BitLevel => {
                 "(check-sat-using (then simplify solve-eqs reduce-bv-size simplify bit-blast sat))"
             }
+            Self::Integer => "(check-sat)",
+        }
+    }
+
+    /// `query` as the strategy asks it, or None when it cannot.
+    pub(crate) fn query(self, query: &str) -> Option<std::borrow::Cow<'_, str>> {
+        match self {
+            Self::Integer => integer::translate(query).map(std::borrow::Cow::Owned),
+            _ => Some(std::borrow::Cow::Borrowed(query)),
         }
     }
 }
@@ -938,7 +953,7 @@ pub fn solve(
     obligations: &[Obligation],
     workers: usize,
     rlimit: u64,
-    strategy: Strategy,
+    strategies: &[Strategy],
     answered: &(dyn Fn(usize, &Answer, f64) + Sync),
 ) -> Vec<Answer> {
     let next = AtomicUsize::new(0);
@@ -970,7 +985,14 @@ pub fn solve(
                             "another rewrite of the application is not proved".to_owned(),
                         )
                     } else {
-                        ask(&mut stdin, &mut stdout, obligation, rlimit, strategy)
+                        let mut answer = Answer::Unknown("no strategy".to_owned());
+                        for &strategy in strategies {
+                            answer = ask(&mut stdin, &mut stdout, obligation, rlimit, strategy);
+                            if !matches!(answer, Answer::Unknown(_)) {
+                                break;
+                            }
+                        }
+                        answer
                     };
                     if answer != Answer::Proved {
                         unproved
@@ -1006,10 +1028,12 @@ fn ask(
         stdout.read_line(&mut answer).expect("read z3 answer");
         answer.trim().to_owned()
     };
+    let Some(query) = strategy.query(&obligation.query) else {
+        return Answer::Unknown(format!("no {strategy:?} form"));
+    };
     writeln!(
         stdin,
-        "(reset)\n(set-option :rlimit {rlimit})\n{}{}",
-        obligation.query,
+        "(reset)\n(set-option :rlimit {rlimit})\n{query}{}",
         strategy.check()
     )
     .expect("write SMT query");
@@ -1017,6 +1041,9 @@ fn ask(
     let answer = line();
     match answer.as_str() {
         "unsat" => Answer::Proved,
+        "sat" if strategy == Strategy::Integer => {
+            Answer::Unknown("a model over integers is not taken".to_owned())
+        }
         "sat" => {
             let symbols = obligation.symbols.join(" ");
             if symbols.is_empty() {
@@ -1093,7 +1120,7 @@ mod tests {
             &recorded.obligations,
             1,
             50_000_000,
-            Strategy::WordLevel,
+            &[Strategy::WordLevel, Strategy::Integer],
             &|_, _, _| {},
         );
         assert!(answers.len() <= 1, "one rewrite records one obligation");
@@ -1104,6 +1131,34 @@ mod tests {
 
     fn refuted(answer: Option<Answer>) -> bool {
         matches!(answer, Some(Answer::Counterexample(_)))
+    }
+
+    #[test]
+    fn a_quotient_recovered_from_a_reciprocal_is_proved() {
+        if Command::new("z3").arg("-version").output().is_err() {
+            eprintln!("SKIP rewrite validation: z3 unavailable");
+            return;
+        }
+        // udiv3: the low word times 0xaaaaaaab, shifted right by 33.
+        let word = || raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xffff_ffff));
+        let product = raw_bin(BinOp::Mul, word(), Expr::Const(0xaaaa_aaab));
+        let scaled = raw_bin(BinOp::Shr, product, Expr::Const(33));
+        let quotient = |divisor| raw_bin(BinOp::DivU, word(), Expr::Const(divisor));
+        assert_eq!(
+            answer(
+                &[],
+                &assign(1, 64, scaled.clone()),
+                &assign(1, 64, quotient(3))
+            ),
+            Some(Answer::Proved)
+        );
+        // Over integers only proofs are taken; the word-level search finds
+        // the counterexample to a wrong divisor.
+        assert!(refuted(answer(
+            &[],
+            &assign(1, 64, scaled),
+            &assign(1, 64, quotient(5))
+        )));
     }
 
     #[test]

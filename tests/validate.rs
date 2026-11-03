@@ -206,7 +206,7 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                 &recorded.obligations,
                 workers,
                 RLIMIT,
-                Strategy::WordLevel,
+                &[Strategy::WordLevel, Strategy::Integer],
                 &|index, answer, seconds| {
                     if seconds >= SLOW_SECONDS {
                         let obligation = &recorded.obligations[index];
