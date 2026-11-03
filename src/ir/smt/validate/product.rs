@@ -453,6 +453,7 @@ fn check_model(
     // undecided.
     let strategies = [
         (Strategy::WordLevel, rlimit),
+        (Strategy::Integer, rlimit),
         (Strategy::Bounded, bit_level_rlimit),
     ];
     let quick = product.equations(application, solver, &strategies, false);
@@ -478,6 +479,7 @@ fn check_model(
             solver,
             &[
                 (Strategy::WordLevel, rlimit),
+                (Strategy::Integer, rlimit),
                 (Strategy::Bounded, bit_level_rlimit),
                 (Strategy::BitLevel, bit_level_rlimit),
             ],
@@ -2060,10 +2062,10 @@ pub struct Stats {
     /// Passes of the invariant inference over every edge.
     pub rounds: usize,
     /// Queries, undecided answers and seconds, by strategy: word-level,
-    /// bounded, bit-level, Horn.
-    pub queries: [usize; 4],
-    pub undecided: [usize; 4],
-    pub seconds: [f64; 4],
+    /// bounded, bit-level, Horn, integer.
+    pub queries: [usize; 5],
+    pub undecided: [usize; 5],
+    pub seconds: [f64; 5],
 }
 
 impl Solver {
@@ -2123,6 +2125,7 @@ impl Solver {
             Strategy::WordLevel => 0,
             Strategy::Bounded => 1,
             Strategy::BitLevel => 2,
+            Strategy::Integer => 4,
         };
         self.stats.queries[kind] += 1;
         self.stats.seconds[kind] += started.elapsed().as_secs_f64();
@@ -2153,6 +2156,9 @@ impl Solver {
     }
 
     fn answer(&mut self, query: &str, rlimit: u64, strategy: Strategy, names: &[&str]) -> Reply {
+        let Some(query) = strategy.query(query) else {
+            return Reply::Unknown(format!("no {strategy:?} form"));
+        };
         writeln!(
             self.stdin,
             "(reset)\n(set-option :rlimit {rlimit})\n{query}{}",
@@ -2163,6 +2169,9 @@ impl Solver {
         let answer = self.line();
         match answer.as_str() {
             "unsat" => Reply::Unsat,
+            "sat" if strategy == Strategy::Integer => {
+                Reply::Unknown("a model over integers is not taken".to_owned())
+            }
             "sat" if names.is_empty() => Reply::Sat(Vec::new()),
             "sat" => {
                 let text = self.list(&format!("(get-value ({}))", names.join(" ")));
