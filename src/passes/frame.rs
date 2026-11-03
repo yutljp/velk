@@ -7,6 +7,14 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 /// Removes stores to frame slots that nothing reads. Does nothing when any
 /// frame address escapes.
 pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::frame::drop_dead_frame_stores",
+        ir,
+        drop_dead_frame_stores_unchecked,
+    )
+}
+
+fn drop_dead_frame_stores_unchecked(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
     let spills = if ir
         .blocks
@@ -289,6 +297,14 @@ fn address_uses_frame(expr: &Expr, sp: u16) -> bool {
 /// so the save and the restores resolve to the same slot across blocks and
 /// stack adjustments.
 pub fn elide_callee_saves(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::frame::elide_callee_saves",
+        ir,
+        elide_callee_saves_unchecked,
+    )
+}
+
+fn elide_callee_saves_unchecked(ir: &mut FunctionIr) {
     if ir
         .blocks
         .iter()
@@ -482,6 +498,14 @@ struct Access {
 /// writing it, as `push rax` does to align the stack: the register holds no
 /// argument there, and no load reads the slot.
 pub fn drop_alignment_pushes(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::frame::drop_alignment_pushes",
+        ir,
+        drop_alignment_pushes_unchecked,
+    )
+}
+
+fn drop_alignment_pushes_unchecked(ir: &mut FunctionIr) {
     use crate::ir::Convention;
     if ir
         .blocks
@@ -593,6 +617,14 @@ fn is_frame_setup(stmt: &Stmt, sp: u16) -> bool {
 /// in the same block when nothing between them reads the frame pointer or
 /// the stack pointer.
 pub fn elide_frame_pointer(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::frame::elide_frame_pointer",
+        ir,
+        elide_frame_pointer_unchecked,
+    )
+}
+
+fn elide_frame_pointer_unchecked(ir: &mut FunctionIr) {
     for block in &mut ir.blocks {
         elide_frame_pointer_block(block);
     }

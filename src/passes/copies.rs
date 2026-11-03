@@ -18,6 +18,14 @@ pub(crate) use available::redundant_copy_renames;
 /// into that reader, so `x8 = w8; if (x8 & 0x80000000) ...` keeps no temporary.
 /// A definition a later block, or the next pass of a loop, may read stays.
 pub fn inline_local_copies(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::copies::inline_local_copies",
+        ir,
+        inline_local_copies_unchecked,
+    )
+}
+
+fn inline_local_copies_unchecked(ir: &mut FunctionIr) {
     let live_in = live_in(ir);
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
@@ -208,12 +216,28 @@ fn substitute_ordinary(stmt: &mut Stmt, dest: u16, width: u8, value: &Expr, ok: 
 /// extension or a small expression) into its only consumer when the widths
 /// match, so no value is extended or truncated by accident.
 pub fn copy_propagate(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::copies::copy_propagate",
+        ir,
+        copy_propagate_unchecked,
+    )
+}
+
+fn copy_propagate_unchecked(ir: &mut FunctionIr) {
     copy_propagate_with(ir, Duplication::Permit, &|_, _| true);
 }
 
 /// Copy propagation for use after CSE: does not duplicate a compound value
 /// into several reads of one consumer.
 pub fn copy_propagate_guarded(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::copies::copy_propagate_guarded",
+        ir,
+        copy_propagate_guarded_unchecked,
+    )
+}
+
+fn copy_propagate_guarded_unchecked(ir: &mut FunctionIr) {
     copy_propagate_with(ir, Duplication::Avoid, &|_, _| true);
 }
 

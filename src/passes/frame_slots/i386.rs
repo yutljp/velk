@@ -5,7 +5,11 @@ use crate::arch::stack_pointer;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use std::collections::HashMap;
 
-pub(crate) fn settle(ir: &mut FunctionIr) {
+pub(crate) fn settle_i386(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::frame_slots::settle_i386", ir, settle_unchecked)
+}
+
+fn settle_unchecked(ir: &mut FunctionIr) {
     fn uses_stack_pointer_as_base(expr: &Expr, sp: u16) -> bool {
         match expr {
             Expr::Reg { index, .. } if *index == sp => true,

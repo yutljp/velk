@@ -6,6 +6,14 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 mod frame_values;
 
 pub fn promote_frame_slots(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::memory::promote_frame_slots",
+        ir,
+        promote_frame_slots_unchecked,
+    )
+}
+
+fn promote_frame_slots_unchecked(ir: &mut FunctionIr) {
     frame_values::promote(ir);
 }
 
@@ -16,6 +24,14 @@ pub fn promote_frame_slots(ir: &mut FunctionIr) {
 ///
 /// Panics if a call has no write definitions after they were computed for the block.
 pub fn forward_stored_values(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::memory::forward_stored_values",
+        ir,
+        forward_stored_values_unchecked,
+    )
+}
+
+fn forward_stored_values_unchecked(ir: &mut FunctionIr) {
     frame_values::forward(ir);
     let sp = stack_pointer(ir.isa);
     // A callee can reach the caller's frame only through an address the
@@ -436,6 +452,14 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
 /// Fuses `t = *p; t = op(t, x); *p = t` into `*p = op(*p, x)` when the
 /// temporary is read nowhere else in the block.
 pub fn fuse_load_op_store(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::memory::fuse_load_op_store",
+        ir,
+        fuse_load_op_store_unchecked,
+    )
+}
+
+fn fuse_load_op_store_unchecked(ir: &mut FunctionIr) {
     let live_in = crate::ir::cfg::live_in(ir);
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
@@ -790,6 +814,14 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
 /// apart by their offset from the stack pointer on entry, which tracks the
 /// stack pointer's moves.
 pub fn forward_spilled_variables(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::memory::forward_spilled_variables",
+        ir,
+        forward_spilled_variables_unchecked,
+    )
+}
+
+fn forward_spilled_variables_unchecked(ir: &mut FunctionIr) {
     use std::collections::HashMap;
     let sp = stack_pointer(ir.isa);
     let go = ir.convention == crate::ir::Convention::GoAmd64;

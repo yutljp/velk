@@ -33,6 +33,14 @@ const OPERAND_DEPTH: usize = 5;
 /// large for their reader stay, as do floats and structure pointers whose
 /// values read memory or may fault.
 pub fn fold_values_read_once(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::read_once::fold_values_read_once",
+        ir,
+        fold_values_read_once_unchecked,
+    )
+}
+
+fn fold_values_read_once_unchecked(ir: &mut FunctionIr) {
     fold(ir, FrameLoads::Ordered);
 }
 

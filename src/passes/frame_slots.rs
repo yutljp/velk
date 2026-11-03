@@ -1,7 +1,7 @@
 mod checked;
 mod i386;
 pub(crate) use checked::checked_frame_slot;
-pub(crate) use i386::settle as settle_i386;
+pub(crate) use i386::settle_i386;
 
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
@@ -89,6 +89,10 @@ impl Stack {
 /// Rewrites every stack access against the entry frame and drops the
 /// adjustments, when the stack pointer is only ever a frame base.
 pub fn settle(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::frame_slots::settle", ir, settle_unchecked)
+}
+
+fn settle_unchecked(ir: &mut FunctionIr) {
     if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
         settle_i386(ir);
     }

@@ -34,6 +34,14 @@ use crate::passes::division::widened::widened_signed_site;
 /// exact over the dividend's domain, and adjusts parameter and return types to
 /// that domain.
 pub fn recover_divisions(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::division::recover_divisions",
+        ir,
+        recover_divisions_unchecked,
+    )
+}
+
+fn recover_divisions_unchecked(ir: &mut FunctionIr) {
     let mut domains: std::collections::HashSet<(u16, bool)> = std::collections::HashSet::new();
     let mut narrowed: Vec<(u16, bool)> = Vec::new();
     // Signed 64-bit chains prove an int64 dividend, so these widen instead.

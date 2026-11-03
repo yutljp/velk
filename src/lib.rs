@@ -34,4 +34,6 @@ pub mod symbolic;
 mod tables;
 mod timing;
 pub mod unpack;
+#[cfg(feature = "validate")]
+pub use ir::smt::validate;
 pub mod xrefs;

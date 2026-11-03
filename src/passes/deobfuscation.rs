@@ -34,6 +34,10 @@ impl Simplification {
 }
 
 pub(crate) fn simplify(ir: &mut FunctionIr) -> Simplification {
+    crate::passes::checked("passes::deobfuscation::simplify", ir, simplify_unchecked)
+}
+
+fn simplify_unchecked(ir: &mut FunctionIr) -> Simplification {
     crate::timing::scope!("deobfuscation::simplify");
     let mba = super::mba::simplify(ir);
     if !ir.blocks.iter().any(|block| {
@@ -73,6 +77,14 @@ pub(super) fn branches(ir: &FunctionIr) -> usize {
 }
 
 pub(super) fn predicates(ir: &mut FunctionIr) -> Simplification {
+    crate::passes::checked(
+        "passes::deobfuscation::predicates",
+        ir,
+        predicates_unchecked,
+    )
+}
+
+fn predicates_unchecked(ir: &mut FunctionIr) -> Simplification {
     crate::timing::scope!("deobfuscation::predicates");
     let before = branches(ir);
     for at in 0..ir.blocks.len() {

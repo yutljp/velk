@@ -10,6 +10,10 @@ mod tests;
 /// Common-subexpression elimination within each statement: a pure subtree
 /// repeated in one statement is bound once to a `t<n>` temporary.
 pub fn cse(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::cse::cse", ir, cse_unchecked)
+}
+
+fn cse_unchecked(ir: &mut FunctionIr) {
     // Indices no statement or annotation names, so a binding never takes
     // a temporary that is live elsewhere or has a fixed role.
     let temporaries = unused_temporaries(ir);

@@ -341,6 +341,14 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
 /// value is gone, and the code cannot rely on what is there instead. A
 /// value a φ joins with others is left as it is.
 pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "ssa::undefine_clobbered_reads",
+        ir,
+        undefine_clobbered_reads_unchecked,
+    )
+}
+
+fn undefine_clobbered_reads_unchecked(ir: &mut FunctionIr) {
     if !ir
         .blocks
         .iter()
@@ -538,6 +546,14 @@ pub(crate) fn c_string(image: &crate::loader::Image, address: u64) -> Option<Str
 
 /// Propagates constants across the function through its SSA form.
 pub fn propagate_constants(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "ssa::propagate_constants",
+        ir,
+        propagate_constants_unchecked,
+    )
+}
+
+fn propagate_constants_unchecked(ir: &mut FunctionIr) {
     let Some(mut ssa) = build(ir) else {
         return;
     };
@@ -558,6 +574,14 @@ pub fn lower(ssa: &Ssa) -> FunctionIr {
 /// call goes there directly: `v1 = f(); v2 = v1;` becomes `v2 = f();`, and
 /// every other output retains its own destination.
 pub fn take_results_directly(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "ssa::take_results_directly",
+        ir,
+        take_results_directly_unchecked,
+    )
+}
+
+fn take_results_directly_unchecked(ir: &mut FunctionIr) {
     let mut reads: HashMap<u16, usize> = HashMap::new();
     let mut definitions: HashMap<u16, usize> = HashMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

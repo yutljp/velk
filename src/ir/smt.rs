@@ -12,6 +12,10 @@ use std::process::{Command, Stdio};
 use super::Stmt;
 use super::{BinOp, Cond, Expr, LaneOp, Operation};
 
+#[cfg(test)]
+mod agreement_tests;
+#[cfg(test)]
+mod coverage;
 mod floating;
 mod integer;
 #[cfg(test)]
@@ -24,6 +28,8 @@ mod render_tests;
 mod rewrite_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "validate")]
+pub mod validate;
 
 #[cfg(test)]
 pub(crate) const CONDITIONS: [Cond; 14] = [
@@ -317,7 +323,7 @@ fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
     memory_value(expr, registers, "memory")
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "validate"))]
 fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) -> Value {
     memory_value_resolved(expr, registers, memory, &[])
 }
@@ -326,7 +332,7 @@ pub(crate) fn resolved_value(expr: &Expr, operands: &[(&Expr, &str)]) -> Value {
     memory_value_resolved(expr, &BTreeMap::new(), "memory", operands)
 }
 
-fn memory_value_resolved(
+pub(crate) fn memory_value_resolved(
     expr: &Expr,
     registers: &BTreeMap<u16, String>,
     memory: &str,

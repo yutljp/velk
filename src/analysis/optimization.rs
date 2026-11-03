@@ -30,24 +30,35 @@ pub(super) fn optimize(
         types,
     } = lifted;
     if ir.isa == crate::loader::Isa::I386 {
-        super::com::recover_i386(&mut ir, image, types.as_ref());
-        crate::ssa::count_variadic_arguments(&mut ir, image);
+        passes::checked("analysis::com::recover_i386", &mut ir, |ir| {
+            super::com::recover_i386(ir, image, types.as_ref())
+        });
+        passes::checked("ssa::count_variadic_arguments", &mut ir, |ir| {
+            crate::ssa::count_variadic_arguments(ir, image)
+        });
         passes::frame_slots::settle_i386(&mut ir);
     } else if ir.isa == crate::loader::Isa::Arm32 {
         passes::frame_slots::settle(&mut ir);
     }
     let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some())
         || go_types::runtime(image, ir.addr).is_some();
-    let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
-        summary::summary(image, target).narrow_return
-    });
+    let narrow_return = |target| summary::summary(image, target).narrow_return;
+    let called = callees(&ir, image);
+    let uniform_32 = passes::checked_assuming(
+        "passes::widths::specialize_widths",
+        &mut ir,
+        &called,
+        |ir| passes::widths::specialize_widths(ir, &narrow_return),
+    );
     // Before the stack adjustments a call reads unseen, such as the push
     // of an argument, are dropped as dead.
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
     if ir.isa != crate::loader::Isa::I386 {
-        crate::ssa::count_variadic_arguments(&mut ir, image);
+        passes::checked("ssa::count_variadic_arguments", &mut ir, |ir| {
+            crate::ssa::count_variadic_arguments(ir, image)
+        });
     }
     if let Err(error) = passed(deadline) {
         return Err(error);
@@ -102,7 +113,9 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    set_up_arguments(&mut ir, types.as_ref());
+    passes::checked("analysis::set_up_arguments", &mut ir, |ir| {
+        set_up_arguments(ir, types.as_ref())
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
@@ -151,7 +164,11 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    typing::apply_partial_return(&mut ir);
+    passes::checked(
+        "analysis::typing::apply_partial_return",
+        &mut ir,
+        typing::apply_partial_return,
+    );
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
@@ -159,11 +176,20 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    drop_unread_indirect_result(&mut ir, image);
+    let called = callees(&ir, image);
+    passes::checked_assuming(
+        "analysis::drop_unread_indirect_result",
+        &mut ir,
+        &called,
+        |ir| drop_unread_indirect_result(ir, image),
+    );
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    crate::ssa::split_variables(&mut ir, &general);
+    let called = callees(&ir, image);
+    passes::checked_assuming("ssa::split_variables", &mut ir, &called, |ir| {
+        crate::ssa::split_variables(ir, &general)
+    });
     let frame_slot_promotion = if promote_slots {
         FrameSlotPromotion::Allowed
     } else {
@@ -177,19 +203,29 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    typing::apply_width_types(&mut ir, &uniform_32);
+    passes::checked("analysis::typing::apply_width_types", &mut ir, |ir| {
+        typing::apply_width_types(ir, &uniform_32)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    typing::apply_void_return(&mut ir);
+    passes::checked("analysis::typing::apply_void_return", &mut ir, |ir| {
+        typing::apply_void_return(ir)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    typing::apply_partial_return(&mut ir);
+    passes::checked(
+        "analysis::typing::apply_partial_return",
+        &mut ir,
+        typing::apply_partial_return,
+    );
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    apply_call_return(&mut ir, image);
+    passes::checked("analysis::apply_call_return", &mut ir, |ir| {
+        apply_call_return(ir, image)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
@@ -203,12 +239,24 @@ pub(super) fn optimize(
     } else {
         None
     };
-    typing::apply_dwarf_types(types, &mut ir);
-    go_types::apply_runtime_signature(&mut ir, image);
+    passes::checked("analysis::typing::apply_dwarf_types", &mut ir, |ir| {
+        typing::apply_dwarf_types(types, ir)
+    });
+    passes::checked(
+        "analysis::go_types::apply_runtime_signature",
+        &mut ir,
+        |ir| go_types::apply_runtime_signature(ir, image),
+    );
     if let Some((params, ret)) = inferred {
-        super::pairs32::place_inferred(params, ret, &mut ir);
+        passes::checked("analysis::pairs32::place_inferred", &mut ir, |ir| {
+            super::pairs32::place_inferred(params, ret, ir)
+        });
     } else if let Some(params) = inferred_parameters {
-        super::pairs32::place_inferred_parameters(params, &mut ir);
+        passes::checked(
+            "analysis::pairs32::place_inferred_parameters",
+            &mut ir,
+            |ir| super::pairs32::place_inferred_parameters(params, ir),
+        );
     }
     if let Err(error) = cleanup_after_types(&mut ir, deadline) {
         return Err(error);
@@ -216,16 +264,24 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    name_indirect_result(&mut ir);
+    passes::checked("analysis::name_indirect_result", &mut ir, |ir| {
+        name_indirect_result(ir)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    structures::recover(&mut ir);
+    passes::checked("analysis::structures::recover", &mut ir, |ir| {
+        structures::recover(ir)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
     if !declared_return {
-        typing::apply_pointer_return_with(&mut ir, &|stmt| prototypes::called(image, stmt));
+        passes::checked(
+            "analysis::typing::apply_pointer_return_with",
+            &mut ir,
+            |ir| typing::apply_pointer_return_with(ir, &|stmt| prototypes::called(image, stmt)),
+        );
     }
     // It returns the pointer it wrote the result through.
     if !declared_return
@@ -237,7 +293,9 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    crate::lift::fold_literals(&mut ir, image);
+    passes::checked("lift::fold_literals", &mut ir, |ir| {
+        crate::lift::fold_literals(ir, image)
+    });
     let mut references = refs::collect(&ir, image);
     if let Err(error) = passed(deadline) {
         return Err(error);
@@ -246,12 +304,16 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    drop_stack_protector(&mut ir, image);
+    passes::checked("analysis::drop_stack_protector", &mut ir, |ir| {
+        drop_stack_protector(ir, image)
+    });
     // Settling simplifies again, which can leave a table read unused.
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    drop_dead_constant_reads(&mut ir, image);
+    passes::checked("analysis::drop_dead_constant_reads", &mut ir, |ir| {
+        drop_dead_constant_reads(ir, image)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
@@ -310,21 +372,33 @@ pub(super) fn optimize(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    typing::apply_prototypes(&mut ir, image);
-    super::pairs32::type_temporaries(&mut ir);
-    prototypes::apply_records(&mut ir, image);
+    passes::checked("analysis::typing::apply_prototypes", &mut ir, |ir| {
+        typing::apply_prototypes(ir, image)
+    });
+    passes::checked("analysis::pairs32::type_temporaries", &mut ir, |ir| {
+        super::pairs32::type_temporaries(ir)
+    });
+    passes::checked("analysis::prototypes::apply_records", &mut ir, |ir| {
+        prototypes::apply_records(ir, image)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    variadic::mark_variadic(&mut ir);
+    passes::checked("analysis::variadic::mark_variadic", &mut ir, |ir| {
+        variadic::mark_variadic(ir)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    passes::coalesce::reuse_pointers(&mut ir);
+    passes::checked("passes::coalesce::reuse_pointers", &mut ir, |ir| {
+        passes::coalesce::reuse_pointers(ir)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    go_types::apply(&mut ir, image);
+    passes::checked("analysis::go_types::apply", &mut ir, |ir| {
+        go_types::apply(ir, image)
+    });
     let changes = passes::deobfuscation::simplify(&mut ir);
     if changes.simplified {
         references = refs::collect(&ir, image);
@@ -352,11 +426,15 @@ fn cleanup_before_split(
         return Err(error);
     }
     let changes = passes::optimize(ir, has_jump_tables);
-    constant_spills::forward(ir, image);
+    passes::checked("analysis::constant_spills::forward", ir, |ir| {
+        constant_spills::forward(ir, image)
+    });
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    drop_folded_away(ir, reached);
+    passes::checked("analysis::drop_folded_away", ir, |ir| {
+        drop_folded_away(ir, reached)
+    });
     Ok(changes)
 }
 
@@ -427,4 +505,29 @@ fn cleanup_after_types(ir: &mut FunctionIr, deadline: Option<Instant>) -> Result
     }
     passes::coalesce::coalesce_copies(ir);
     Ok(())
+}
+
+/// What the summaries say of the callees `ir` calls directly, for the
+/// rewrite validation of a pass that relies on them.
+fn callees(ir: &FunctionIr, image: &Image) -> passes::Callees {
+    let mut callees = passes::Callees::default();
+    if !cfg!(feature = "validate") {
+        return callees;
+    }
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Call {
+            target: Some(target),
+            ..
+        } = stmt
+        {
+            let summary = summary::summary(image, *target);
+            if summary.narrow_return {
+                callees.narrow_results.push(*target);
+            }
+            if !summary.indirect_result {
+                callees.without_result_address.push(*target);
+            }
+        }
+    }
+    callees
 }

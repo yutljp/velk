@@ -297,6 +297,10 @@ fn rewrite(expr: &mut Expr, preserve_width: bool) -> usize {
 }
 
 pub(super) fn simplify(ir: &mut FunctionIr) -> usize {
+    crate::passes::checked("passes::mba::simplify", ir, simplify_unchecked)
+}
+
+fn simplify_unchecked(ir: &mut FunctionIr) -> usize {
     let mut changed = 0;
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {

@@ -21,6 +21,14 @@ enum CoalesceMode {
 }
 
 pub fn coalesce_copies(ir: &mut FunctionIr) {
+    crate::passes::checked(
+        "passes::coalesce::coalesce_copies",
+        ir,
+        coalesce_copies_unchecked,
+    )
+}
+
+fn coalesce_copies_unchecked(ir: &mut FunctionIr) {
     let _ = coalesce(ir, CoalesceMode::Analysis, None);
 }
 

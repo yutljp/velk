@@ -4,6 +4,10 @@ use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 
 /// Propagates constants within a basic block and simplifies expressions.
 pub fn simplify(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::simplify::simplify", ir, simplify_unchecked)
+}
+
+fn simplify_unchecked(ir: &mut FunctionIr) {
     let starts: std::collections::HashSet<_> = if ir.isa == crate::loader::Isa::Arm32 {
         ir.blocks.iter().map(|block| block.start).collect()
     } else {

@@ -15,6 +15,44 @@ pub mod widths;
 
 use crate::ir::FunctionIr;
 
+/// Runs the pass `site`; with the `validate` feature, records an SMT
+/// obligation for each statement it rewrites.
+#[inline]
+pub(crate) fn checked<R>(
+    site: &'static str,
+    ir: &mut FunctionIr,
+    run: impl FnOnce(&mut FunctionIr) -> R,
+) -> R {
+    checked_assuming(site, ir, &Callees::default(), run)
+}
+
+/// What the summaries of a function's callees tell a pass that relies on
+/// them.
+#[derive(Debug, Default)]
+pub(crate) struct Callees {
+    /// The callees that return 32-bit values.
+    pub(crate) narrow_results: Vec<u64>,
+    /// The callees that take no result address in `AArch64`'s x8.
+    pub(crate) without_result_address: Vec<u64>,
+}
+
+/// The same for a pass that relies on what `callees` says.
+#[inline]
+pub(crate) fn checked_assuming<R>(
+    site: &'static str,
+    ir: &mut FunctionIr,
+    callees: &Callees,
+    run: impl FnOnce(&mut FunctionIr) -> R,
+) -> R {
+    #[cfg(feature = "validate")]
+    return crate::ir::smt::validate::pass(site, ir, callees, run);
+    #[cfg(not(feature = "validate"))]
+    {
+        let _ = (site, callees);
+        run(ir)
+    }
+}
+
 /// Functions with recovered jump tables skip the flow-sensitive cleanups.
 pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) -> deobfuscation::Simplification {
     cse::cse(ir);

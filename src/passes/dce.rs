@@ -6,6 +6,10 @@ use crate::passes::frame::reads_outside_frame;
 /// Dead-store elimination over the control flow graph: removes a definition
 /// that no path reads before overwriting it.
 pub fn dce_flow(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::dce::dce_flow", ir, dce_flow_unchecked)
+}
+
+fn dce_flow_unchecked(ir: &mut FunctionIr) {
     let live_in = live_in(ir);
     for index in 0..ir.blocks.len() {
         if opaque(&ir.blocks[index]) {
@@ -46,6 +50,10 @@ pub fn dce_flow(ir: &mut FunctionIr) {
 /// Per-block dead-store removal: drops an assignment whose destination no
 /// other block reads and that is overwritten or never read later in its block.
 pub fn dce(ir: &mut FunctionIr) {
+    crate::passes::checked("passes::dce::dce", ir, dce_unchecked)
+}
+
+fn dce_unchecked(ir: &mut FunctionIr) {
     // A copy of a register into itself, as a restore after a call that
     // left the register alone becomes, does nothing.
     for block in &mut ir.blocks {

@@ -1247,6 +1247,10 @@ impl Changes {
 /// and reads under a comparison or a signed operation keep the width it
 /// acts at, as constant propagation's do.
 pub fn simplify(ir: &mut FunctionIr) -> Changes {
+    crate::passes::checked("ssa::ranges::simplify", ir, simplify_unchecked)
+}
+
+fn simplify_unchecked(ir: &mut FunctionIr) -> Changes {
     let Some(mut ssa) = super::build(ir) else {
         return Changes::default();
     };
