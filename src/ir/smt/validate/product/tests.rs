@@ -70,6 +70,8 @@ fn application(before: Vec<Block>, after: Vec<Block>) -> Application {
         landing_pads: false,
         narrow_stack: None,
         private_frame: None,
+        fixed_frame: false,
+        convention: crate::ir::Convention::SysV,
         entry_alignment: None,
         returned: Some(64),
         narrow_results: BTreeSet::new(),
@@ -103,6 +105,8 @@ fn assuming(
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
+            fixed_frame: false,
+            convention: crate::ir::Convention::SysV,
             entry_alignment: None,
             returned,
             narrow_results,
@@ -130,6 +134,8 @@ fn aligned(
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
+            fixed_frame: false,
+            convention: crate::ir::Convention::SysV,
             entry_alignment: alignment.map(|alignment| (4, alignment)),
             returned: Some(64),
             narrow_results: BTreeSet::new(),
@@ -451,6 +457,114 @@ fn functions_are_compared_across_blocks_and_loops() {
     };
     assert_eq!(settled, Verdict::Proved);
 
+    // A slot among a Go register-convention callee's arguments, which only
+    // a caller of that convention keeps clear of what it reads afterwards;
+    // and a slot reached through a register that holds a frame address,
+    // which a kept byte is not read through.
+    let go = |caller: Convention, through: bool| {
+        let slot = raw_bin(BinOp::Add, r(4), Expr::Const(16));
+        let address = if through { r(5) } else { slot.clone() };
+        let mut calling = call();
+        if let Stmt::Call {
+            args, convention, ..
+        } = &mut calling
+        {
+            *args = Some(vec![Expr::Const(0); 3]);
+            *convention = Convention::GoAmd64;
+        }
+        let store = Stmt::Store {
+            at: None,
+            addr: address.clone(),
+            value: Expr::Const(7),
+            width: 8,
+        };
+        let load = Expr::Load {
+            addr: Box::new(address),
+            width: 8,
+            signed: false,
+        };
+        let mut application = application(
+            vec![block(
+                0,
+                vec![
+                    assign(5, slot.clone()),
+                    store.clone(),
+                    calling.clone(),
+                    assign(2, load),
+                    ret(r(2)),
+                ],
+            )],
+            vec![block(
+                0,
+                vec![
+                    assign(5, slot),
+                    store,
+                    calling,
+                    assign(2, Expr::Const(7)),
+                    ret(r(2)),
+                ],
+            )],
+        );
+        application.private_frame = Some(4);
+        application.convention = caller;
+        check(&application, 50_000_000, 1_000_000_000)
+    };
+    assert_eq!(go(Convention::GoAmd64, false), Verdict::Proved);
+    assert!(not_proved(&go(Convention::SysV, false)));
+    assert!(not_proved(&go(Convention::GoAmd64, true)));
+
+    // A frame slot read back past an atomic, which writes nothing below the
+    // stack pointer of a function that never moves it.
+    let atomic = |fixed: bool| {
+        let slot = raw_bin(BinOp::Add, r(4), Expr::Const(-16i64 as u64));
+        let store = Stmt::Store {
+            at: None,
+            addr: slot.clone(),
+            value: Expr::Const(7),
+            width: 8,
+        };
+        let exchange = Stmt::Machine {
+            at: None,
+            instruction: crate::ir::MachineInstruction::Atomic {
+                op: crate::ir::AtomicOp::Exchange,
+                width: 8,
+                ordering: crate::ir::Ordering::SeqCst,
+            },
+            inputs: vec![r(1), r(3)],
+            outputs: vec![RegRef {
+                index: 6,
+                width: 64,
+            }],
+        };
+        let mut application = application(
+            vec![block(
+                0,
+                vec![
+                    store.clone(),
+                    exchange.clone(),
+                    assign(
+                        2,
+                        Expr::Load {
+                            addr: Box::new(slot),
+                            width: 8,
+                            signed: false,
+                        },
+                    ),
+                    ret(r(2)),
+                ],
+            )],
+            vec![block(
+                0,
+                vec![store, exchange, assign(2, Expr::Const(7)), ret(r(2))],
+            )],
+        );
+        application.private_frame = Some(4);
+        application.fixed_frame = fixed;
+        check(&application, 50_000_000, 1_000_000_000)
+    };
+    assert_eq!(atomic(true), Verdict::Proved);
+    assert!(not_proved(&atomic(false)));
+
     // A mask a branch in another block makes redundant: a range the
     // equations cannot state, found from the Horn clauses; and the same
     // mask after a branch that says nothing of the sign.
@@ -623,6 +737,8 @@ fn functions_are_compared_across_blocks_and_loops() {
                 landing_pads: false,
                 narrow_stack: None,
                 private_frame: None,
+                fixed_frame: false,
+                convention: crate::ir::Convention::SysV,
                 entry_alignment: None,
                 returned: Some(64),
                 narrow_results: BTreeSet::new(),
@@ -660,6 +776,8 @@ fn functions_are_compared_across_blocks_and_loops() {
                 landing_pads: false,
                 narrow_stack: narrow.then_some(13),
                 private_frame: None,
+                fixed_frame: false,
+                convention: crate::ir::Convention::SysV,
                 entry_alignment: None,
                 returned: Some(64),
                 narrow_results: BTreeSet::new(),
@@ -693,6 +811,8 @@ fn functions_are_compared_across_blocks_and_loops() {
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
+            fixed_frame: false,
+            convention: crate::ir::Convention::SysV,
             entry_alignment: None,
             returned: Some(64),
             narrow_results: BTreeSet::new(),

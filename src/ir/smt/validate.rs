@@ -211,6 +211,7 @@ pub(crate) fn pass<R>(
             let sp = crate::arch::stack_pointer(ir.isa);
             let private_frame =
                 (!crate::passes::memory::frame_addresses_escape(&before, sp)).then_some(sp);
+            let fixed_frame = crate::passes::memory::fixed_private_frame_blocks(&before, sp);
             state.applications.push(product::Application {
                 site,
                 tag,
@@ -221,6 +222,8 @@ pub(crate) fn pass<R>(
                 narrow_stack: (crate::arch::pointer_bytes(ir.isa) == 4)
                     .then(|| crate::arch::stack_pointer(ir.isa)),
                 private_frame,
+                fixed_frame,
+                convention: ir.convention,
                 entry_alignment: ir
                     .entry_alignment
                     .map(|alignment| (crate::arch::stack_pointer(ir.isa), alignment)),
