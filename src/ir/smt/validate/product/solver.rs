@@ -8,7 +8,7 @@ use super::horn::solve_horn;
 use crate::ir::smt::validate::Strategy;
 
 #[derive(Clone)]
-pub(super) enum Reply {
+pub(crate) enum Reply {
     Unsat,
     /// Satisfiable, with the requested Booleans' values in the model.
     Sat(Vec<bool>),
@@ -25,6 +25,8 @@ pub(crate) struct Solver {
     pub(super) replies: HashMap<(String, Strategy, u64), Reply>,
     /// The replies to Horn clauses solved already, by clauses and limit.
     pub(super) horns: HashMap<(String, u64), Reply>,
+    /// The query z3 last found satisfiable and still holds a model of.
+    satisfied: Option<String>,
 }
 
 /// Where checking an application spent its solver work.
@@ -58,31 +60,50 @@ impl Solver {
             stats: Stats::default(),
             replies: HashMap::new(),
             horns: HashMap::new(),
+            satisfied: None,
         })
     }
 
-    pub(super) fn line(&mut self) -> String {
-        let mut line = String::new();
-        self.stdout.read_line(&mut line).expect("read z3 answer");
-        line.trim().to_owned()
+    /// The lines z3 prints for `request`, read up to a marker echoed after
+    /// it, so that whatever z3 prints, such as an error, is never read as
+    /// the reply to a later request; none when z3 has stopped, which then
+    /// starts again.
+    fn request(&mut self, request: &str) -> Option<Vec<String>> {
+        let lines = self.exchange(request);
+        if lines.is_none()
+            && let Some(again) = Self::start()
+        {
+            let mut old = std::mem::replace(self, again);
+            self.stats = std::mem::take(&mut old.stats);
+            self.replies = std::mem::take(&mut old.replies);
+            self.horns = std::mem::take(&mut old.horns);
+        }
+        lines
     }
 
-    /// The parenthesized answer to a request, possibly over several lines.
-    pub(super) fn list(&mut self, request: &str) -> String {
-        writeln!(self.stdin, "{request}").expect("write SMT request");
-        self.stdin.flush().expect("flush SMT request");
-        let mut text = String::new();
-        let mut depth = 0i32;
+    fn exchange(&mut self, request: &str) -> Option<Vec<String>> {
+        writeln!(self.stdin, "{request}\n(echo \"{END}\")").ok()?;
+        self.stdin.flush().ok()?;
+        let mut lines = Vec::new();
         loop {
-            let line = self.line();
-            depth += line.matches('(').count() as i32 - line.matches(')').count() as i32;
-            text.push_str(&line);
-            text.push(' ');
-            if depth <= 0 {
-                break;
+            let mut line = String::new();
+            if self.stdout.read_line(&mut line).ok()? == 0 {
+                return None;
+            }
+            match line.trim() {
+                END => return Some(lines),
+                line => lines.push(line.to_owned()),
             }
         }
-        text.trim().to_owned()
+    }
+
+    /// The one answer to a request, or what z3 printed instead.
+    fn reply(&mut self, request: &str) -> Result<String, String> {
+        let lines = self.request(request).ok_or("z3 stopped")?;
+        if lines.iter().any(|line| line.starts_with("(error")) {
+            return Err(lines.join(" "));
+        }
+        Ok(lines.join(" "))
     }
 
     /// The reply to `query`, with the Booleans `names` in a model. A query
@@ -134,32 +155,39 @@ impl Solver {
         reply
     }
 
-    pub(super) fn answer(
+    pub(crate) fn answer(
         &mut self,
         query: &str,
         rlimit: u64,
         strategy: Strategy,
         names: &[&str],
     ) -> Reply {
+        let original = query;
         let Some(query) = strategy.query(query) else {
             return Reply::Unknown(format!("no {strategy:?} form"));
         };
-        writeln!(
-            self.stdin,
+        self.satisfied = None;
+        let answer = match self.reply(&format!(
             "(reset)\n(set-option :rlimit {rlimit})\n{query}{}",
             strategy.check()
-        )
-        .expect("write SMT query");
-        self.stdin.flush().expect("flush SMT query");
-        let answer = self.line();
+        )) {
+            Ok(answer) => answer,
+            Err(printed) => return Reply::Unknown(printed),
+        };
         match answer.as_str() {
             "unsat" => Reply::Unsat,
             "sat" if strategy == Strategy::Integer => {
                 Reply::Unknown("a model over integers is not taken".to_owned())
             }
-            "sat" if names.is_empty() => Reply::Sat(Vec::new()),
             "sat" => {
-                let text = self.list(&format!("(get-value ({}))", names.join(" ")));
+                self.satisfied = Some(original.to_owned());
+                if names.is_empty() {
+                    return Reply::Sat(Vec::new());
+                }
+                let text = match self.reply(&format!("(get-value ({}))", names.join(" "))) {
+                    Ok(text) => text,
+                    Err(printed) => return Reply::Unknown(printed),
+                };
                 let values: Vec<bool> = text
                     .split(|c: char| c.is_whitespace() || c == '(' || c == ')')
                     .filter_map(|token| match token {
@@ -168,24 +196,49 @@ impl Solver {
                         _ => None,
                     })
                     .collect();
-                assert_eq!(values.len(), names.len(), "z3 values: {text}");
-                Reply::Sat(values)
+                if values.len() == names.len() {
+                    Reply::Sat(values)
+                } else {
+                    Reply::Unknown(format!("no values: {text}"))
+                }
             }
             answer => {
                 let answer = answer.to_owned();
-                let reason = self.list("(get-info :reason-unknown)");
+                let reason = self
+                    .reply("(get-info :reason-unknown)")
+                    .unwrap_or_else(|printed| printed);
                 Reply::Unknown(format!("{answer} {reason}"))
             }
         }
     }
 
-    pub(super) fn model(&mut self, symbols: &[String]) -> String {
+    /// The values of `symbols` in a model of `query`, which the solver
+    /// found satisfiable. A reply recalled from an earlier ask leaves z3
+    /// holding another query, which is then asked again.
+    pub(crate) fn model(&mut self, query: &str, symbols: &[String]) -> String {
         if symbols.is_empty() {
             return String::new();
         }
-        self.list(&format!("(get-value ({}))", symbols.join(" ")))
+        if self.satisfied.as_deref() != Some(query) {
+            let asked = self
+                .replies
+                .iter()
+                .find(|((asked, _, _), reply)| asked == query && matches!(reply, Reply::Sat(_)))
+                .map(|((_, strategy, rlimit), _)| (*strategy, *rlimit));
+            let Some((strategy, rlimit)) = asked else {
+                return "no model".to_owned();
+            };
+            if !matches!(self.answer(query, rlimit, strategy, &[]), Reply::Sat(_)) {
+                return "no model".to_owned();
+            }
+        }
+        self.reply(&format!("(get-value ({}))", symbols.join(" ")))
+            .unwrap_or_else(|printed| printed)
     }
 }
+
+/// What z3 is asked to print after each request, marking the end of its reply.
+const END: &str = "velk-end";
 
 impl Drop for Solver {
     fn drop(&mut self) {

@@ -66,7 +66,8 @@ mod tests;
 use candidates::candidates;
 use horn::horn;
 use run::{Run, run, start, starting};
-use solver::{Reply, Solver, Stats};
+use solver::Stats;
+pub(super) use solver::{Reply, Solver};
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
@@ -560,7 +561,7 @@ impl Product {
                         Reply::Sat(_) => Some(match undecided.take() {
                             Some(reason) => Verdict::Unknown { what, reason },
                             None => Verdict::NotProved {
-                                state: solver.model(&symbols),
+                                state: solver.model(&query, &symbols),
                                 what,
                             },
                         }),

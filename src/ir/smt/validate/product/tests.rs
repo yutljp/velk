@@ -883,3 +883,27 @@ fn narrow_stores_and_masks_suggest_equations_of_their_bits() {
     }
     assert!(!found.contains(&(Expr::reg(6, 8), Expr::reg(6, 8))));
 }
+
+#[test]
+fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
+    if Command::new("z3").arg("-version").output().is_err() {
+        eprintln!("SKIP solver replies: z3 unavailable");
+        return;
+    }
+    let mut solver = Solver::start().expect("z3");
+    let undeclared = "(declare-const x (_ BitVec 8))\n(assert (= y #x00))\n";
+    assert!(matches!(
+        solver.answer(undeclared, 1_000_000, Strategy::WordLevel, &["x"]),
+        Reply::Unknown(_)
+    ));
+    let refuted = "(declare-const x (_ BitVec 8))\n(assert (= x (bvadd x #x01)))\n";
+    assert!(matches!(
+        solver.answer(refuted, 1_000_000, Strategy::WordLevel, &[]),
+        Reply::Unsat
+    ));
+    let held = "(declare-const p Bool)\n(assert p)\n";
+    assert!(matches!(
+        solver.answer(held, 1_000_000, Strategy::WordLevel, &["p"]),
+        Reply::Sat(values) if values == [true]
+    ));
+}

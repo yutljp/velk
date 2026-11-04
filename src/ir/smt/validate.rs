@@ -9,8 +9,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::hash::{Hash, Hasher};
-use std::io::{BufRead, BufReader, Write};
-use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
@@ -968,14 +966,7 @@ pub fn solve(
     std::thread::scope(|scope| {
         for _ in 0..workers.max(1) {
             scope.spawn(|| {
-                let mut child = Command::new("z3")
-                    .args(["-in", "-smt2"])
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .spawn()
-                    .expect("start z3");
-                let mut stdin = child.stdin.take().expect("piped z3 stdin");
-                let mut stdout = BufReader::new(child.stdout.take().expect("piped z3 stdout"));
+                let mut solver = product::Solver::start().expect("start z3");
                 loop {
                     let index = next.fetch_add(1, Ordering::Relaxed);
                     let Some(obligation) = obligations.get(index) else {
@@ -993,7 +984,7 @@ pub fn solve(
                     } else {
                         let mut answer = Answer::Unknown("no strategy".to_owned());
                         for &strategy in strategies {
-                            answer = ask(&mut stdin, &mut stdout, obligation, rlimit, strategy);
+                            answer = ask(&mut solver, obligation, rlimit, strategy);
                             if !matches!(answer, Answer::Unknown(_)) {
                                 break;
                             }
@@ -1009,8 +1000,6 @@ pub fn solve(
                     answered(index, &answer, started.elapsed().as_secs_f64());
                     answers.lock().expect("answers")[index] = Some(answer);
                 }
-                drop(stdin);
-                child.wait().expect("wait for z3");
             });
         }
     });
@@ -1023,60 +1012,17 @@ pub fn solve(
 }
 
 fn ask(
-    stdin: &mut impl Write,
-    stdout: &mut impl BufRead,
+    solver: &mut product::Solver,
     obligation: &Obligation,
     rlimit: u64,
     strategy: Strategy,
 ) -> Answer {
-    let mut line = || {
-        let mut answer = String::new();
-        stdout.read_line(&mut answer).expect("read z3 answer");
-        answer.trim().to_owned()
-    };
-    let Some(query) = strategy.query(&obligation.query) else {
-        return Answer::Unknown(format!("no {strategy:?} form"));
-    };
-    writeln!(
-        stdin,
-        "(reset)\n(set-option :rlimit {rlimit})\n{query}{}",
-        strategy.check()
-    )
-    .expect("write SMT query");
-    stdin.flush().expect("flush SMT query");
-    let answer = line();
-    match answer.as_str() {
-        "unsat" => Answer::Proved,
-        "sat" if strategy == Strategy::Integer => {
-            Answer::Unknown("a model over integers is not taken".to_owned())
+    match solver.answer(&obligation.query, rlimit, strategy, &[]) {
+        product::Reply::Unsat => Answer::Proved,
+        product::Reply::Sat(_) => {
+            Answer::Counterexample(solver.model(&obligation.query, &obligation.symbols))
         }
-        "sat" => {
-            let symbols = obligation.symbols.join(" ");
-            if symbols.is_empty() {
-                return Answer::Counterexample(String::new());
-            }
-            writeln!(stdin, "(get-value ({symbols}))").expect("request SMT model");
-            stdin.flush().expect("flush SMT request");
-            // The values come back as one parenthesized list, possibly over
-            // several lines.
-            let mut model = String::new();
-            let mut depth = 0i32;
-            loop {
-                let text = line();
-                depth += text.matches('(').count() as i32 - text.matches(')').count() as i32;
-                model.push_str(&text);
-                model.push(' ');
-                if depth <= 0 {
-                    break;
-                }
-            }
-            Answer::Counterexample(model.trim().to_owned())
-        }
-        _ => {
-            writeln!(stdin, "(get-info :reason-unknown)").expect("request SMT reason");
-            stdin.flush().expect("flush SMT request");
-            Answer::Unknown(format!("{answer} {}", line()))
-        }
+        product::Reply::Unknown(reason) => Answer::Unknown(reason),
     }
 }
 
@@ -1085,6 +1031,7 @@ mod tests {
     use super::*;
     use crate::ir::smt::raw_bin;
     use crate::ir::{BinOp, RegRef};
+    use std::process::Command;
 
     #[test]
     fn horn_clauses_relate_unmodeled_applications_by_their_arguments() {
