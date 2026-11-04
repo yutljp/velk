@@ -93,6 +93,12 @@ pub struct Application {
     /// The stack pointer, when the function hands out no address of its
     /// frame.
     pub private_frame: Option<u16>,
+    /// Whether, besides, the function never moves its stack pointer and no
+    /// statement of it reaches memory in ways atomics cannot be ordered
+    /// around, so no atomic or barrier writes its frame.
+    pub fixed_frame: bool,
+    /// The function's calling convention.
+    pub convention: crate::ir::Convention,
     /// The stack pointer and what the function knows of it on entry.
     pub entry_alignment: Option<(u16, crate::ir::EntryAlignment)>,
     /// The low bits of a returned value the function's return type keeps,

@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
-use super::side::{Facts, Layer, Side};
+use super::side::{Facts, Kept, Layer, Side};
 use super::{Application, Candidate, NARROW_STACK};
 use crate::ir::smt::validate::{
     BITS, MEMORY, Script, expressions, registers_read, shape, unmodeled,
@@ -192,6 +192,11 @@ pub(super) fn run(
 ) -> Result<Run, &'static str> {
     let old = &application.before[index].stmts;
     let new = &application.after[index].stmts;
+    let pointer_bits = if application.narrow_stack.is_some() {
+        32
+    } else {
+        64
+    };
     let mut script = Script::default();
     script.declare("m", MEMORY);
     for &register in registers {
@@ -516,11 +521,21 @@ pub(super) fn run(
                             ..
                         },
                     ) if *convention != crate::ir::Convention::GoAbi0 => {
+                        // A callee of Go's register convention spills its
+                        // register arguments to the bottom of a caller of
+                        // that convention's frame, where the caller keeps
+                        // nothing it reads after the call: past what the
+                        // stack carries, the callee changes no byte the
+                        // caller reads.
+                        let written = if application.convention == crate::ir::Convention::GoAmd64
+                            && *convention == crate::ir::Convention::GoAmd64
+                        {
+                            args.len().saturating_sub(convention.arguments().len())
+                        } else {
+                            args.len()
+                        };
                         convention.stack_arguments().map(|start| {
-                            (
-                                sp,
-                                start - convention.pushed_by_call() + 8 * args.len() as i64,
-                            )
+                            (sp, start - convention.pushed_by_call() + 8 * written as i64)
                         })
                     }
                     _ => None,
@@ -539,8 +554,9 @@ pub(super) fn run(
                     before.facts.layers.borrow_mut().push(Layer {
                         memory: memory.clone(),
                         inner: before.memory.clone(),
+                        sp: (sp, pointer_bits),
                         stack,
-                        bound: constant(owned as u64),
+                        kept: Kept::Past(constant(owned as u64)),
                     });
                 }
                 before.memory.clone_from(&memory);
@@ -573,6 +589,19 @@ pub(super) fn run(
                     after.set(*output, &term);
                 }
                 let memory = script.havoc(MEMORY);
+                if let Some(sp) = application.private_frame
+                    && application.fixed_frame
+                    && crate::passes::memory::memory_ordering_barrier(old_stmt)
+                {
+                    let stack = (before.term(&mut script, sp), after.term(&mut script, sp));
+                    before.facts.layers.borrow_mut().push(Layer {
+                        memory: memory.clone(),
+                        inner: before.memory.clone(),
+                        sp: (sp, pointer_bits),
+                        stack,
+                        kept: Kept::Below,
+                    });
+                }
                 before.memory.clone_from(&memory);
                 after.memory = memory;
             }

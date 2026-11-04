@@ -344,11 +344,21 @@ The check assumes the following:
   value, a callee writes nothing of the caller's frame at or above the end of
   its stack arguments: eight bytes for each argument, counted from where the
   convention places stack arguments. The count includes the arguments passed in
-  registers, so it covers Go's spill area for them; Windows' home space lies
+  registers, so it covers a spill area for them; Windows' home space lies
   below the start. A byte is kept only where the stack pointers of both sides
   place it past the arguments, as a pass may leave one side's stack pointer
-  where the function entered. A call with unknown arguments, or of Go's stack
+  where the function entered, and only for a load from the stack pointer plus a
+  constant: an address from elsewhere may lie in a caller's frame, which a
+  callee may have been handed. A call with unknown arguments, or of Go's stack
   convention, which also returns results on the stack, may write any memory.
+- Between two functions of Go's register convention, the callee spills its
+  register arguments to the bottom of the caller's frame, where the caller
+  keeps nothing it reads after the call, as Go's compiler lays out frames. Only
+  the arguments passed on the stack count toward the bytes the callee may write.
+- When, besides, the function never changes its stack pointer, an atomic or a
+  barrier writes nothing below the stack pointer that a load from the stack
+  pointer plus a constant reads: no other thread holds an address in a frame
+  that hands none out.
 - The stack pointer starts aligned as the function's entry alignment says: what
   its calling convention promises, or 16 bytes at an x86-64 ELF executable's
   entry point. Go's conventions and the system-call conventions promise nothing.

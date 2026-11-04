@@ -33,13 +33,28 @@ pub(super) struct Facts {
     pub(super) layers: RefCell<Vec<Layer>>,
 }
 
-/// The memory a call leaves, which keeps the bytes of the memory before it
-/// that both sides' stack pointers place at `bound` or more past them.
+/// The memory a statement leaves, which keeps the bytes of the memory
+/// before it that both sides' stack pointers place where `kept` says. Only
+/// a load from the stack pointer plus a constant reads a kept byte: a
+/// pointer from elsewhere may reach the frames of the function's callers,
+/// which a callee may be handed and write.
 pub(super) struct Layer {
     pub(super) memory: String,
     pub(super) inner: String,
+    /// The stack pointer and the width addresses read it at.
+    pub(super) sp: (u16, u8),
     pub(super) stack: (String, String),
-    pub(super) bound: String,
+    pub(super) kept: Kept,
+}
+
+/// Where a layer keeps the bytes before it, from the stack pointer.
+pub(super) enum Kept {
+    /// At this many bytes or more past it: a call leaves the frame past
+    /// the arguments it may write.
+    Past(String),
+    /// Below it: an atomic or barrier writes no byte of a frame whose
+    /// address the function hands out nowhere.
+    Below,
 }
 
 impl Side {
@@ -83,21 +98,30 @@ impl Side {
             if opaque_any(addr) {
                 continue;
             }
+            let base = crate::passes::memory::split_offset(addr).0;
             let address = memory_value(addr, &self.registers, &self.memory).term;
             let mut facts = Vec::new();
             for byte in 0..u64::from(width) {
                 let at = format!("(bvadd {address} {})", constant(byte));
                 for layer in self.facts.layers.borrow().iter() {
+                    if !matches!(base, Expr::Reg { index, width } if (*index, *width) == layer.sp) {
+                        continue;
+                    }
+                    let kept = |stack: &str| match &layer.kept {
+                        Kept::Past(bound) => format!("(bvsge (bvsub {at} {stack}) {bound})"),
+                        Kept::Below => format!("(bvslt (bvsub {at} {stack}) {})", constant(0)),
+                    };
                     facts.push(format!(
-                        "(=> (and (bvsge (bvsub {at} {}) {bound}) (bvsge (bvsub {at} {}) {bound})) \
-                         (= (select {} {at}) (select {} {at})))",
-                        layer.stack.0,
-                        layer.stack.1,
+                        "(=> (and {} {}) (= (select {} {at}) (select {} {at})))",
+                        kept(&layer.stack.0),
+                        kept(&layer.stack.1),
                         layer.memory,
                         layer.inner,
-                        bound = layer.bound,
                     ));
                 }
+            }
+            if facts.is_empty() {
+                continue;
             }
             let mut known = self.facts.known.borrow_mut();
             let conjunction = format!("(and {} {})", known_or_true(&known), facts.join(" "));
