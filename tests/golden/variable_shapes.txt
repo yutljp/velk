@@ -1702,7 +1702,7 @@ go_probe 0x41d0e0: 4if ( 4if ( 4else 8if ( 8if ( 8if ( 4if (
 go_probe 0x41d240: 4if ( 4if ( 4if ( 4else
 go_probe 0x41d360: 4while ( 8if ( 12if ( 8else 12if ( 8if ( 12continue; 8while ( 12if ( 4while ( 8if ( 12break;
 go_probe 0x41d500: 4if ( 8while ( 12if ( 12if ( 16if (
-go_probe 0x41d6a0: 4do { 4while ( 4if ( 4for ( 8if (
+go_probe 0x41d6a0: 4do { 4while ( 4if ( 4while ( 8if (
 go_probe 0x41d7c0: 4if ( 4else 4for ( 8for ( 12if ( 16break; 12if ( 8for ( 12if ( 16break; 8if ( 12continue;
 go_probe 0x41d960: 4if ( 4if ( 4if (
 go_probe 0x41da00: 4for ( 8if ( 12break; 8if ( 12break; 4if ( 8for ( 12if ( 16while ( 20if ( 20if ( 24break; 16break; 12if ( 16if ( 20continue; 16if ( 16else 16break; 12if ( 16continue; 12if ( 8if ( 12if (
@@ -4260,7 +4260,7 @@ go_stripped 0x41d0e0: 4if ( 4if ( 4else 8if ( 8if ( 8if ( 4if (
 go_stripped 0x41d240: 4if ( 4if ( 4if ( 4else
 go_stripped 0x41d360: 4while ( 8if ( 12if ( 8else 12if ( 8if ( 12continue; 8while ( 12if ( 4while ( 8if ( 12break;
 go_stripped 0x41d500: 4if ( 8while ( 12if ( 12if ( 16if (
-go_stripped 0x41d6a0: 4do { 4while ( 4if ( 4for ( 8if (
+go_stripped 0x41d6a0: 4do { 4while ( 4if ( 4while ( 8if (
 go_stripped 0x41d7c0: 4if ( 4else 4for ( 8for ( 12if ( 16break; 12if ( 8for ( 12if ( 16break; 8if ( 12continue;
 go_stripped 0x41d960: 4if ( 4if ( 4if (
 go_stripped 0x41da00: 4for ( 8if ( 12break; 8if ( 12break; 4if ( 8for ( 12if ( 16while ( 20if ( 20if ( 24break; 16break; 12if ( 16if ( 20continue; 16if ( 16else 16break; 12if ( 16continue; 12if ( 8if ( 12if (

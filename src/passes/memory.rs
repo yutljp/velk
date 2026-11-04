@@ -100,14 +100,21 @@ fn forward_stored_values_unchecked(ir: &mut FunctionIr) {
                     // is its own, which the caller stores nothing to: a slot
                     // the caller stored to keeps its value. Only a call of
                     // unknown arguments, or of another convention, may write
-                    // more.
+                    // more. A callee of Go's stack convention writes its
+                    // results past its arguments, how far no declaration
+                    // says.
                     let spilled = match args {
+                        _ if *convention == crate::ir::Convention::GoAbi0 => i64::MAX,
                         Some(_) if spills && *convention == crate::ir::Convention::GoAmd64 => 0,
                         Some(args) if spills => 8 * args.len() as i64,
                         None if spills => i64::MAX,
                         _ => 0,
                     };
                     let reserved = passed.max(spilled);
+                    // A remembered value that loads memory the call may
+                    // change, such as a result an earlier call left on the
+                    // stack, no longer describes what the slot holds.
+                    pending.retain(|(_, _, stored)| !crate::passes::copies::reads_memory(stored));
                     pending.retain(|(_, addr, stored)| {
                         let (base, offset) = split_offset(addr);
                         let mut reads = std::collections::HashSet::new();
@@ -223,8 +230,12 @@ pub(crate) fn memory_ordering_barrier(stmt: &Stmt) -> bool {
 }
 
 pub(crate) fn fixed_private_frame(ir: &FunctionIr, sp: u16) -> bool {
-    !frame_address_escapes(ir, sp)
-        && !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+    fixed_private_frame_blocks(&ir.blocks, sp)
+}
+
+pub(crate) fn fixed_private_frame_blocks(blocks: &[crate::ir::Block], sp: u16) -> bool {
+    !frame_addresses_escape(blocks, sp)
+        && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
             matches!(
                 stmt,
                 Stmt::Machine {
@@ -234,8 +245,7 @@ pub(crate) fn fixed_private_frame(ir: &FunctionIr, sp: u16) -> bool {
                 }
             )
         })
-        && !ir
-            .blocks
+        && !blocks
             .iter()
             .flat_map(|block| &block.stmts)
             .any(|stmt| statement_registers(stmt).0.contains(&sp))
@@ -1404,6 +1414,75 @@ mod tests {
             ir.render()
         );
     }
+    #[test]
+    fn a_stored_load_is_not_forwarded_past_a_call_that_may_change_what_it_loads() {
+        let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            abi: None,
+            clobbers: Some(Default::default()),
+            outputs: Vec::new(),
+            via: None,
+            at: None,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(32, load(0, 8), 8),
+                call,
+                Stmt::Ret {
+                    value: load(32, 8),
+                    at: None,
+                },
+            ],
+        );
+        forward_stored_values(&mut ir);
+        assert!(
+            matches!(ir.blocks[0].stmts.last(), Some(Stmt::Ret { value, .. }) if *value == load(32, 8)),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_slot_is_not_forwarded_past_a_call_that_may_write_its_results_there() {
+        let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::GoAbi0,
+            args: Some(vec![Expr::Const(2)]),
+            floats_named: true,
+            abi: None,
+            clobbers: Some(Default::default()),
+            outputs: Vec::new(),
+            via: None,
+            at: None,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(32, Expr::Const(13), 8),
+                call,
+                Stmt::Ret {
+                    value: load(32, 8),
+                    at: None,
+                },
+            ],
+        );
+        ir.convention = crate::ir::Convention::GoAmd64;
+        forward_stored_values(&mut ir);
+        assert!(
+            matches!(ir.blocks[0].stmts.last(), Some(Stmt::Ret { value, .. }) if *value == load(32, 8)),
+            "{}",
+            ir.render()
+        );
+    }
+
     fn deferred_call(args: Vec<Expr>) -> Stmt {
         Stmt::Call {
             kind: crate::ir::CallKind::Invoke,
