@@ -321,6 +321,9 @@ time, is decompiled again and checked as a whole:
   strategies give up on. Only proofs over integers are taken; a model found
   there is left to the other strategies. A query comparing whole arrays, or
   with an operation the solver does not model, is not asked over integers.
+  Z3's handler of Diophantine equations is turned off for these queries: on
+  the large constants of some of them it ran for many minutes without counting
+  that work against the solver limit.
 - When the equations do not prove an application, it goes to Z3's Horn engine,
   which may find any invariant, ranges included, or report a path from the
   function's start on which an obligation fails. Each relation takes only what
