@@ -167,8 +167,12 @@ impl Solver {
             return Reply::Unknown(format!("no {strategy:?} form"));
         };
         self.satisfied = None;
+        // z3's handler of Diophantine equations can run for hours on the
+        // large constants of an integer query without counting the work
+        // against the limit; it is left out of the integer strategy.
         let answer = match self.reply(&format!(
-            "(reset)\n(set-option :rlimit {rlimit})\n{query}{}",
+            "(reset)\n(set-option :rlimit {rlimit})\n(set-option :lp.dio {})\n{query}{}",
+            strategy != Strategy::Integer,
             strategy.check()
         )) {
             Ok(answer) => answer,
