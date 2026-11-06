@@ -302,7 +302,10 @@ time, is decompiled again and checked as a whole:
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
   is then not proved and a query was left undecided are single candidates asked
-  about with bounds propagation too.
+  about with bounds propagation too. The inference first runs with a tenth of
+  the solver limits; only an application it leaves unproved is checked again
+  with the whole limits, so the many queries undecided either way, each group
+  of them asked again in halves, cost a tenth as much.
 - An undefined value, such as a register a call leaves without a value, is any
   value, chosen independently at each place. An operation without an SMT model
   is one unknown function of its arguments, the same on both sides; in the Horn

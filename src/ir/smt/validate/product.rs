@@ -253,6 +253,19 @@ fn check_model(
         (Strategy::Integer, rlimit),
         (Strategy::Bounded, bit_level_rlimit),
     ];
+    // Most applications are proved with a tenth of the limits, and a query
+    // left undecided with them is mostly left undecided with all of them,
+    // each undecided group being asked again in parts; so the inference
+    // first runs with a tenth, and only an application it leaves unproved
+    // has the whole limits.
+    let tenth = strategies.map(|(strategy, limit)| (strategy, limit / 10));
+    if product
+        .equations(application, solver, &tenth, false)
+        .failed
+        .is_none()
+    {
+        return Verdict::Proved;
+    }
     let quick = product.equations(application, solver, &strategies, false);
     if quick.failed.is_none() {
         return Verdict::Proved;
