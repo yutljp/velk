@@ -307,7 +307,10 @@ time, is decompiled again and checked as a whole:
   with the whole limits, so the many queries undecided either way, each group
   of them asked again in halves, cost a tenth as much.
 - An undefined value, such as a register a call leaves without a value, is any
-  value, chosen independently at each place. An operation without an SMT model
+  value, chosen independently at each place, except that an assignment of one
+  both sides make alike, once each between the same two paired statements,
+  gives it one value on both sides: the original may hold any value there, so
+  the rewritten function's is among them. An operation without an SMT model
   is one unknown function of its arguments, the same on both sides; in the Horn
   clauses each of its applications is a value of its own, equal to another
   where their arguments are equal, so the engine cannot choose the function.

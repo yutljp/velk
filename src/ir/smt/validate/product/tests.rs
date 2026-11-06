@@ -314,6 +314,37 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert_eq!(undefined(0xff), Verdict::Proved);
     assert!(not_proved(&undefined(0x1ff)));
 
+    // An undefined value both sides assign alike, stored in the next block
+    // after an assignment no one reads is dropped: one value on both sides.
+    // Not so when either side assigns it twice there, or the rewritten side
+    // assigns it at another place.
+    let alike = |times: usize, place: u64| {
+        let unknown = |at: u64| Stmt::Assign {
+            at: Some(at),
+            dest: RegRef {
+                index: 3,
+                width: 64,
+            },
+            value: Expr::apply(crate::ir::Operation::Undefined, Vec::new()),
+        };
+        let tail = block(
+            1,
+            vec![store(Expr::Const(0x1000), r(3)), ret(Expr::Const(0))],
+        );
+        let mut old = vec![assign(8, Expr::Const(5))];
+        let mut new = Vec::new();
+        for _ in 0..times {
+            old.push(unknown(0x10));
+            new.push(unknown(place));
+        }
+        old.push(br(1));
+        new.push(br(1));
+        verdict(vec![block(0, old), tail.clone()], vec![block(0, new), tail])
+    };
+    assert_eq!(alike(1, 0x10), Verdict::Proved);
+    assert!(not_proved(&alike(2, 0x10)));
+    assert!(not_proved(&alike(1, 0x14)));
+
     // High bits dropped that only a narrow store in another block would
     // read, and a store wide enough to read them.
     let stored = |width: u8| {

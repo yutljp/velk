@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
-use super::side::{Facts, Kept, Layer, Side};
+use super::side::{Facts, Kept, Layer, Side, undefined_count};
 use super::{Application, Candidate, NARROW_STACK};
 use crate::ir::smt::validate::{
     BITS, MEMORY, Script, expressions, registers_read, shape, unmodeled,
@@ -230,16 +230,13 @@ pub(super) fn run(
     let (mut next_old, mut next_new) = (0, 0);
     let mut ended = false;
     for (&at_old, &at_new) in old_observable.iter().zip(&new_observable) {
-        for stmt in &old[next_old..at_old] {
-            if let Stmt::Assign { dest, value, .. } = stmt {
-                before.assign(&mut script, *dest, value);
-            }
-        }
-        for stmt in &new[next_new..at_new] {
-            if let Stmt::Assign { dest, value, .. } = stmt {
-                after.assign(&mut script, *dest, value);
-            }
-        }
+        assign_stretch(
+            &mut script,
+            &mut before,
+            &mut after,
+            &old[next_old..at_old],
+            &new[next_new..at_new],
+        );
         (next_old, next_new) = (at_old + 1, at_new + 1);
         let (old_stmt, new_stmt) = (&old[at_old], &new[at_new]);
         if shape(old_stmt) != shape(new_stmt) {
@@ -616,16 +613,13 @@ pub(super) fn run(
         }
     }
     if !ended {
-        for stmt in &old[next_old..] {
-            if let Stmt::Assign { dest, value, .. } = stmt {
-                before.assign(&mut script, *dest, value);
-            }
-        }
-        for stmt in &new[next_new..] {
-            if let Stmt::Assign { dest, value, .. } = stmt {
-                after.assign(&mut script, *dest, value);
-            }
-        }
+        assign_stretch(
+            &mut script,
+            &mut before,
+            &mut after,
+            &old[next_old..],
+            &new[next_new..],
+        );
         if index + 1 < application.before.len() {
             edges.push((index + 1, path, before, after));
         }
@@ -670,6 +664,61 @@ pub(super) fn run(
         edges,
         obligations,
     })
+}
+
+/// Runs the assignments of each side between the same two paired
+/// statements. An assignment of an undefined value that both stretches make
+/// alike, once each, gives it one value on both sides: the original may hold
+/// any value there, so the one the rewritten function holds is among them,
+/// and the obligations then ask only that the rewrite keep what the original
+/// does with it.
+fn assign_stretch(
+    script: &mut Script,
+    before: &mut Side,
+    after: &mut Side,
+    old: &[Stmt],
+    new: &[Stmt],
+) {
+    type Key<'a> = (Option<u64>, RegRef, &'a Expr);
+    fn key(stmt: &Stmt) -> Option<Key<'_>> {
+        match stmt {
+            Stmt::Assign {
+                at, dest, value, ..
+            } => Some((*at, *dest, value)),
+            _ => None,
+        }
+    }
+    let once = |stmts: &[Stmt], wanted: Key| {
+        stmts
+            .iter()
+            .filter(|stmt| key(stmt) == Some(wanted))
+            .count()
+            == 1
+    };
+    let mut given: Vec<(Key, Vec<String>)> = Vec::new();
+    for wanted in old.iter().filter_map(key) {
+        let count = undefined_count(wanted.2);
+        if count > 0 && once(old, wanted) && once(new, wanted) {
+            given.push((wanted, (0..count).map(|_| script.havoc(BITS)).collect()));
+        }
+    }
+    let names = |stmt| -> Vec<String> {
+        let wanted = key(stmt);
+        given
+            .iter()
+            .find(|(paired, _)| Some(*paired) == wanted)
+            .map_or_else(Vec::new, |(_, names)| names.clone())
+    };
+    for stmt in old {
+        if let Stmt::Assign { dest, value, .. } = stmt {
+            before.assign(script, *dest, value, &names(stmt));
+        }
+    }
+    for stmt in new {
+        if let Stmt::Assign { dest, value, .. } = stmt {
+            after.assign(script, *dest, value, &names(stmt));
+        }
+    }
 }
 
 pub(super) fn truth(

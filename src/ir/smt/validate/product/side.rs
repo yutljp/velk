@@ -164,25 +164,34 @@ impl Side {
             .insert(dest.index, low(term, u32::from(dest.width)));
     }
 
-    pub(super) fn assign(&mut self, script: &mut Script, dest: RegRef, value: &Expr) {
+    /// Assigns `value` to `dest`, its undefined values being `undefined` in
+    /// order, as many as given, and any values after them.
+    pub(super) fn assign(
+        &mut self,
+        script: &mut Script,
+        dest: RegRef,
+        value: &Expr,
+        undefined: &[String],
+    ) {
         let mut read = BTreeSet::new();
         registers_read(value, &mut read);
         for index in read {
             self.term(script, index);
         }
         self.layer_facts(script, value);
-        // Each undefined value is any value, independently; an operation the
-        // solver does not model is one function of its arguments on both
-        // sides.
+        // Each undefined value is any value, independently unless given; an
+        // operation the solver does not model is one function of its
+        // arguments on both sides.
         let mut unmodeled = Vec::new();
         opaque(value, &mut unmodeled);
         let mut operands: Vec<(&Expr, String)> = Vec::new();
+        let mut given = undefined.iter();
         for node in unmodeled {
             let Expr::Apply { op, args } = node else {
                 unreachable!("an unmodeled operation is an application");
             };
             let term = if *op == crate::ir::Operation::Undefined {
-                script.havoc(BITS)
+                given.next().cloned().unwrap_or_else(|| script.havoc(BITS))
             } else {
                 let terms: Vec<String> = args
                     .iter()
@@ -248,6 +257,18 @@ pub(super) fn collect_loads<'a>(expr: &'a Expr, found: &mut Vec<(&'a Expr, u8)>)
     for child in crate::ir::visit::children(expr) {
         collect_loads(child, found);
     }
+}
+
+/// How many undefined values `expr` applies.
+pub(super) fn undefined_count(expr: &Expr) -> usize {
+    let mut found = Vec::new();
+    opaque(expr, &mut found);
+    found
+        .iter()
+        .filter(
+            |node| matches!(node, Expr::Apply { op, .. } if *op == crate::ir::Operation::Undefined),
+        )
+        .count()
 }
 
 /// Whether `expr` applies an operation the solver does not model.
