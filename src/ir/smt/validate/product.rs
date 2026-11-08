@@ -1546,14 +1546,12 @@ fn run(
                             convention,
                             ..
                         },
-                    ) if *convention != crate::ir::Convention::GoAbi0 => {
-                        convention.stack_arguments().map(|start| {
-                            (
-                                sp,
-                                start - convention.pushed_by_call() + 8 * args.len() as i64,
-                            )
-                        })
-                    }
+                    ) if !convention.go_assembly() => convention.stack_arguments().map(|start| {
+                        (
+                            sp,
+                            start - convention.pushed_by_call() + 8 * args.len() as i64,
+                        )
+                    }),
                     _ => None,
                 };
                 // What the callee may write of the frame starts at the stack

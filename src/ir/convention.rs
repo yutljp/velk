@@ -28,6 +28,9 @@ pub enum Convention {
     GoWriteBarrier,
     /// Go's assembly ABI on x86-64: arguments and results on the stack.
     GoAbi0,
+    /// Go's assembly ABI on `AArch64`: arguments and results on the stack,
+    /// past the slot at the stack pointer, which the call pushes nothing to.
+    GoAbi0Arm64,
 }
 
 /// What a function knows of its stack pointer on entry: it leaves
@@ -53,6 +56,7 @@ impl Convention {
             Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => (0, 4),
             Self::GoAmd64
             | Self::GoAbi0
+            | Self::GoAbi0Arm64
             | Self::GoWriteBarrier
             | Self::SyscallX86
             | Self::SyscallI386
@@ -90,8 +94,15 @@ impl Convention {
             Self::SyscallX86 => &[0, 7, 6, 2, 10, 8, 9],
             Self::SyscallI386 => &[0, 3, 1, 2, 6, 7, 5],
             Self::SyscallArm => &[8, 0, 1, 2, 3, 4, 5],
-            Self::GoWriteBarrier | Self::GoAbi0 => &[],
+            Self::GoWriteBarrier | Self::GoAbi0 | Self::GoAbi0Arm64 => &[],
         }
+    }
+
+    /// Whether the convention is Go's assembly ABI, which passes arguments
+    /// and results on the stack.
+    #[must_use]
+    pub fn go_assembly(self) -> bool {
+        matches!(self, Self::GoAbi0 | Self::GoAbi0Arm64)
     }
 
     /// Where the arguments past the registers start, from the stack pointer
@@ -104,7 +115,7 @@ impl Convention {
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
             Self::Aapcs64 | Self::Aapcs32 => Some(0),
-            Self::GoAbi0 | Self::GoAmd64 => Some(8),
+            Self::GoAbi0 | Self::GoAbi0Arm64 | Self::GoAmd64 => Some(8),
             Self::SyscallI386 | Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
         }
     }
@@ -118,7 +129,8 @@ impl Convention {
             | Self::Aapcs64
             | Self::SyscallI386
             | Self::SyscallX86
-            | Self::SyscallArm => 0,
+            | Self::SyscallArm
+            | Self::GoAbi0Arm64 => 0,
             Self::SysV | Self::Win64 | Self::GoAmd64 | Self::GoWriteBarrier | Self::GoAbi0 => 8,
         }
     }
@@ -141,7 +153,8 @@ impl Convention {
             | Self::SyscallX86
             | Self::SyscallArm
             | Self::GoWriteBarrier
-            | Self::GoAbi0 => &[],
+            | Self::GoAbi0
+            | Self::GoAbi0Arm64 => &[],
         }
     }
 
@@ -220,7 +233,8 @@ impl Convention {
             | Self::SyscallX86
             | Self::SyscallArm
             | Self::GoWriteBarrier
-            | Self::GoAbi0 => &[],
+            | Self::GoAbi0
+            | Self::GoAbi0Arm64 => &[],
         }
     }
 
@@ -241,6 +255,7 @@ impl Convention {
             Self::SyscallI386 | Self::SyscallX86 | Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
             Self::GoAbi0 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
+            Self::GoAbi0Arm64 => &[0, 1, 2, 3, 4, 5, 6, 7, 9],
         }
     }
 
@@ -263,7 +278,7 @@ impl Convention {
             Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => &[4],
             Self::GoAmd64 => &[4, 14, 48, 49],
             Self::Aapcs32 => &[13],
-            Self::Aapcs64 | Self::SyscallArm => &[31],
+            Self::Aapcs64 | Self::SyscallArm | Self::GoAbi0Arm64 => &[31],
             Self::SysV
             | Self::Win64
             | Self::SyscallI386
@@ -316,6 +331,15 @@ impl Convention {
             Self::SyscallX86 => &[0, 1, 11],
             Self::SyscallArm | Self::SyscallI386 => &[0],
             Self::GoWriteBarrier => &[11],
+            // Everything but the stack pointer: assembly may set the
+            // goroutine in x28 too.
+            Self::GoAbi0Arm64 => &[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+                45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+                66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86,
+                87, 88, 89, 90, 91, 92, 93, 94, 95,
+            ],
         }
     }
 }
@@ -340,7 +364,8 @@ impl CallKind {
     pub fn push_bytes(self, isa: crate::loader::Isa, convention: Convention) -> Option<i64> {
         use crate::loader::Isa;
         let syscall = match (isa, convention) {
-            (Isa::AArch64, Convention::Aapcs64) | (Isa::Arm32, Convention::Aapcs32) => false,
+            (Isa::AArch64, Convention::Aapcs64 | Convention::GoAbi0Arm64)
+            | (Isa::Arm32, Convention::Aapcs32) => false,
             (
                 Isa::I386,
                 Convention::Cdecl
@@ -401,6 +426,7 @@ mod tests {
             (Isa::X86_64, Convention::Win64, 40, 32),
             (Isa::X86_64, Convention::GoAbi0, 8, 0),
             (Isa::AArch64, Convention::Aapcs64, 0, 0),
+            (Isa::AArch64, Convention::GoAbi0Arm64, 8, 8),
         ] {
             assert_eq!(
                 CallKind::Invoke.stack_offset(isa, convention, entry),

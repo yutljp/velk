@@ -92,7 +92,9 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
         if ir.variadic
             || matches!(
                 ir.convention,
-                crate::ir::Convention::GoAmd64 | crate::ir::Convention::GoAbi0
+                crate::ir::Convention::GoAmd64
+                    | crate::ir::Convention::GoAbi0
+                    | crate::ir::Convention::GoAbi0Arm64
             )
             || ir.params.iter().any(|param| {
                 !param.ty.is_pointer() && param.ty.integer().is_none() && !param.ty.is_sse_float()

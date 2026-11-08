@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use super::Summaries;
-use crate::ir::{Block, Convention, Expr, Stmt};
+use crate::ir::{Block, Expr, Stmt};
 use crate::loader::Image;
 
 /// What a call to `target` under Go's assembly ABI leaves past its stack
@@ -11,10 +11,13 @@ use crate::loader::Image;
 /// them through, so the caller's loads of them read the call's results.
 pub(crate) fn stack_results(image: &Image, summaries: Summaries<'_>, target: u64) -> Vec<Stmt> {
     let convention = image.convention_of(target);
-    if convention != Convention::GoAbi0 {
+    if !convention.go_assembly() {
         return Vec::new();
     }
     let sp = crate::arch::stack_pointer(image.isa);
+    // The summary counts from the first argument; the caller's stack
+    // pointer is short of it by what the call pushes.
+    let first = convention.stack_arguments().unwrap_or(0) - convention.pushed_by_call();
     summaries(target)
         .stack_results
         .iter()
@@ -22,12 +25,12 @@ pub(crate) fn stack_results(image: &Image, summaries: Summaries<'_>, target: u64
         .zip(convention.results())
         .map(|((offset, width), register)| Stmt::Store {
             // Addressed as the caller's own loads of it are.
-            addr: match offset {
+            addr: match u64::from(*offset).wrapping_add(first as u64) {
                 0 => Expr::reg(sp, 64),
-                _ => Expr::bin(
+                offset => Expr::bin(
                     crate::ir::BinOp::Add,
                     Expr::reg(sp, 64),
-                    Expr::Const(u64::from(*offset)),
+                    Expr::Const(offset),
                 ),
             },
             value: Expr::reg(*register, 64),
@@ -66,13 +69,17 @@ pub(super) fn take_stack_results(blocks: &mut [Block], image: &Image, summaries:
             let stmts = &mut blocks[index].stmts;
             let Stmt::Call {
                 target: Some(target),
-                convention: Convention::GoAbi0,
+                convention,
                 ..
             } = stmts[at]
             else {
                 at += 1;
                 continue;
             };
+            if !convention.go_assembly() {
+                at += 1;
+                continue;
+            }
             let stored = stack_results(image, summaries, target).len();
             // Offset, width and register of each result.
             let fields: Vec<(u64, u8, u16)> = stmts

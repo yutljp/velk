@@ -1,5 +1,7 @@
 //! Go binary function-name recovery through the pclntab/moduledata tables.
 
+use std::collections::HashSet;
+
 use crate::loader::Image;
 
 mod stack;
@@ -141,12 +143,21 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
         .collect()
 }
 
-pub(crate) fn functions_with_args(image: &Image) -> Vec<(GoFunction, Option<u32>)> {
+/// The function table, the function data and names it points into, and
+/// the start of the text the entries are offsets into.
+struct Tables<'a> {
+    entries: &'a [u8],
+    data: &'a [u8],
+    names: &'a [u8],
+    text: u64,
+}
+
+fn tables(image: &Image) -> Option<Tables<'_>> {
     let Some(tab) = pclntab(image) else {
-        return Vec::new();
+        return None;
     };
     let Some(data) = moduledata(image, tab.vaddr) else {
-        return Vec::new();
+        return None;
     };
     let (
         Some((pclntable, pclntable_len)),
@@ -160,20 +171,38 @@ pub(crate) fn functions_with_args(image: &Image) -> Vec<(GoFunction, Option<u32>
         slice_at(image, data + MODULE_NAMES),
     )
     else {
-        return Vec::new();
+        return None;
     };
     if ftab_len <= 1 || ftab_len > 1_000_000 {
-        return Vec::new();
+        return None;
     }
 
     let Some(ftab_size) = ftab_len.checked_mul(8) else {
-        return Vec::new();
+        return None;
     };
     let (Some(entries), Some(data), Some(names)) = (
         super::image_reads::bounded_bytes(image, ftab_ptr, ftab_size),
         super::image_reads::bounded_bytes(image, pclntable, pclntable_len),
         super::image_reads::bounded_bytes(image, names, names_len),
     ) else {
+        return None;
+    };
+    Some(Tables {
+        entries,
+        data,
+        names,
+        text,
+    })
+}
+
+pub(crate) fn functions_with_args(image: &Image) -> Vec<(GoFunction, Option<u32>)> {
+    let Some(Tables {
+        entries,
+        data,
+        names,
+        text,
+    }) = tables(image)
+    else {
         return Vec::new();
     };
     let mut functions = Vec::new();
@@ -192,6 +221,43 @@ pub(crate) fn functions_with_args(image: &Image) -> Vec<(GoFunction, Option<u32>
         }
     });
     functions
+}
+
+/// Go's flag for a function written in assembly, in its table entry.
+const FUNC_FLAG_ASM: u8 = 4;
+
+/// The functions the table flags as written in assembly; none when its
+/// layout is not Go 1.20's or a later one's, or it flags none, as a table
+/// of a version without the flag would.
+pub(crate) fn assembly_functions(image: &Image) -> Option<HashSet<u64>> {
+    let tab = pclntab(image)?;
+    let magic = super::image_reads::bounded_bytes(image, tab.vaddr, 4)?;
+    if magic != [0xf1, 0xff, 0xff, 0xff].as_slice() {
+        return None;
+    }
+    let Tables {
+        entries,
+        data,
+        text,
+        ..
+    } = tables(image)?;
+    let count = (entries.len() / 8).saturating_sub(1).min(200_000);
+    let mut functions = HashSet::new();
+    for entry in entries.as_chunks::<8>().0.iter().take(count) {
+        let entry_off = u32::from_le_bytes(entry[..4].try_into().expect("four bytes"));
+        let func_off = i32::from_le_bytes(entry[4..].try_into().expect("four bytes"));
+        // entryOff, nameOff, args, deferreturn, pcsp, pcfile, pcln,
+        // npcdata, cuOffset and startLine take four bytes each, then
+        // funcID one: the flags follow.
+        let flags = usize::try_from(func_off)
+            .ok()
+            .and_then(|function| function.checked_add(41))
+            .and_then(|at| data.get(at));
+        if flags.is_some_and(|flags| flags & FUNC_FLAG_ASM != 0) {
+            functions.insert(text.wrapping_add(u64::from(entry_off)));
+        }
+    }
+    (!functions.is_empty()).then_some(functions)
 }
 
 fn walk_table(
@@ -239,6 +305,64 @@ fn walk_table(
 mod tests {
     use crate::ir::Convention;
     use crate::loader::{Image, Isa, Section};
+
+    #[test]
+    fn arm64_assembly_functions_that_reach_the_callers_frame_take_the_assembly_abi() {
+        let path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe_arm64");
+        let image = crate::loader::load(&path).unwrap();
+        let at = |name: &str| {
+            image
+                .functions
+                .values()
+                .find(|function| function.name.as_deref() == Some(name))
+                .map(|function| function.addr)
+                .unwrap()
+        };
+        // Arguments on the stack, a result on the stack, and Go's register
+        // ABI in assembly and in Go.
+        for (name, convention) in [
+            ("runtime.usleep", Convention::GoAbi0Arm64),
+            ("runtime.nanotime1", Convention::GoAbi0Arm64),
+            ("runtime.memmove", Convention::Aapcs64),
+            ("runtime.send", Convention::Aapcs64),
+        ] {
+            assert_eq!(image.convention_of(at(name)), convention, "{name}");
+        }
+        assert_eq!(
+            crate::analysis::summary::summary(&image, at("runtime.usleep")).stack,
+            1
+        );
+        let nanotime = at("runtime.nanotime1");
+        assert_eq!(
+            crate::analysis::summary::summary(&image, nanotime).stack_results[0],
+            (0, 8)
+        );
+        // runtime.send stores what nanotime1 returns on the stack.
+        let send = image.functions.get(&at("runtime.send")).unwrap();
+        let analysis = crate::analysis::analyze(&image, send, None).unwrap();
+        let stored = analysis.ir.blocks.iter().any(|block| {
+            let Some(call) = block.stmts.iter().position(|stmt| {
+                matches!(stmt, crate::ir::Stmt::Call { target: Some(target), .. } if *target == nanotime)
+            }) else {
+                return false;
+            };
+            let results: Vec<u16> = block.stmts[call]
+                .call_outputs()
+                .iter()
+                .map(|output| output.dest.index)
+                .collect();
+            block.stmts[call + 1..].iter().any(|stmt| {
+                let crate::ir::Stmt::Store { value, .. } = stmt else {
+                    return false;
+                };
+                let mut reads = std::collections::HashSet::new();
+                crate::ir::visit::collect_reads(value, &mut reads);
+                results.iter().any(|result| reads.contains(result))
+            })
+        });
+        assert!(stored);
+    }
 
     #[test]
     fn abi0_wrappers_initialize_fixed_registers_before_the_call() {

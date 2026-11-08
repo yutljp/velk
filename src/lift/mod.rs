@@ -338,6 +338,9 @@ fn lift_in_mode(
             };
             if mode == execution::Mode::Analysis {
                 aarch64::recover_atomic_loops(image, summaries, &mut blocks);
+                if image.go {
+                    take_stack_results(&mut blocks, image, summaries);
+                }
             }
             Ok(blocks)
         }
@@ -906,7 +909,7 @@ pub(crate) fn call(
     let mut args = arguments(kind, convention, image.isa, arity, stack);
     // Go's assembly ABI packs its arguments: the callee may read only the
     // low bytes of a slot.
-    if let (Convention::GoAbi0, Some(args), Some(summary)) = (convention, &mut args, summary) {
+    if let (true, Some(args), Some(summary)) = (convention.go_assembly(), &mut args, summary) {
         for (arg, read) in args.iter_mut().zip(summary.stack_widths) {
             if let Expr::Load { width, .. } = arg
                 && read != 0

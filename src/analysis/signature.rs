@@ -433,7 +433,10 @@ pub fn recover_with(
         .all(|register| params.iter().any(|param| param.index == *register));
     let frame = match (registers_full, isa) {
         (_, Isa::AArch64 | Isa::Arm32)
-            if matches!(convention, Convention::Aapcs64 | Convention::Aapcs32) =>
+            if matches!(
+                convention,
+                Convention::Aapcs64 | Convention::Aapcs32 | Convention::GoAbi0Arm64
+            ) =>
         {
             stack_arguments(blocks, landing_pads, isa, convention)
         }
