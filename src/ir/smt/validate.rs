@@ -209,7 +209,46 @@ pub(crate) fn pass<R>(
             let sp = crate::arch::stack_pointer(ir.isa);
             let private_frame =
                 (!crate::passes::memory::frame_addresses_escape(&before, sp)).then_some(sp);
-            let fixed_frame = crate::passes::memory::fixed_private_frame_blocks(&before, sp);
+            let exclusive = before.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                matches!(
+                    stmt,
+                    crate::ir::Stmt::Machine {
+                        instruction: crate::ir::MachineInstruction::ArmCacheZero
+                            | crate::ir::MachineInstruction::ArmExclusive { .. },
+                        ..
+                    }
+                )
+            });
+            // A function that never moves its stack pointer has it on entry
+            // everywhere, in a landing pad too; one that moves it is followed
+            // along its edges, on an architecture with 64-bit addresses and
+            // without unwinding.
+            let offsets = |blocks: &[crate::ir::Block]| {
+                let moved = blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| crate::ir::visit::statement_registers(stmt).0.contains(&sp));
+                if !moved {
+                    Some(
+                        blocks
+                            .iter()
+                            .map(|block| vec![Some(0); block.stmts.len()])
+                            .collect(),
+                    )
+                } else if crate::arch::pointer_bytes(ir.isa) == 8 && ir.landing_pads.is_empty() {
+                    product::stack_offsets(blocks, sp)
+                } else {
+                    None
+                }
+            };
+            let frames = (private_frame.is_some() && !exclusive)
+                .then(|| {
+                    Some(product::Frames {
+                        before: offsets(&before)?,
+                        after: offsets(&ir.blocks)?,
+                    })
+                })
+                .flatten();
             state.applications.push(product::Application {
                 site,
                 tag,
@@ -220,7 +259,7 @@ pub(crate) fn pass<R>(
                 narrow_stack: (crate::arch::pointer_bytes(ir.isa) == 4)
                     .then(|| crate::arch::stack_pointer(ir.isa)),
                 private_frame,
-                fixed_frame,
+                frames,
                 convention: ir.convention,
                 entry_alignment: ir
                     .entry_alignment

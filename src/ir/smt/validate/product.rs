@@ -74,7 +74,98 @@ use std::rc::Rc;
 
 use super::{Script, Strategy};
 use crate::ir::smt::constant;
-use crate::ir::{Block, Expr};
+use crate::ir::{Block, Expr, Stmt};
+
+/// How far each statement of each side finds the stack pointer from its
+/// value on entry; none in a block no edge from the entry reaches.
+#[derive(Debug, Clone)]
+pub struct Frames {
+    pub before: Vec<Vec<Option<i64>>>,
+    pub after: Vec<Vec<Option<i64>>>,
+}
+
+/// How far the stack pointer `sp` is from its value on entry before each
+/// statement of `blocks`, along the edges the product follows; none when a
+/// statement moves it other than by a constant or two edges bring it to a
+/// block at different places.
+pub(crate) fn stack_offsets(blocks: &[Block], sp: u16) -> Option<Vec<Vec<Option<i64>>>> {
+    let index: BTreeMap<u64, usize> = blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    let mut entries: Vec<Option<i64>> = vec![None; blocks.len()];
+    let mut offsets: Vec<Vec<Option<i64>>> = blocks
+        .iter()
+        .map(|block| vec![None; block.stmts.len()])
+        .collect();
+    let mut pending = Vec::new();
+    if !blocks.is_empty() {
+        entries[0] = Some(0);
+        pending.push(0);
+    }
+    while let Some(position) = pending.pop() {
+        let mut offset = entries[position]?;
+        let mut targets = Vec::new();
+        let mut ended = false;
+        for (number, stmt) in blocks[position].stmts.iter().enumerate() {
+            offsets[position][number] = Some(offset);
+            match stmt {
+                Stmt::Assign { dest, value, .. } if dest.index == sp => {
+                    let Expr::Bin { op, lhs, rhs } = value else {
+                        return None;
+                    };
+                    let (Expr::Reg { index, width: 64 }, Expr::Const(constant)) = (&**lhs, &**rhs)
+                    else {
+                        return None;
+                    };
+                    if dest.width != 64 || *index != sp {
+                        return None;
+                    }
+                    offset = match op {
+                        crate::ir::BinOp::Add => offset.wrapping_add(*constant as i64),
+                        crate::ir::BinOp::Sub => offset.wrapping_sub(*constant as i64),
+                        _ => return None,
+                    };
+                }
+                _ if crate::ir::visit::statement_registers(stmt).0.contains(&sp) => return None,
+                Stmt::Brif { target, .. } => targets.push((*target, offset)),
+                Stmt::Br { target, .. } => {
+                    targets.extend(target.map(|target| (target, offset)));
+                    ended = true;
+                }
+                Stmt::Switch { cases, default, .. } => {
+                    targets.extend(cases.iter().map(|(_, target)| (*target, offset)));
+                    targets.extend(default.map(|target| (target, offset)));
+                    ended = true;
+                }
+                Stmt::Ret { .. } | Stmt::Trap { .. } | Stmt::BrIndirect { .. } => ended = true,
+                _ => {}
+            }
+            if ended {
+                break;
+            }
+        }
+        let mut next: Vec<(usize, i64)> = targets
+            .into_iter()
+            .filter_map(|(target, offset)| Some((*index.get(&target)?, offset)))
+            .collect();
+        if !ended && position + 1 < blocks.len() {
+            next.push((position + 1, offset));
+        }
+        for (target, offset) in next {
+            match entries[target] {
+                Some(known) if known != offset => return None,
+                Some(_) => {}
+                None => {
+                    entries[target] = Some(offset);
+                    pending.push(target);
+                }
+            }
+        }
+    }
+    Some(offsets)
+}
 
 /// A pass application recorded for the whole-function check.
 #[derive(Debug, Clone)]
@@ -94,10 +185,11 @@ pub struct Application {
     /// The stack pointer, when the function hands out no address of its
     /// frame.
     pub private_frame: Option<u16>,
-    /// Whether, besides, the function never moves its stack pointer and no
-    /// statement of it reaches memory in ways atomics cannot be ordered
-    /// around, so no atomic or barrier writes its frame.
-    pub fixed_frame: bool,
+    /// Where, besides, each side's stack pointer is before each statement,
+    /// when only constants move it and no statement of the function
+    /// reaches memory in ways atomics cannot be ordered around, so no
+    /// atomic or barrier writes the frame below its stack pointer on entry.
+    pub frames: Option<Frames>,
     /// The function's calling convention.
     pub convention: crate::ir::Convention,
     /// The stack pointer and what the function knows of it on entry.

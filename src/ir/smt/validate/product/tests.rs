@@ -70,7 +70,7 @@ fn application(before: Vec<Block>, after: Vec<Block>) -> Application {
         landing_pads: false,
         narrow_stack: None,
         private_frame: None,
-        fixed_frame: false,
+        frames: None,
         convention: crate::ir::Convention::SysV,
         entry_alignment: None,
         returned: Some(64),
@@ -105,7 +105,7 @@ fn assuming(
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
-            fixed_frame: false,
+            frames: None,
             convention: crate::ir::Convention::SysV,
             entry_alignment: None,
             returned,
@@ -134,7 +134,7 @@ fn aligned(
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
-            fixed_frame: false,
+            frames: None,
             convention: crate::ir::Convention::SysV,
             entry_alignment: alignment.map(|alignment| (4, alignment)),
             returned: Some(64),
@@ -544,10 +544,11 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(not_proved(&go(Convention::SysV, false)));
     assert!(not_proved(&go(Convention::GoAmd64, true)));
 
-    // A frame slot read back past an atomic, which writes nothing below the
-    // stack pointer of a function that never moves it.
-    let atomic = |fixed: bool| {
-        let slot = raw_bin(BinOp::Add, r(4), Expr::Const(-16i64 as u64));
+    // A frame slot read back past an atomic, in the next block, which
+    // writes nothing below the stack pointer on entry of a function that
+    // moves it only by constants: whether it moves it first, and the slot.
+    let atomic = |moved: Option<Expr>, slot: i64, frames: bool| {
+        let slot = plus(4, slot);
         let store = Stmt::Store {
             at: None,
             addr: slot.clone(),
@@ -567,34 +568,70 @@ fn functions_are_compared_across_blocks_and_loops() {
                 width: 64,
             }],
         };
+        let first: Vec<Stmt> = moved
+            .into_iter()
+            .map(|value| assign(4, value))
+            .chain([store, exchange, br(1)])
+            .collect();
+        let load = Expr::Load {
+            addr: Box::new(slot),
+            width: 8,
+            signed: false,
+        };
         let mut application = application(
-            vec![block(
-                0,
-                vec![
-                    store.clone(),
-                    exchange.clone(),
-                    assign(
-                        2,
-                        Expr::Load {
-                            addr: Box::new(slot),
-                            width: 8,
-                            signed: false,
-                        },
-                    ),
-                    ret(r(2)),
-                ],
-            )],
-            vec![block(
-                0,
-                vec![store, exchange, assign(2, Expr::Const(7)), ret(r(2))],
-            )],
+            vec![
+                block(0, first.clone()),
+                block(1, vec![assign(2, load), ret(r(2))]),
+            ],
+            vec![
+                block(0, first),
+                block(1, vec![assign(2, Expr::Const(7)), ret(r(2))]),
+            ],
         );
         application.private_frame = Some(4);
-        application.fixed_frame = fixed;
+        application.frames = frames.then(|| Frames {
+            before: stack_offsets(&application.before, 4).expect("offsets"),
+            after: stack_offsets(&application.after, 4).expect("offsets"),
+        });
         check(&application, 50_000_000, 1_000_000_000)
     };
-    assert_eq!(atomic(true), Verdict::Proved);
-    assert!(not_proved(&atomic(false)));
+    assert_eq!(atomic(None, -16, true), Verdict::Proved);
+    assert!(not_proved(&atomic(None, -16, false)));
+    assert_eq!(atomic(Some(plus(4, -32)), 16, true), Verdict::Proved);
+    assert!(not_proved(&atomic(Some(plus(4, -32)), 32, true)));
+    let at = |blocks: &[Block]| stack_offsets(blocks, 4);
+    assert_eq!(
+        at(&[
+            block(0, vec![assign(4, plus(4, -32)), br(2)]),
+            block(1, vec![ret(r(0))]),
+            block(2, vec![assign(4, plus(4, 32)), ret(r(0))]),
+        ]),
+        Some(vec![
+            vec![Some(0), Some(-32)],
+            vec![None],
+            vec![Some(-32), Some(0)]
+        ])
+    );
+    assert_eq!(at(&[block(0, vec![assign(4, r(5)), ret(r(0))])]), None);
+    assert_eq!(
+        at(&[
+            block(
+                0,
+                vec![
+                    Stmt::Brif {
+                        at: None,
+                        cond: Cond::Eq,
+                        lhs: r(0),
+                        rhs: Expr::Const(0),
+                        target: 2,
+                    },
+                    assign(4, plus(4, -8)),
+                ],
+            ),
+            block(2, vec![ret(r(0))]),
+        ]),
+        None
+    );
 
     // A mask a branch in another block makes redundant: a range the
     // equations cannot state, found from the Horn clauses; and the same
@@ -768,7 +805,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 landing_pads: false,
                 narrow_stack: None,
                 private_frame: None,
-                fixed_frame: false,
+                frames: None,
                 convention: crate::ir::Convention::SysV,
                 entry_alignment: None,
                 returned: Some(64),
@@ -807,7 +844,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 landing_pads: false,
                 narrow_stack: narrow.then_some(13),
                 private_frame: None,
-                fixed_frame: false,
+                frames: None,
                 convention: crate::ir::Convention::SysV,
                 entry_alignment: None,
                 returned: Some(64),
@@ -842,7 +879,7 @@ fn functions_are_compared_across_blocks_and_loops() {
             landing_pads: false,
             narrow_stack: None,
             private_frame: None,
-            fixed_frame: false,
+            frames: None,
             convention: crate::ir::Convention::SysV,
             entry_alignment: None,
             returned: Some(64),
