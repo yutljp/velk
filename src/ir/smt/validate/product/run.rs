@@ -586,11 +586,26 @@ pub(super) fn run(
                     after.set(*output, &term);
                 }
                 let memory = script.havoc(MEMORY);
+                // The frame is kept below where each side's stack pointer
+                // was on entry.
                 if let Some(sp) = application.private_frame
-                    && application.fixed_frame
+                    && let Some(frames) = &application.frames
+                    && let (Some(old_offset), Some(new_offset)) =
+                        (frames.before[index][at_old], frames.after[index][at_new])
                     && crate::passes::memory::memory_ordering_barrier(old_stmt)
                 {
-                    let stack = (before.term(&mut script, sp), after.term(&mut script, sp));
+                    let stack = (
+                        format!(
+                            "(bvsub {} {})",
+                            before.term(&mut script, sp),
+                            constant(old_offset as u64)
+                        ),
+                        format!(
+                            "(bvsub {} {})",
+                            after.term(&mut script, sp),
+                            constant(new_offset as u64)
+                        ),
+                    );
                     before.facts.layers.borrow_mut().push(Layer {
                         memory: memory.clone(),
                         inner: before.memory.clone(),

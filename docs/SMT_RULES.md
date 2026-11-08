@@ -364,10 +364,13 @@ The check assumes the following:
   register arguments to the bottom of the caller's frame, where the caller
   keeps nothing it reads after the call, as Go's compiler lays out frames. Only
   the arguments passed on the stack count toward the bytes the callee may write.
-- When, besides, the function never changes its stack pointer, an atomic or a
-  barrier writes nothing below the stack pointer that a load from the stack
-  pointer plus a constant reads: no other thread holds an address in a frame
-  that hands none out.
+- When, besides, the function moves its stack pointer only by adding
+  constants, an atomic or a barrier writes nothing below the stack pointer's
+  value on entry that a load from the stack pointer plus a constant reads: no
+  other thread holds an address in a frame that hands none out. How far the
+  stack pointer is from its value on entry is followed along the edges from the
+  entry, on each side; when two edges bring it to a block at different places,
+  or the function unwinds or has 32-bit addresses and moves it, nothing is kept.
 - The stack pointer starts aligned as the function's entry alignment says: what
   its calling convention promises, or 16 bytes at an x86-64 ELF executable's
   entry point. Go's conventions and the system-call conventions promise nothing.
