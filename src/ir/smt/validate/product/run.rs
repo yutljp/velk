@@ -517,7 +517,7 @@ pub(super) fn run(
                             convention,
                             ..
                         },
-                    ) if *convention != crate::ir::Convention::GoAbi0 => {
+                    ) if !convention.go_assembly() => {
                         // A callee of Go's register convention spills its
                         // register arguments to the bottom of a caller of
                         // that convention's frame, where the caller keeps
