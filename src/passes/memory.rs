@@ -104,7 +104,7 @@ fn forward_stored_values_unchecked(ir: &mut FunctionIr) {
                     // results past its arguments, how far no declaration
                     // says.
                     let spilled = match args {
-                        _ if *convention == crate::ir::Convention::GoAbi0 => i64::MAX,
+                        _ if convention.go_assembly() => i64::MAX,
                         Some(_) if spills && *convention == crate::ir::Convention::GoAmd64 => 0,
                         Some(args) if spills => 8 * args.len() as i64,
                         None if spills => i64::MAX,

@@ -36,7 +36,7 @@ pub(super) fn stack_arguments(
     let slot_bytes = i64::from(crate::arch::pointer_bytes(isa));
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
-    let results = convention == Convention::GoAbi0;
+    let results = convention.go_assembly();
     let incoming = matches!(
         convention,
         Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64

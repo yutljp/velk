@@ -1140,7 +1140,7 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         | Convention::SyscallX86
         | Convention::SyscallArm
         | Convention::GoWriteBarrier => return,
-        Convention::GoAbi0 => 8,
+        Convention::GoAbi0 | Convention::GoAbi0Arm64 => 8,
     };
     let slot_bytes = u64::from(crate::arch::pointer_bytes(ir.isa));
     let mut params = Vec::new();

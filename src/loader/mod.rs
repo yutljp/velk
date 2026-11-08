@@ -389,13 +389,17 @@ impl Image {
             return i386::properties(self, addr).0;
         }
         if self.go
-            && self.isa == Isa::X86_64
+            && matches!(self.isa, Isa::X86_64 | Isa::AArch64)
             && self
                 .go_abi0
                 .get_or_init(|| self.assembly_callees())
                 .contains(&addr)
         {
-            return crate::ir::Convention::GoAbi0;
+            return if self.isa == Isa::AArch64 {
+                crate::ir::Convention::GoAbi0Arm64
+            } else {
+                crate::ir::Convention::GoAbi0
+            };
         }
         crate::ir::Convention::of(self.isa, self.format, self.go)
     }
@@ -410,7 +414,12 @@ impl Image {
 
     /// The targets of the direct calls `xorps xmm15, xmm15` follows: Go
     /// zeroes xmm15 again after calling into the assembly ABI, which uses it.
+    /// On `AArch64`, the functions written in assembly that reach their
+    /// caller's frame.
     fn assembly_callees(&self) -> std::collections::HashSet<u64> {
+        if self.isa == Isa::AArch64 {
+            return self.arm64_assembly_callees();
+        }
         let mut callees = std::collections::HashSet::new();
         // ABI0-to-register wrappers initialize the fixed registers before
         // their call, rather than restoring them after an assembly call.
@@ -471,6 +480,69 @@ impl Image {
             }
         }
         callees
+    }
+
+    /// The functions the pclntab flags as written in assembly whose code
+    /// loads or stores past the stack pointer it found on entry: arguments
+    /// and results, which Go's assembly ABI passes on the stack. The others,
+    /// such as `memmove`, take Go's register ABI, which leaves the caller's
+    /// frame to the caller, or take nothing.
+    fn arm64_assembly_callees(&self) -> std::collections::HashSet<u64> {
+        use yaxpeax_arch::Decoder;
+        use yaxpeax_arm::armv8::a64::{InstDecoder, Opcode, Operand};
+        let Some(assembly) = go::assembly_functions(self) else {
+            return std::collections::HashSet::new();
+        };
+        let decoder = InstDecoder::default();
+        assembly
+            .into_iter()
+            .filter(|addr| {
+                let Some(size) = self.functions.get(addr).and_then(|function| function.size) else {
+                    return false;
+                };
+                let Some(bytes) = self.read_vaddr(*addr, size) else {
+                    return false;
+                };
+                // How far the code moved the stack pointer down, counting
+                // each move down and none back up: code after a return may
+                // still run in the frame the return left.
+                let mut frame: i64 = 0;
+                for word in bytes.as_chunks::<4>().0 {
+                    let mut reader = yaxpeax_arch::U8Reader::new(word);
+                    let Ok(instruction) = decoder.decode(&mut reader) else {
+                        continue;
+                    };
+                    let operands = &instruction.operands;
+                    if instruction.opcode == Opcode::SUB
+                        && matches!(operands[0], Operand::RegisterOrSP(_, 31))
+                        && matches!(operands[1], Operand::RegisterOrSP(_, 31))
+                    {
+                        match operands[2] {
+                            Operand::Immediate(value) => frame += i64::from(value),
+                            Operand::ImmShift(value, shift) => {
+                                frame += i64::from(value) << shift;
+                            }
+                            _ => {}
+                        }
+                        continue;
+                    }
+                    for operand in operands {
+                        match *operand {
+                            Operand::RegPreIndex(31, offset, true) if offset < 0 => {
+                                frame -= i64::from(offset);
+                            }
+                            Operand::RegPreIndex(31, offset, false)
+                                if i64::from(offset) >= frame + 8 =>
+                            {
+                                return true;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                false
+            })
+            .collect()
     }
 
     /// An image holding only little-endian `code`, mapped executable at

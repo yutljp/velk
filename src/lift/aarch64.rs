@@ -650,6 +650,11 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
                 lifter.stmts.push(Stmt::Trap { at: None });
                 return true;
             }
+            if let Some(target) = target {
+                lifter
+                    .stmts
+                    .extend(super::stack_results(lifter.image, lifter.summaries, target));
+            }
         }
         O::BRK | O::UDF => {
             lifter.stmts.push(Stmt::Trap { at: None });
