@@ -492,16 +492,17 @@ fn functions_are_compared_across_blocks_and_loops() {
     // a caller of that convention keeps clear of what it reads afterwards;
     // and a slot reached through a register that holds a frame address,
     // which a kept byte is not read through.
-    let go = |caller: Convention, through: bool| {
-        let slot = raw_bin(BinOp::Add, r(4), Expr::Const(16));
+    let go = |caller: Convention, callee: Convention, count: usize, through: bool| {
+        let sp = if callee == Convention::Aapcs64 { 31 } else { 4 };
+        let slot = raw_bin(BinOp::Add, r(sp), Expr::Const(16));
         let address = if through { r(5) } else { slot.clone() };
         let mut calling = call();
         if let Stmt::Call {
             args, convention, ..
         } = &mut calling
         {
-            *args = Some(vec![Expr::Const(0); 3]);
-            *convention = Convention::GoAmd64;
+            *args = Some(vec![Expr::Const(0); count]);
+            *convention = callee;
         }
         let store = Stmt::Store {
             at: None,
@@ -536,13 +537,20 @@ fn functions_are_compared_across_blocks_and_loops() {
                 ],
             )],
         );
-        application.private_frame = Some(4);
+        application.private_frame = Some(sp);
         application.convention = caller;
         check(&application, 50_000_000, 1_000_000_000)
     };
-    assert_eq!(go(Convention::GoAmd64, false), Verdict::Proved);
-    assert!(not_proved(&go(Convention::SysV, false)));
-    assert!(not_proved(&go(Convention::GoAmd64, true)));
+    use Convention::{Aapcs64, GoAmd64, SysV};
+    assert_eq!(go(GoAmd64, GoAmd64, 3, false), Verdict::Proved);
+    assert!(not_proved(&go(SysV, GoAmd64, 3, false)));
+    assert!(not_proved(&go(GoAmd64, GoAmd64, 3, true)));
+    // On AArch64 the stack carries the ninth argument on, from the stack
+    // pointer: ten leave the slot at 16 alone, eleven reach it.
+    assert_eq!(go(Aapcs64, Aapcs64, 3, false), Verdict::Proved);
+    assert_eq!(go(Aapcs64, Aapcs64, 10, false), Verdict::Proved);
+    assert!(not_proved(&go(Aapcs64, Aapcs64, 11, false)));
+    assert!(not_proved(&go(SysV, Aapcs64, 3, false)));
 
     // A frame slot read back past an atomic, in the next block, which
     // writes nothing below the stack pointer on entry of a function that
@@ -599,6 +607,54 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(not_proved(&atomic(None, -16, false)));
     assert_eq!(atomic(Some(plus(4, -32)), 16, true), Verdict::Proved);
     assert!(not_proved(&atomic(Some(plus(4, -32)), 32, true)));
+
+    // A call of unknown arguments between two functions of the AArch64
+    // standard, after the function moved its stack pointer down by 48:
+    // whether a slot at `slot` past it, at or past where the stack pointer
+    // was on entry, survives the call.
+    let unknown = |slot: u64, caller: Convention, frames: bool| {
+        let sp = 31;
+        let address = raw_bin(BinOp::Add, r(sp), Expr::Const(slot));
+        let mut calling = call();
+        if let Stmt::Call {
+            args, convention, ..
+        } = &mut calling
+        {
+            *args = None;
+            *convention = Convention::Aapcs64;
+        }
+        let body = |returned: Expr| {
+            vec![block(
+                0,
+                vec![
+                    assign(sp, plus(sp, -48)),
+                    store(address.clone(), r(19)),
+                    calling.clone(),
+                    assign(19, returned),
+                    assign(sp, plus(sp, 48)),
+                    ret(r(19)),
+                ],
+            )]
+        };
+        let load = Expr::Load {
+            addr: Box::new(address.clone()),
+            width: 8,
+            signed: false,
+        };
+        let mut application = application(body(load), body(r(19)));
+        application.private_frame = Some(sp);
+        application.convention = caller;
+        application.frames = frames.then(|| Frames {
+            before: stack_offsets(&application.before, sp).expect("offsets"),
+            after: stack_offsets(&application.after, sp).expect("offsets"),
+        });
+        check(&application, 50_000_000, 1_000_000_000)
+    };
+    assert_eq!(unknown(56, Convention::Aapcs64, true), Verdict::Proved);
+    assert_eq!(unknown(48, Convention::Aapcs64, true), Verdict::Proved);
+    assert!(not_proved(&unknown(40, Convention::Aapcs64, true)));
+    assert!(not_proved(&unknown(56, Convention::Aapcs64, false)));
+    assert!(not_proved(&unknown(56, Convention::SysV, true)));
     let at = |blocks: &[Block]| stack_offsets(blocks, 4);
     assert_eq!(
         at(&[
