@@ -991,6 +991,15 @@ fn compute(
     ) && crate::lift::pairs32::types(image, addr)
         .is_some_and(|(_, ret)| crate::lift::pairs32::wide(&ret));
     let runtime = super::go_types::runtime(image, addr);
+    // Go's function table gives the bytes of a function's arguments, among
+    // them a spill slot of at least one byte for each argument a register
+    // passes: no more registers carry arguments than that.
+    let argument_bytes = image
+        .go_argument_sizes
+        .get()
+        .filter(|_| image.go)
+        .and_then(|sizes| sizes.get(&addr))
+        .map_or(usize::MAX, |&bytes| bytes as usize);
     let summary = Summary {
         promoted_parameters: (!image.go).then(|| {
             signature.params.iter().any(|param| crate::render::promoted_parameter(&param.ty))
@@ -1002,14 +1011,17 @@ fn compute(
                     })
                 })
         }),
-        arity: Some(if let Some(prototype) = runtime {
-            prototype.fixed()
-        } else if declared_no_arguments {
-            0
-        } else {
-            count(convention.arguments())
-        }),
-        floats: Some(count(convention.float_arguments())),
+        arity: Some(
+            if let Some(prototype) = runtime {
+                prototype.fixed()
+            } else if declared_no_arguments {
+                0
+            } else {
+                count(convention.arguments())
+            }
+            .min(argument_bytes),
+        ),
+        floats: Some(count(convention.float_arguments()).min(argument_bytes)),
         inputs: if runtime.is_some() {
             None
         } else {

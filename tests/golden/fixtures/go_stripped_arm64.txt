@@ -1,4 +1,4 @@
-# go_stripped_arm64: elf aarch64 0x75830, 1269 functions, 0 lift failures, 8 unsupported, 72 gotos
+# go_stripped_arm64: elf aarch64 0x75830, 1269 functions, 0 lift failures, 8 unsupported, 70 gotos
 0x11000 144 internal/abi.Kind.String pclntab
 0x11090 192 internal/abi.Name.IsBlank pclntab
 0x11150 208 internal/abi.Name.Name pclntab
@@ -1348,18 +1348,18 @@ fn main.twice @ 0x77430 (size 64)
 == 0x77470 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x77470 */
-void main_main(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t v3;
+void main_main(void) {
+    uint64_t v5;
 
-    int32_t v1 = *(uint64_t *)(v3 + 0x10);
-    int64_t v2 = main_twice(21, a1, a2);
+    int32_t v1 = *(uint64_t *)(v5 + 0x10);
+    int64_t v2 = main_twice(21);
     runtime_printlock();
     runtime_printint(v2);
     runtime_printnl();
     runtime_printunlock();
 }
 -- signature
-void (int64_t a0, int64_t a1, int64_t a2)
+void ()
 -- references
 
 -- ir
@@ -1368,7 +1368,7 @@ fn main.main @ 0x77470 (size 80)
     v1 = load64((x28 + #0x10))
     br 0x7747c
   blk1 @ 0x7747c:
-    v2:x0, x1 = call 0x77430(#0x15, x1, x2)
+    v2:x0, x1 = call 0x77430(#0x15)
     x0, x1, d0, d1 = call 0x40340()
     x0, x1, d0, d1 = call 0x409d0(v2)
     x0, x1, d0, d1 = call 0x40570()
