@@ -83,8 +83,7 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             let new: Vec<&Stmt> = new.stmts.iter().filter(|stmt| observable(stmt)).collect();
             old.into_iter().zip(new).collect()
         };
-        let mut written = (BTreeSet::new(), BTreeSet::new());
-        let mut stored = (false, false);
+        let mut written = (Written::default(), Written::default());
         for (old_stmt, new_stmt) in paired {
             // Two assignments at one place may assign different registers,
             // as a renaming does: the registers may then correspond too.
@@ -102,19 +101,15 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             };
             if assignments || shape(old_stmt) == shape(new_stmt) {
                 for (a, b) in expressions(old_stmt).into_iter().zip(expressions(new_stmt)) {
-                    differences(a, b, &written, stored, &mut |pair| {
+                    differences(a, b, &written, &mut |pair| {
                         if seen.insert(format!("{pair:?}")) {
                             found.push(pair);
                         }
                     });
                 }
             }
-            for (stmt, written, stored) in [
-                (old_stmt, &mut written.0, &mut stored.0),
-                (new_stmt, &mut written.1, &mut stored.1),
-            ] {
-                writes(stmt, written, stored);
-            }
+            written.0.record(old_stmt);
+            written.1.record(new_stmt);
         }
     }
     // Registers a copy or a renaming joins, on the two sides.
@@ -267,41 +262,68 @@ pub(super) fn kept(value: Expr, width: u8) -> Expr {
     }
 }
 
-pub(super) fn writes(stmt: &Stmt, written: &mut BTreeSet<u16>, stored: &mut bool) {
-    match stmt {
-        Stmt::Assign { dest, .. } => {
-            written.insert(dest.index);
+/// What one side's statements have changed so far in a block.
+#[derive(Default)]
+pub(super) struct Written {
+    registers: BTreeSet<u16>,
+    /// The address and width of each store.
+    stores: Vec<(Expr, u8)>,
+    /// Whether a call or a machine statement may have written any memory.
+    memory: bool,
+}
+
+impl Written {
+    fn record(&mut self, stmt: &Stmt) {
+        match stmt {
+            Stmt::Assign { dest, .. } => {
+                self.registers.insert(dest.index);
+            }
+            Stmt::Store { addr, width, .. } => self.stores.push((addr.clone(), *width)),
+            Stmt::Call { .. } => {
+                self.registers.extend(stmt.call_clobbers());
+                self.registers
+                    .extend(stmt.call_outputs().iter().map(|output| output.dest.index));
+                self.memory = true;
+            }
+            Stmt::Machine { outputs, .. } => {
+                self.registers
+                    .extend(outputs.iter().map(|output| output.index));
+                self.memory = true;
+            }
+            _ => {}
         }
-        Stmt::Store { .. } => *stored = true,
-        Stmt::Call { .. } => {
-            written.extend(stmt.call_clobbers());
-            written.extend(stmt.call_outputs().iter().map(|output| output.dest.index));
-            *stored = true;
-        }
-        Stmt::Machine { outputs, .. } => {
-            written.extend(outputs.iter().map(|output| output.index));
-            *stored = true;
-        }
-        _ => {}
+    }
+
+    /// Whether `expr` still has the value it had at the block's entry: it
+    /// reads no register written since, and each load reads bytes no store
+    /// since wrote. The registers of the addresses are unwritten, so a load
+    /// and a store at constant offsets from one base compare by offset.
+    fn keeps(&self, expr: &Expr) -> bool {
+        let mut read = BTreeSet::new();
+        registers_read(expr, &mut read);
+        read.is_disjoint(&self.registers)
+            && (!loads(expr)
+                || (!self.memory
+                    && self.stores.iter().all(|(addr, width)| {
+                        crate::passes::memory::loads_avoid(expr, addr, *width)
+                    })))
     }
 }
 
 pub(super) fn differences(
     old: &Expr,
     new: &Expr,
-    written: &(BTreeSet<u16>, BTreeSet<u16>),
-    stored: (bool, bool),
+    written: &(Written, Written),
     found: &mut impl FnMut(Candidate),
 ) {
     if old == new {
         return;
     }
-    let entry = |expr: &Expr, written: &BTreeSet<u16>, stored: bool| {
-        let mut read = BTreeSet::new();
-        registers_read(expr, &mut read);
-        read.is_disjoint(written) && !(stored && loads(expr)) && unmodeled(expr).is_none()
-    };
-    if entry(old, &written.0, stored.0) && entry(new, &written.1, stored.1) {
+    if written.0.keeps(old)
+        && written.1.keeps(new)
+        && unmodeled(old).is_none()
+        && unmodeled(new).is_none()
+    {
         found((old.clone(), new.clone()));
     }
     let (old_children, new_children) = (
@@ -312,7 +334,7 @@ pub(super) fn differences(
         && old_children.len() == new_children.len()
     {
         for (a, b) in old_children.into_iter().zip(new_children) {
-            differences(a, b, written, stored, found);
+            differences(a, b, written, found);
         }
     }
 }
