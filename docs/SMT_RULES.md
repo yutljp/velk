@@ -294,8 +294,12 @@ time, is decompiled again and checked as a whole:
   be defined there too.
 - Each block is checked from entry states that inferred invariants relate:
   equations between an expression of each side that every edge keeps
-  (Houdini). The candidates come from where paired statements differ, from
-  assignments one side lacks, and from registers a copy or a renaming joins, at
+  (Houdini). The candidates come from where paired statements differ, when
+  what the expressions read still holds what the block entered with: no
+  register they read was assigned or changed before them in the block, and,
+  when they load, no call or machine statement came before them and each load
+  reads other bytes than every earlier store in the block, at another
+  constant offset from the same base. They also come from assignments one side lacks, and from registers a copy or a renaming joins, at
   every width they are read, written, stored or masked at, and at the low bits
   those widths need of what a register is computed from. The candidates of an
   edge are asked about together, with word-level queries, then over integers

@@ -953,6 +953,32 @@ fn narrow_stores_and_masks_suggest_equations_of_their_bits() {
 }
 
 #[test]
+fn a_load_after_stores_to_other_bytes_suggests_an_equation_at_the_entry() {
+    let load = |addr: Expr| Expr::Load {
+        addr: Box::new(addr),
+        width: 8,
+        signed: false,
+    };
+    // The block stores, then returns what one side loads and the other
+    // side holds in a register.
+    let proposed = |first: Stmt| {
+        let blocks = |returned: Expr| {
+            vec![block(
+                0,
+                vec![first.clone(), store(plus(4, 16), r(1)), ret(returned)],
+            )]
+        };
+        let found = candidates(&application(blocks(load(plus(4, 8))), blocks(r(0))));
+        found.contains(&(load(plus(4, 8)), r(0)))
+    };
+    assert!(proposed(store(plus(4, 0), r(2))));
+    assert!(!proposed(store(plus(4, 12), r(2))));
+    assert!(!proposed(store(r(5), r(2))));
+    assert!(!proposed(call()));
+    assert!(!proposed(assign(4, plus(4, -16))));
+}
+
+#[test]
 fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
     if Command::new("z3").arg("-version").output().is_err() {
         eprintln!("SKIP solver replies: z3 unavailable");
