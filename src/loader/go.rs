@@ -343,6 +343,10 @@ mod tests {
         assert!(changes_g("runtime.setg"));
         assert!(!changes_g("runtime.usleep"));
         assert!(!changes_g("runtime.systemstack"));
+        // The function table gives bootstrapRand no argument bytes: calls
+        // pass it nothing, whatever registers its body reads.
+        let random = crate::analysis::summary::summary(&image, at("runtime.bootstrapRand"));
+        assert_eq!((random.arity, random.floats), (Some(0), Some(0)));
         let nanotime = at("runtime.nanotime1");
         assert_eq!(
             crate::analysis::summary::summary(&image, nanotime).stack_results[0],
