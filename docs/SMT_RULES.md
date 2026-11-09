@@ -302,7 +302,9 @@ time, is decompiled again and checked as a whole:
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
   is then not proved and a query was left undecided are single candidates asked
-  about with bounds propagation too. The inference first runs with a tenth of
+  about with bounds propagation too. Once bounds propagation leaves sixteen
+  queries in a row undecided, it is asked no more in that inference: on some
+  functions it decided nothing for hours. The inference first runs with a tenth of
   the solver limits; only an application it leaves unproved is checked again
   with the whole limits, so the many queries undecided either way, each group
   of them asked again in halves, cost a tenth as much.

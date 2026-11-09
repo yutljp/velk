@@ -30,8 +30,9 @@ const RLIMIT: u64 = 50_000_000;
 const SLOW_SECONDS: f64 = 5.0;
 /// Statement checks taking at least this many seconds are saved whole.
 const SAVED_SECONDS: f64 = 60.0;
-/// Solver work allowed for a query word-level reasoning left undecided.
-const BIT_LEVEL_RLIMIT: u64 = 1_000_000_000;
+/// Solver work allowed for a query with bounds propagation, and for the
+/// Horn query.
+const BOUNDED_RLIMIT: u64 = 1_000_000_000;
 
 #[derive(Default)]
 struct Sites {
@@ -93,7 +94,7 @@ fn check_all(
                     };
                     let started = std::time::Instant::now();
                     let (verdict, stats) =
-                        product::check_measured(application, RLIMIT, BIT_LEVEL_RLIMIT);
+                        product::check_measured(application, RLIMIT, BOUNDED_RLIMIT);
                     let line = format!(
                         "{}\t{}\t{}\t{:.1}\t{}\t{}\t{}\t{:?}\t{:?}\t{:?}\t{}\n",
                         application.tag,
