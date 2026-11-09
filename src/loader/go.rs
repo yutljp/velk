@@ -333,6 +333,16 @@ mod tests {
             crate::analysis::summary::summary(&image, at("runtime.usleep")).stack,
             1
         );
+        // The goroutine in x28 survives an assembly call, except one whose
+        // code sets it.
+        let changes_g = |name: &str| {
+            let summary = crate::analysis::summary::summary(&image, at(name));
+            let convention = image.convention_of(at(name));
+            convention.clobbered_by(summary.clobbers).contains(&28)
+        };
+        assert!(changes_g("runtime.setg"));
+        assert!(!changes_g("runtime.usleep"));
+        assert!(!changes_g("runtime.systemstack"));
         let nanotime = at("runtime.nanotime1");
         assert_eq!(
             crate::analysis::summary::summary(&image, nanotime).stack_results[0],
