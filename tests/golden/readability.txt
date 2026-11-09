@@ -159,9 +159,9 @@ flattened_x86_64_O2.o: 86 lines, 3 prelude lines, 13 variables, 2 casts, 0 regis
 frame_bounds_a64.o: 19 lines, 3 prelude lines, 4 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 frame_bounds_x64.o: 18 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 go_probe: 61136 lines, 6690 prelude lines, 13789 variables, 11473 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
-go_probe_arm64: 69960 lines, 7093 prelude lines, 17230 variables, 17329 casts, 693 registers, 0 unsigned, 16 traps, 72 gotos, 124 indirect calls
+go_probe_arm64: 69945 lines, 7093 prelude lines, 17221 variables, 17332 casts, 693 registers, 0 unsigned, 16 traps, 72 gotos, 124 indirect calls
 go_stripped: 61068 lines, 6688 prelude lines, 13776 variables, 11466 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
-go_stripped_arm64: 69898 lines, 7091 prelude lines, 17219 variables, 17323 casts, 693 registers, 0 unsigned, 16 traps, 72 gotos, 124 indirect calls
+go_stripped_arm64: 69883 lines, 7091 prelude lines, 17210 variables, 17326 casts, 693 registers, 0 unsigned, 16 traps, 72 gotos, 124 indirect calls
 i386_switch.elf: 68 lines, 13 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_a64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
