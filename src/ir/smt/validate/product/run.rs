@@ -509,7 +509,30 @@ pub(super) fn run(
                     }
                 }
                 let memory = script.havoc(MEMORY);
+                let standard = |convention: crate::ir::Convention| {
+                    application.convention == crate::ir::Convention::Aapcs64
+                        && convention == crate::ir::Convention::Aapcs64
+                };
+                // The stack pointer, how far below where it was on entry
+                // each side has it, and how far past that the frame is kept.
                 let owned = match (application.private_frame, old_stmt) {
+                    // A callee of the AArch64 procedure call standard whose
+                    // arguments are unknown writes only the stack arguments,
+                    // which its caller places in its own frame: nothing at
+                    // or past where the caller's stack pointer was on entry.
+                    (
+                        Some(sp),
+                        Stmt::Call {
+                            args: None,
+                            convention,
+                            ..
+                        },
+                    ) if standard(*convention) => application.frames.as_ref().and_then(|frames| {
+                        match (frames.before[index][at_old], frames.after[index][at_new]) {
+                            (Some(old), Some(new)) => Some((sp, (old, new), 0)),
+                            _ => None,
+                        }
+                    }),
                     (
                         Some(sp),
                         Stmt::Call {
@@ -523,16 +546,24 @@ pub(super) fn run(
                         // that convention's frame, where the caller keeps
                         // nothing it reads after the call: past what the
                         // stack carries, the callee changes no byte the
-                        // caller reads.
-                        let written = if application.convention == crate::ir::Convention::GoAmd64
-                            && *convention == crate::ir::Convention::GoAmd64
-                        {
+                        // caller reads. The AArch64 procedure call standard
+                        // gives register arguments no place in the frame,
+                        // and Go's register convention there, which calls
+                        // take for it, spills them as on x86-64.
+                        let register_arguments_unread = standard(*convention)
+                            || (application.convention == crate::ir::Convention::GoAmd64
+                                && *convention == crate::ir::Convention::GoAmd64);
+                        let written = if register_arguments_unread {
                             args.len().saturating_sub(convention.arguments().len())
                         } else {
                             args.len()
                         };
                         convention.stack_arguments().map(|start| {
-                            (sp, start - convention.pushed_by_call() + 8 * written as i64)
+                            (
+                                sp,
+                                (0, 0),
+                                start - convention.pushed_by_call() + 8 * written as i64,
+                            )
                         })
                     }
                     _ => None,
@@ -546,8 +577,18 @@ pub(super) fn run(
                 // sides enter each block with one memory and store the same
                 // bytes in pairs, so the callee is given one memory and
                 // leaves one.
-                if let Some((sp, owned)) = owned {
-                    let stack = (before.term(&mut script, sp), after.term(&mut script, sp));
+                if let Some((sp, (old_offset, new_offset), owned)) = owned {
+                    let entry = |term: String, offset: i64| {
+                        if offset == 0 {
+                            term
+                        } else {
+                            format!("(bvsub {term} {})", constant(offset as u64))
+                        }
+                    };
+                    let stack = (
+                        entry(before.term(&mut script, sp), old_offset),
+                        entry(after.term(&mut script, sp), new_offset),
+                    );
                     before.facts.layers.borrow_mut().push(Layer {
                         memory: memory.clone(),
                         inner: before.memory.clone(),
