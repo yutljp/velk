@@ -927,10 +927,6 @@ pub enum Strategy {
     /// Word-level reasoning after bounds propagation, which settles address
     /// arithmetic under masks that ranges keep exact.
     Bounded,
-    /// Bit-level search, slower but able to settle products and quotients
-    /// of constants that word-level reasoning gives up on; it does not take
-    /// memory.
-    BitLevel,
     /// Linear integer arithmetic over the query's integer values: each
     /// linear operation exact, memory an array of integers, and each other
     /// operation, such as a product of two variables, any function of its
@@ -951,9 +947,6 @@ impl Strategy {
             Self::Bounded => {
                 "(check-sat-using (then simplify solve-eqs propagate-bv-bounds simplify \
                  reduce-bv-size smt))"
-            }
-            Self::BitLevel => {
-                "(check-sat-using (then simplify solve-eqs reduce-bv-size simplify bit-blast sat))"
             }
             Self::Integer => {
                 "(check-sat-using (then simplify solve-eqs propagate-ineqs simplify smt))"

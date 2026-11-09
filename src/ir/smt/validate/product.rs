@@ -258,14 +258,14 @@ type Candidate = (Expr, Expr);
 
 /// Checks `application` with one solver process.
 #[must_use]
-pub fn check(application: &Application, rlimit: u64, bit_level_rlimit: u64) -> Verdict {
+pub fn check(application: &Application, rlimit: u64, bounded_rlimit: u64) -> Verdict {
     let Some(mut solver) = Solver::start() else {
         return Verdict::Unknown {
             what: String::new(),
             reason: "z3 unavailable".to_owned(),
         };
     };
-    check_with(application, &mut solver, rlimit, bit_level_rlimit)
+    check_with(application, &mut solver, rlimit, bounded_rlimit)
 }
 
 /// The same, with where the solver work went.
@@ -273,7 +273,7 @@ pub fn check(application: &Application, rlimit: u64, bit_level_rlimit: u64) -> V
 pub fn check_measured(
     application: &Application,
     rlimit: u64,
-    bit_level_rlimit: u64,
+    bounded_rlimit: u64,
 ) -> (Verdict, Stats) {
     let Some(mut solver) = Solver::start() else {
         return (
@@ -284,7 +284,7 @@ pub fn check_measured(
             Stats::default(),
         );
     };
-    let verdict = check_with(application, &mut solver, rlimit, bit_level_rlimit);
+    let verdict = check_with(application, &mut solver, rlimit, bounded_rlimit);
     (verdict, std::mem::take(&mut solver.stats))
 }
 
@@ -292,7 +292,7 @@ fn check_with(
     application: &Application,
     solver: &mut Solver,
     rlimit: u64,
-    bit_level_rlimit: u64,
+    bounded_rlimit: u64,
 ) -> Verdict {
     // A callee that may write any memory makes queries the solver decides
     // quickly; keeping a private frame's bytes across calls is for an
@@ -302,9 +302,9 @@ fn check_with(
         private_frame: None,
         ..application.clone()
     };
-    let verdict = check_model(&coarse, solver, rlimit, bit_level_rlimit);
+    let verdict = check_model(&coarse, solver, rlimit, bounded_rlimit);
     if application.private_frame.is_some() && matches!(verdict, Verdict::NotProved { .. }) {
-        return check_model(application, solver, rlimit, bit_level_rlimit);
+        return check_model(application, solver, rlimit, bounded_rlimit);
     }
     verdict
 }
@@ -313,7 +313,7 @@ fn check_model(
     application: &Application,
     solver: &mut Solver,
     rlimit: u64,
-    bit_level_rlimit: u64,
+    bounded_rlimit: u64,
 ) -> Verdict {
     if application.landing_pads {
         return Verdict::Unchecked("exceptions unwind into the function");
@@ -336,14 +336,12 @@ fn check_model(
 
     // Each stronger strategy is for what the ones before leave undecided:
     // the bounded one for an edge's whole group of candidates, then, if
-    // candidates were dropped undecided, for each of them; the bit-level
-    // one, the slowest, for what the Horn query, bounded in time, leaves
-    // after them. Replies are kept, so a stage asks again only what was
-    // undecided.
+    // candidates were dropped undecided, for each of them. Replies are
+    // kept, so a stage asks again only what was undecided.
     let strategies = [
         (Strategy::WordLevel, rlimit),
         (Strategy::Integer, rlimit),
-        (Strategy::Bounded, bit_level_rlimit),
+        (Strategy::Bounded, bounded_rlimit),
     ];
     // Most applications are proved with a tenth of the limits, and a query
     // left undecided with them is mostly left undecided with all of them,
@@ -370,32 +368,10 @@ fn check_model(
     let Some(failed) = first.failed else {
         return Verdict::Proved;
     };
-    let mut horned = solver.horn(
+    let horned = solver.horn(
         &horn(application, &first.checked, &product.registers),
-        bit_level_rlimit,
+        bounded_rlimit,
     );
-    let mut failed = failed;
-    if matches!(horned, Reply::Unknown(_)) && first.undecided {
-        let full = product.equations(
-            application,
-            solver,
-            &[
-                (Strategy::WordLevel, rlimit),
-                (Strategy::Integer, rlimit),
-                (Strategy::Bounded, bit_level_rlimit),
-                (Strategy::BitLevel, bit_level_rlimit),
-            ],
-            true,
-        );
-        let Some(again) = full.failed else {
-            return Verdict::Proved;
-        };
-        failed = again;
-        horned = solver.horn(
-            &horn(application, &full.checked, &product.registers),
-            bit_level_rlimit,
-        );
-    }
     match horned {
         Reply::Sat(_) => Verdict::Proved,
         Reply::Unsat => match failed {
@@ -520,6 +496,11 @@ impl Product {
         // nothing about the rewrite.
         let mut undecided = None;
         let mut left = false;
+        // How many replies in a row the bounded strategy left undecided:
+        // after so many it is asked no more, as on some functions it decides
+        // nothing for hours at its large limit.
+        const GIVE_UP: usize = 16;
+        let mut streak = 0;
         // `all` asks with every strategy rather than the first; `split`
         // says an undecided reply is asked again in parts.
         let mut ask = |solver: &mut Solver, query: &str, names: &[&str], all: bool, split: bool| {
@@ -528,7 +509,18 @@ impl Product {
                 if !matches!(reply, Reply::Unknown(_)) {
                     break;
                 }
+                let bounded = strategy == Strategy::Bounded;
+                if bounded && streak >= GIVE_UP {
+                    continue;
+                }
                 reply = solver.values(query, rlimit, strategy, names);
+                if bounded {
+                    streak = if matches!(reply, Reply::Unknown(_)) {
+                        streak + 1
+                    } else {
+                        0
+                    };
+                }
             }
             left |= !split && matches!(reply, Reply::Unknown(_));
             reply

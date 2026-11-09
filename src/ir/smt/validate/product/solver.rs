@@ -37,10 +37,10 @@ pub struct Stats {
     /// Passes of the invariant inference over every edge.
     pub rounds: usize,
     /// Queries, undecided answers and seconds, by strategy: word-level,
-    /// bounded, bit-level, Horn, integer.
-    pub queries: [usize; 5],
-    pub undecided: [usize; 5],
-    pub seconds: [f64; 5],
+    /// bounded, Horn, integer.
+    pub queries: [usize; 4],
+    pub undecided: [usize; 4],
+    pub seconds: [f64; 4],
 }
 
 impl Solver {
@@ -124,8 +124,7 @@ impl Solver {
         let kind = match strategy {
             Strategy::WordLevel => 0,
             Strategy::Bounded => 1,
-            Strategy::BitLevel => 2,
-            Strategy::Integer => 4,
+            Strategy::Integer => 3,
         };
         self.stats.queries[kind] += 1;
         self.stats.seconds[kind] += started.elapsed().as_secs_f64();
@@ -146,10 +145,10 @@ impl Solver {
         }
         let started = std::time::Instant::now();
         let reply = solve_horn(text, rlimit);
-        self.stats.queries[3] += 1;
-        self.stats.seconds[3] += started.elapsed().as_secs_f64();
+        self.stats.queries[2] += 1;
+        self.stats.seconds[2] += started.elapsed().as_secs_f64();
         if matches!(reply, Reply::Unknown(_)) {
-            self.stats.undecided[3] += 1;
+            self.stats.undecided[2] += 1;
         }
         self.horns.insert(key, reply.clone());
         reply
