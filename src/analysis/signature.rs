@@ -435,7 +435,10 @@ pub fn recover_with(
         (_, Isa::AArch64 | Isa::Arm32)
             if matches!(
                 convention,
-                Convention::Aapcs64 | Convention::Aapcs32 | Convention::GoAbi0Arm64
+                Convention::Aapcs64
+                    | Convention::Aapcs32
+                    | Convention::GoArm64
+                    | Convention::GoAbi0Arm64
             ) =>
         {
             stack_arguments(blocks, landing_pads, isa, convention)

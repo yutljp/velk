@@ -650,7 +650,9 @@ fn render_with(
         .map(|index| {
             let name = if let Some(name) = symbols.variable_names.get(&(ir.addr, index)) {
                 vacant_name(name, &mut machine_reserved)
-            } else if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
+            } else if (index == 14 && ir.convention == crate::ir::Convention::GoAmd64)
+                || (index == 28 && ir.convention == crate::ir::Convention::GoArm64)
+            {
                 vacant_name("g", &mut machine_reserved)
             } else if let Some(role) = roles.register(index) {
                 vacant_name(role, &mut machine_reserved)

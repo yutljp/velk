@@ -1,4 +1,4 @@
-# go_probe_arm64: elf aarch64 0x75830, 1271 functions, 0 lift failures, 8 unsupported, 70 gotos
+# go_probe_arm64: elf aarch64 0x75830, 1271 functions, 0 lift failures, 8 unsupported, 69 gotos
 0x11000 144 internal/abi.Kind.String pclntab
 0x11090 192 internal/abi.Name.IsBlank pclntab
 0x11150 208 internal/abi.Name.Name pclntab
@@ -1273,6 +1273,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct go_string { uint8_t * ptr; int64_t len; };
+
 uint64_t main_add();
 uint64_t main_divmod();
 uint64_t main_kindName();
@@ -1290,10 +1292,11 @@ void runtime_printunlock();
 -- decompile
 /* velk pseudo-C: runtime.printstring @ 0x40bd0 */
 void runtime_printstring(const void *a0, int64_t a1) {
-    uint64_t v2;
+    uint64_t g;
+    struct go_string string = { .ptr = (uint8_t *)(uintptr_t)a0, .len = (int64_t)a1 };
 
-    int32_t v1 = *(uint64_t *)(v2 + 0x10);
-    runtime_gwrite(a0, a1, a1);
+    int32_t v1 = *(uint64_t *)(g + 0x10);
+    runtime_gwrite(string.ptr, string.len, string.len);
 }
 -- signature
 void (const void * a0, int64_t a1)
@@ -1305,7 +1308,7 @@ fn runtime.printstring @ 0x40bd0 (size 128)
     v1 = load64((x28 + #0x10))
     br 0x40bdc
   blk1 @ 0x40bdc:
-    x0, x1, d0, d1 = call 0x40420(x0, x1, x1)
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40420(x0, x1, x1)
     ret #0x0
 -- card
 {"addr":"0x40bd0","approxTokens":228,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":128,"unsupported":0}
@@ -1331,13 +1334,13 @@ fn main.add @ 0x77420 (size 16)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x77430 */
 int64_t main_divmod(int64_t a0, int64_t a1) {
-    uint64_t v2;
+    uint64_t g;
 
-    int32_t v1 = *(uint64_t *)(v2 + 0x10);
+    int32_t v1 = *(uint64_t *)(g + 0x10);
     if (a1 == 0) {
         runtime_panicdivide();
     }
-    return (__int128)a0 / a1;
+    return (__int128)a0 / a1; /* also returns (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)((__int128)a0 / a1) * a1)) */
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -1351,7 +1354,7 @@ fn main.divmod @ 0x77430 (size 96)
   blk1 @ 0x7743c:
     brif eq x1, #0x0 -> 0x77468
   blk2 @ 0x7744c:
-    ret (x0 / x1)
+    ret results((x0 / x1), (x0 - ((x0 / x1) * x1)))
   blk3 @ 0x77468:
     call 0x3cc80()
     trap
@@ -1447,16 +1450,16 @@ fn main.kindName @ 0x774c0 (size 112)
 /* ref: 0xaf010 .rodata */
 void main_main(void) {
     uint64_t v5;
-    uint64_t v6;
-    uint64_t v7;
+    uint64_t g;
+    uint64_t v23;
     int64_t local_0; /* [sp-60] */
     int64_t local_1; /* [sp-38] */
     int64_t local_2; /* [sp-40] */
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_3; /* [sp-28] */
     int64_t local_4; /* [sp-30] */
 
-    int32_t v1 = *(uint64_t *)(v6 + 0x10);
-    local_0 = v7;
+    int32_t v1 = *(uint64_t *)(g + 0x10);
+    local_0 = v23;
     int64_t v2 = main_divmod(7, 3);
     int64_t v3 = v5; /* also returned by the call */
     local_1 = v2;
@@ -1494,32 +1497,32 @@ fn main.main @ 0x77530 (size 240)
     br 0x7753c
   blk1 @ 0x7753c:
     store64(x30, (sp + #0xffffffffffffffa0))
-    v2:x0, v3:x1 = call 0x77430(#0x7, #0x3)
+    v2:x0, v3:x1, x2 = call 0x77430(#0x7, #0x3)
     store64(v2, (sp + #0xffffffffffffffc8))
     store64(v3, (sp + #0xffffffffffffffc0))
     store64(#0x1, (sp + #0xffffffffffffffd8))
     store64(#0x2, (sp + #0xffffffffffffffe0))
     store64(#0x3, (sp + #0xffffffffffffffe8))
-    v2:x0 = call 0x77490((sp + #0xffffffffffffffd8), #0x3)
+    v2:x0, x2, x3, x4 = call 0x77490((sp + #0xffffffffffffffd8), #0x3)
     store64(v2, (sp + #0xffffffffffffffd0))
     v2:x0 = call 0x77420(#0x1, #0x2)
     store64(v2, (sp + #0xfffffffffffffff0))
-    x0, x1, d0, d1 = call 0x40340()
-    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
-    x0, x1, d0, d1 = call 0x40530()
-    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xfffffffffffffff0)))
-    x0, x1, d0, d1 = call 0x40530()
-    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc8)))
-    x0, x1, d0, d1 = call 0x40530()
-    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc0)))
-    x0, x1, d0, d1 = call 0x40570()
-    x0, x1, d0, d1 = call 0x403c0()
-    v2:x0, x1 = call 0x774c0(#0x85420, #0xaf010)
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40340()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40530()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xfffffffffffffff0)))
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40530()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffc8)))
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40530()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffc0)))
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40570()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
+    v2:x0, x1, x2 = call 0x774c0(#0x85420, #0xaf010)
     store64(v2, (sp + #0xffffffffffffffd0))
-    x0, x1, d0, d1 = call 0x40340()
-    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
-    x0, x1, d0, d1 = call 0x40570()
-    v2:x0, x1, d0, d1 = call 0x403c0()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40340()
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40570()
+    v2:x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
     ret #0x0
 -- card
 {"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"unsupported":0}

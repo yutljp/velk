@@ -13,7 +13,7 @@ pub(crate) fn runtime(
         || !matches!(
             (image.isa, image.convention_of(address)),
             (crate::loader::Isa::X86_64, crate::ir::Convention::GoAmd64)
-                | (crate::loader::Isa::AArch64, crate::ir::Convention::Aapcs64)
+                | (crate::loader::Isa::AArch64, crate::ir::Convention::GoArm64)
         )
     {
         return None;

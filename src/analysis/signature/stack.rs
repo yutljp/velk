@@ -39,7 +39,7 @@ pub(super) fn stack_arguments(
     let results = convention.go_assembly();
     let incoming = matches!(
         convention,
-        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64
+        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 | Convention::GoArm64
     );
     // The registers holding a known offset from the stack pointer on entry,
     // as each block starts: the stack pointer and the frame pointer, and

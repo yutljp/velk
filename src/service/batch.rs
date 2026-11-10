@@ -93,6 +93,7 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
             || matches!(
                 ir.convention,
                 crate::ir::Convention::GoAmd64
+                    | crate::ir::Convention::GoArm64
                     | crate::ir::Convention::GoAbi0
                     | crate::ir::Convention::GoAbi0Arm64
             )

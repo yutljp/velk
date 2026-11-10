@@ -180,7 +180,7 @@ fn known_runtime_summary(image: &Image, addr: u64) -> Option<Summary> {
             1
         };
         (Some(0), Some(0), true, false, stack)
-    } else if convention == crate::ir::Convention::GoAmd64 {
+    } else if convention.go_registers() {
         match name {
             "runtime.panicdivide" => (Some(0), Some(0), true, false, 0),
             _ if runtime_noreturn(name) => {
