@@ -29,7 +29,10 @@ pub(super) fn groups(
     types: &mut BTreeMap<u16, CType>,
     reserved: &mut HashSet<String>,
 ) -> Vec<Group> {
-    if !matches!(ir.convention, Convention::GoAmd64 | Convention::GoAbi0) {
+    if !matches!(
+        ir.convention,
+        Convention::GoAmd64 | Convention::GoArm64 | Convention::GoAbi0 | Convention::GoAbi0Arm64
+    ) {
         return Vec::new();
     }
     let mut candidates = Vec::new();

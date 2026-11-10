@@ -97,7 +97,7 @@ pub(in crate::lift) fn recover_atomic_loops(
         if update.operands[3] != Operand::Nothing {
             continue;
         }
-        let mut lifter = Lifter::new(image, summaries);
+        let mut lifter = Lifter::new(image, summaries, block.start);
         let Some(mem) = memory::memory(load.operands[1], 64) else {
             continue;
         };

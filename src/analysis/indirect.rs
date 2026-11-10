@@ -741,7 +741,11 @@ fn returned_by(image: &Image, addr: u64) -> Option<u64> {
     let convention = image.convention_of(addr);
     if !matches!(
         convention,
-        Convention::SysV | Convention::Win64 | Convention::Aapcs64 | Convention::GoAmd64
+        Convention::SysV
+            | Convention::Win64
+            | Convention::Aapcs64
+            | Convention::GoAmd64
+            | Convention::GoArm64
     ) {
         return None;
     }

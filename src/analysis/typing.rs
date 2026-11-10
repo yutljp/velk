@@ -1118,7 +1118,7 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         super::pairs32::place_parameters(types, ir);
         return;
     }
-    if convention == Convention::GoAmd64 {
+    if convention.go_registers() {
         return;
     }
     let integers = convention.arguments();
@@ -1135,7 +1135,7 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         }
         Convention::SysV => 8,
         Convention::Win64 => 40,
-        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 => 0,
+        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 | Convention::GoArm64 => 0,
         Convention::SyscallI386
         | Convention::SyscallX86
         | Convention::SyscallArm

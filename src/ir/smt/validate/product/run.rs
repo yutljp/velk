@@ -546,13 +546,12 @@ pub(super) fn run(
                         // that convention's frame, where the caller keeps
                         // nothing it reads after the call: past what the
                         // stack carries, the callee changes no byte the
-                        // caller reads. The AArch64 procedure call standard
-                        // gives register arguments no place in the frame,
-                        // and Go's register convention there, which calls
-                        // take for it, spills them as on x86-64.
+                        // caller reads, on x86-64 and on AArch64 alike. The
+                        // AArch64 procedure call standard gives register
+                        // arguments no place in the frame.
                         let register_arguments_unread = standard(*convention)
-                            || (application.convention == crate::ir::Convention::GoAmd64
-                                && *convention == crate::ir::Convention::GoAmd64);
+                            || (application.convention.go_registers()
+                                && *convention == application.convention);
                         let written = if register_arguments_unread {
                             args.len().saturating_sub(convention.arguments().len())
                         } else {

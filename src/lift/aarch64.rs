@@ -32,8 +32,7 @@ use yaxpeax_arm::armv8::a64::{self, Instruction, Operand, SizeCode};
 
 use super::flags::{Flags, Test};
 use super::{
-    Decoded, Machine, Write, call, call_through, flags, preserve_compare, reverse_bytes, rotate,
-    tail_call,
+    Decoded, Machine, Write, call, flags, preserve_compare, reverse_bytes, rotate, tail_call,
 };
 use crate::arch::aarch64::LR;
 use crate::ir::{
@@ -80,10 +79,23 @@ pub(super) struct Lifter<'a> {
     last_compare: Option<Flags>,
     image: &'a crate::loader::Image,
     summaries: super::Summaries<'a>,
+    /// The convention of a call through a register: the procedure call
+    /// standard's in Go's assembly, which calls C code such as the vDSO
+    /// that way and keeps values in the registers C preserves.
+    indirect: crate::ir::Convention,
 }
 
 impl<'a> Lifter<'a> {
-    pub(super) fn new(image: &'a crate::loader::Image, summaries: super::Summaries<'a>) -> Self {
+    pub(super) fn new(
+        image: &'a crate::loader::Image,
+        summaries: super::Summaries<'a>,
+        addr: u64,
+    ) -> Self {
+        let indirect = if image.convention_of(addr).go_assembly() {
+            crate::ir::Convention::Aapcs64
+        } else {
+            crate::ir::Convention::of(image.isa, image.format, image.go)
+        };
         Self {
             stmts: Vec::new(),
             incomplete: Default::default(),
@@ -91,6 +103,7 @@ impl<'a> Lifter<'a> {
             last_compare: None,
             image,
             summaries,
+            indirect,
         }
     }
 
@@ -635,9 +648,12 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
                     through
                 };
                 link(lifter, pc);
-                lifter
-                    .stmts
-                    .push(call_through(CallKind::Invoke, lifter.image, through));
+                lifter.stmts.push(super::call_through_as(
+                    CallKind::Invoke,
+                    lifter.image,
+                    through,
+                    lifter.indirect,
+                ));
             }
         }
         O::BL => {

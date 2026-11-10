@@ -1,5 +1,5 @@
 # functions left out:
-#   accesses memory: 293
+#   accesses memory: 289
 #   calls: 8102
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 10
@@ -7,8 +7,8 @@
 #   refers to data: 362
 #   requires an external machine-state source: 4
 #   returns no integer: 311
-#   returns nothing: 706
-#   takes an argument that is no integer: 1000
+#   returns nothing: 708
+#   takes an argument that is no integer: 1002
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 50

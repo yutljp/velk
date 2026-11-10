@@ -33,7 +33,7 @@ pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
 /// in registers and whose callers take them at once.
 pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
     let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
-    if convention != crate::ir::Convention::GoAmd64 {
+    if !convention.go_registers() {
         return 0;
     }
     let results: Vec<u16> = convention

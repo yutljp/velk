@@ -39,7 +39,7 @@ fn forward_stored_values_unchecked(ir: &mut FunctionIr) {
     // spills its register arguments to the bottom of the caller's frame.
     let private_frame = !frame_address_escapes(ir, sp);
     let atomic_private_frame = fixed_private_frame(ir, sp);
-    let spills = ir.convention == crate::ir::Convention::GoAmd64;
+    let spills = ir.convention.go_registers();
     for block in &mut ir.blocks {
         let mut pending: Vec<(u8, Expr, Expr)> = Vec::new();
         for stmt in &mut block.stmts {
@@ -105,7 +105,7 @@ fn forward_stored_values_unchecked(ir: &mut FunctionIr) {
                     // says.
                     let spilled = match args {
                         _ if convention.go_assembly() => i64::MAX,
-                        Some(_) if spills && *convention == crate::ir::Convention::GoAmd64 => 0,
+                        Some(_) if spills && convention.go_registers() => 0,
                         Some(args) if spills => 8 * args.len() as i64,
                         None if spills => i64::MAX,
                         _ => 0,
@@ -834,7 +834,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
 fn forward_spilled_variables_unchecked(ir: &mut FunctionIr) {
     use std::collections::HashMap;
     let sp = stack_pointer(ir.isa);
-    let go = ir.convention == crate::ir::Convention::GoAmd64;
+    let go = ir.convention.go_registers();
     if frame_address_escapes(ir, sp)
         || ir
             .blocks

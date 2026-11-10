@@ -324,8 +324,9 @@ mod tests {
         for (name, convention) in [
             ("runtime.usleep", Convention::GoAbi0Arm64),
             ("runtime.nanotime1", Convention::GoAbi0Arm64),
-            ("runtime.memmove", Convention::Aapcs64),
-            ("runtime.send", Convention::Aapcs64),
+            ("runtime.walltime", Convention::GoAbi0Arm64),
+            ("runtime.memmove", Convention::GoArm64),
+            ("runtime.send", Convention::GoArm64),
         ] {
             assert_eq!(image.convention_of(at(name)), convention, "{name}");
         }
@@ -376,6 +377,47 @@ mod tests {
             })
         });
         assert!(stored);
+        // Go's register ABI returns findObject's third value in x2, which
+        // wbBufFlush1 reads.
+        let find = at("runtime.findObject");
+        let flush = image.functions.get(&at("runtime.wbBufFlush1")).unwrap();
+        let lifted = crate::analysis::analyze(&image, flush, None).unwrap().ir;
+        let outputs: Vec<u16> = lifted
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .find(|stmt| {
+                matches!(stmt, crate::ir::Stmt::Call { target: Some(target), .. } if *target == find)
+            })
+            .unwrap()
+            .call_outputs()
+            .iter()
+            .map(|output| output.register)
+            .collect();
+        assert!(outputs.contains(&2), "{outputs:?}");
+        // walltime's assembly calls the vDSO through a register under the
+        // procedure call standard, which keeps x20 and x21.
+        let walltime = image.functions.get(&at("runtime.walltime")).unwrap();
+        let lifted = crate::analysis::analyze(&image, walltime, None).unwrap().ir;
+        let conventions: Vec<Convention> = lifted
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .filter_map(|stmt| match stmt {
+                crate::ir::Stmt::Call {
+                    through: Some(_),
+                    convention,
+                    ..
+                } => Some(*convention),
+                _ => None,
+            })
+            .collect();
+        assert!(!conventions.is_empty());
+        assert!(
+            conventions
+                .iter()
+                .all(|convention| *convention == Convention::Aapcs64)
+        );
     }
 
     #[test]

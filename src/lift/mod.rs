@@ -327,7 +327,7 @@ fn lift_in_mode(
             let mut blocks = match lift_continuing(
                 image,
                 summaries,
-                || execution::Located::new(aarch64::Lifter::new(image, summaries), mode),
+                || execution::Located::new(aarch64::Lifter::new(image, summaries, addr), mode),
                 addr,
                 bytes,
                 &aarch64::decode,
@@ -1056,12 +1056,25 @@ fn append_float_arguments(
 /// A call to the address `through` computes. One through an import's slot
 /// passes the arguments its prototype takes.
 pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt {
+    call_through_as(
+        kind,
+        image,
+        through,
+        Convention::of(image.isa, image.format, image.go),
+    )
+}
+
+/// The same for a call that follows `default` unless an import says
+/// otherwise.
+pub(crate) fn call_through_as(
+    kind: CallKind,
+    image: &Image,
+    through: Expr,
+    default: Convention,
+) -> Stmt {
     let convention = import_name(image, &through)
         .and_then(|name| crate::analysis::prototypes::i386_import(image, name))
-        .map_or_else(
-            || Convention::of(image.isa, image.format, image.go),
-            |properties| properties.0,
-        );
+        .map_or(default, |properties| properties.0);
     let variadic = crate::lift::import_name(image, &through)
         .and_then(|name| crate::analysis::prototypes::for_image(name, image))
         .is_some_and(|prototype| {

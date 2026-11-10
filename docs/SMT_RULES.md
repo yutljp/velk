@@ -370,10 +370,9 @@ The check assumes the following:
   register arguments to the bottom of the caller's frame, where the caller
   keeps nothing it reads after the call, as Go's compiler lays out frames. Only
   the arguments passed on the stack count toward the bytes the callee may write.
-  The same holds between two functions of the AArch64 procedure call standard,
-  which gives register arguments no place in the frame, and which calls between
-  Go functions on AArch64 also take: Go's register convention there spills
-  register arguments as on x86-64.
+  Go's register convention on AArch64 spills them in the same way. The same
+  holds between two functions of the AArch64 procedure call standard, which
+  gives register arguments no place in the frame.
   A call of unknown arguments between two such functions writes only the
   stack arguments, which the caller places in its own frame: a byte at or past
   where the caller's stack pointer was on entry is kept, where the stack
