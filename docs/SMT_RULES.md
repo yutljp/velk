@@ -340,6 +340,11 @@ time, is decompiled again and checked as a whole:
   which may find any invariant, ranges included, or report a path from the
   function's start on which an obligation fails. Each relation takes only what
   its block or a later one reads, and the proved equations hold in its clauses.
+- Where only constants move a side's stack pointer, the check works out how
+  far from its entry value it is when each block starts, the same on every
+  path. Each block then starts with the two sides' stack pointers that far
+  apart, as both enter with one, and on a 32-bit architecture with each that
+  far from a value in the range assumed below.
 
 The check assumes the following:
 
@@ -352,9 +357,7 @@ The check assumes the following:
   AArch64's x8, for a pass that relies on the summary.
 - On a 32-bit architecture, the general registers enter the function with
   32-bit values, and the stack pointer starts more than any frame away from
-  address zero and from the top of the address space. Where only constants
-  move the stack pointer, each block starts with it a known distance from its
-  entry value, and so with that value, which lies in this range. A parameter passed in two
+  address zero and from the top of the address space. A parameter passed in two
   of these registers is bound to one variable that enters holding both: the
   high register's value above the low one's.
 - When the function before the pass never uses an address in its frame as a

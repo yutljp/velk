@@ -182,11 +182,10 @@ pub struct Application {
     pub landing_pads: bool,
     /// The stack pointer, on an architecture with 32-bit addresses.
     pub narrow_stack: Option<u16>,
-    /// How far each side's stack pointer is from its value on entry when
-    /// each block starts, original side first, on an architecture with
-    /// 32-bit addresses; empty for a side whose stack pointer moves other
-    /// than by constants.
-    pub narrow_entries: [Vec<Option<i64>>; 2],
+    /// The stack pointer, and how far each side's is from its value on
+    /// entry when each block starts, original side first; empty for a side
+    /// whose stack pointer moves other than by constants.
+    pub stack_entries: (u16, [Vec<Option<i64>>; 2]),
     /// The stack pointer, when the function hands out no address of its
     /// frame.
     pub private_frame: Option<u16>,
