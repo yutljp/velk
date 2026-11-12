@@ -229,7 +229,12 @@ pub(super) fn horn(application: &Application, checked: &[Checked], registers: &[
             })
             .map(String::as_str)
             .collect();
-        let holds = format!("(and {} {})", relation(block, &names), held.join(" "));
+        let holds = format!(
+            "(and {} {} {})",
+            relation(block, &names),
+            checked_block.run.facts,
+            held.join(" ")
+        );
         for edge in &checked_block.run.edges {
             let target = position[&edge.target];
             let values: Vec<&str> = taken(target)

@@ -182,6 +182,11 @@ pub struct Application {
     pub landing_pads: bool,
     /// The stack pointer, on an architecture with 32-bit addresses.
     pub narrow_stack: Option<u16>,
+    /// How far each side's stack pointer is from its value on entry when
+    /// each block starts, original side first, on an architecture with
+    /// 32-bit addresses; empty for a side whose stack pointer moves other
+    /// than by constants.
+    pub narrow_entries: [Vec<Option<i64>>; 2],
     /// The stack pointer, when the function hands out no address of its
     /// frame.
     pub private_frame: Option<u16>,
@@ -549,7 +554,11 @@ impl Product {
                         let edge = &run.edges[edge];
                         (
                             &run.script,
-                            conjunction(&invariants[source], &run.assumed),
+                            format!(
+                                "(and {} {})",
+                                conjunction(&invariants[source], &run.assumed),
+                                run.facts
+                            ),
                             edge.path.as_str(),
                             &edge.holds,
                             edge.target,
@@ -641,7 +650,11 @@ impl Product {
                 &Rc::new(shared.clone()),
             )
             .expect("a block that ran once runs again");
-            let mut assumed = conjunction(invariant, &run.assumed);
+            let mut assumed = format!(
+                "(and {} {})",
+                conjunction(invariant, &run.assumed),
+                run.facts
+            );
             // A first block no edge leads back to starts as the function does.
             if index == 0 && !self.entered_again {
                 let facts = starting(application, &self.registers, &shared, &mut run.script);

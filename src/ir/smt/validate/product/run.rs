@@ -28,6 +28,8 @@ pub(super) struct Run {
     pub(super) script: Script,
     /// Each candidate invariant, in the entry states.
     pub(super) assumed: Vec<String>,
+    /// What the entry states meet on every path from the function's start.
+    pub(super) facts: String,
     pub(super) edges: Vec<Edge>,
     /// What each obligation compares, and the assertion that it differs.
     pub(super) obligations: Vec<(String, String)>,
@@ -213,6 +215,29 @@ pub(super) fn run(
             .map(|candidate| instantiate(&mut script, &mut before, &mut after, candidate))
             .collect()
     };
+    // A stack pointer only constants move stays as far from the ends of a
+    // 32-bit address space as it entered.
+    let mut facts = vec!["true".to_owned()];
+    if let Some(sp) = application.narrow_stack {
+        for (side, entries) in [&mut before, &mut after]
+            .into_iter()
+            .zip(&application.narrow_entries)
+        {
+            if let Some(Some(offset)) = entries.get(index) {
+                let entered = format!(
+                    "(bvsub {} {})",
+                    side.term(&mut script, sp),
+                    constant(*offset as u64)
+                );
+                facts.push(format!(
+                    "(bvuge {entered} {}) (bvule {entered} {})",
+                    constant(NARROW_STACK.0),
+                    constant(NARROW_STACK.1)
+                ));
+            }
+        }
+    }
+    let facts = format!("(and {})", facts.join(" "));
     let old_observable: Vec<usize> = (0..old.len()).filter(|&i| observable(&old[i])).collect();
     let new_observable: Vec<usize> = (0..new.len()).filter(|&i| observable(&new[i])).collect();
     if old_observable.len() != new_observable.len() {
@@ -716,6 +741,7 @@ pub(super) fn run(
     Ok(Run {
         script,
         assumed,
+        facts,
         edges,
         obligations,
     })

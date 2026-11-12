@@ -69,6 +69,7 @@ fn application(before: Vec<Block>, after: Vec<Block>) -> Application {
         after,
         landing_pads: false,
         narrow_stack: None,
+        narrow_entries: Default::default(),
         private_frame: None,
         frames: None,
         convention: crate::ir::Convention::SysV,
@@ -104,6 +105,7 @@ fn assuming(
             after,
             landing_pads: false,
             narrow_stack: None,
+            narrow_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,
@@ -133,6 +135,7 @@ fn aligned(
             after,
             landing_pads: false,
             narrow_stack: None,
+            narrow_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,
@@ -860,6 +863,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 )],
                 landing_pads: false,
                 narrow_stack: None,
+                narrow_entries: Default::default(),
                 private_frame: None,
                 frames: None,
                 convention: crate::ir::Convention::SysV,
@@ -899,6 +903,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 )],
                 landing_pads: false,
                 narrow_stack: narrow.then_some(13),
+                narrow_entries: Default::default(),
                 private_frame: None,
                 frames: None,
                 convention: crate::ir::Convention::SysV,
@@ -915,6 +920,53 @@ fn functions_are_compared_across_blocks_and_loops() {
     };
     assert_eq!(framed32(true), Verdict::Proved);
     assert!(not_proved(&framed32(false)));
+
+    // The same address through a frame pointer set in an earlier block: the
+    // second block needs the stack pointer still clear of the address
+    // space's ends, which holds where only constants have moved it.
+    let later32 = |entries: [Vec<Option<i64>>; 2]| {
+        let low = |expr: Expr| raw_bin(BinOp::And, expr, Expr::Const(0xffff_ffff));
+        let frame = assign(5, low(plus(13, -4)));
+        let mut application = application(
+            vec![
+                block(0, vec![frame.clone(), br(1)]),
+                block(
+                    1,
+                    vec![
+                        store(
+                            low(raw_bin(BinOp::Add, low(r(5)), Expr::Const(-4i64 as u64))),
+                            r(1),
+                        ),
+                        ret(Expr::Const(0)),
+                    ],
+                ),
+            ],
+            vec![
+                block(0, vec![frame, br(1)]),
+                block(1, vec![store(plus(13, -8), r(1)), ret(Expr::Const(0))]),
+            ],
+        );
+        application.narrow_stack = Some(13);
+        application.narrow_registers = [13].into();
+        application.narrow_entries = entries;
+        // Inference over paths from the start finds the bound by itself in
+        // a function this small, so the blocks are checked alone as well.
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        let alone = product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none();
+        (check(&application, 50_000_000, 1_000_000_000), alone)
+    };
+    let unmoved = vec![Some(0), Some(0)];
+    assert_eq!(later32([unmoved.clone(), unmoved]), (Verdict::Proved, true));
+    assert_eq!(later32([Vec::new(), Vec::new()]), (Verdict::Proved, false));
 
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
@@ -934,6 +986,7 @@ fn functions_are_compared_across_blocks_and_loops() {
             after: vec![block(0, vec![calling]), block(1, vec![ret(Expr::Const(0))])],
             landing_pads: false,
             narrow_stack: None,
+            narrow_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,
