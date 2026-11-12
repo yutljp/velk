@@ -249,6 +249,18 @@ pub(crate) fn pass<R>(
                     })
                 })
                 .flatten();
+            let narrow_entries = [&before, &ir.blocks].map(|blocks| {
+                (crate::arch::pointer_bytes(ir.isa) == 4)
+                    .then(|| product::stack_offsets(blocks, sp))
+                    .flatten()
+                    .map(|offsets| {
+                        offsets
+                            .iter()
+                            .map(|block| block.first().copied().flatten())
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            });
             state.applications.push(product::Application {
                 site,
                 tag,
@@ -256,8 +268,8 @@ pub(crate) fn pass<R>(
                 before,
                 after: ir.blocks.clone(),
                 landing_pads: !ir.landing_pads.is_empty(),
-                narrow_stack: (crate::arch::pointer_bytes(ir.isa) == 4)
-                    .then(|| crate::arch::stack_pointer(ir.isa)),
+                narrow_stack: (crate::arch::pointer_bytes(ir.isa) == 4).then_some(sp),
+                narrow_entries,
                 private_frame,
                 frames,
                 convention: ir.convention,

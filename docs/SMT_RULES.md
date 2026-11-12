@@ -352,7 +352,9 @@ The check assumes the following:
   AArch64's x8, for a pass that relies on the summary.
 - On a 32-bit architecture, the general registers enter the function with
   32-bit values, and the stack pointer starts more than any frame away from
-  address zero and from the top of the address space. A parameter passed in two
+  address zero and from the top of the address space. Where only constants
+  move the stack pointer, each block starts with it a known distance from its
+  entry value, and so with that value, which lies in this range. A parameter passed in two
   of these registers is bound to one variable that enters holding both: the
   high register's value above the low one's.
 - When the function before the pass never uses an address in its frame as a
