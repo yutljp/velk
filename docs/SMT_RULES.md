@@ -325,7 +325,8 @@ time, is decompiled again and checked as a whole:
   and one the rewritten side has in place of an expression of the original
   is what that expression evaluates to, with its undefined values zero,
   when the expression reads an undefined value or is a register holding
-  what a call of the block left; in place of anything else it stays any
+  what a call left in it, a register the call changes and no output takes,
+  on every path to that place; in place of anything else it stays any
   value, so dropping a value the function computes is not proved. An
   operation without an SMT model
   is one unknown function of its arguments, the same on both sides; in the Horn

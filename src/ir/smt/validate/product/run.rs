@@ -191,6 +191,7 @@ pub(super) fn run(
     candidates: &[Candidate],
     registers: &[u16],
     shared: &Rc<BTreeSet<u16>>,
+    left: &BTreeSet<u16>,
 ) -> Result<Run, &'static str> {
     let old = &application.before[index].stmts;
     let new = &application.after[index].stmts;
@@ -261,9 +262,13 @@ pub(super) fn run(
     let mut path = "true".to_owned();
     let (mut next_old, mut next_new) = (0, 0);
     let mut ended = false;
-    // What calls of the block leave in registers they change and no output
-    // takes: any value.
-    let mut left_by_calls: BTreeSet<String> = BTreeSet::new();
+    // What calls leave in registers they change and no output takes, on
+    // the original side: any value. Those the block enters with are left so
+    // on every path to it.
+    let mut left_by_calls: BTreeSet<String> = left
+        .iter()
+        .map(|&register| before.term(&mut script, register))
+        .collect();
     for (&at_old, &at_new) in old_observable.iter().zip(&new_observable) {
         assign_stretch(
             &mut script,
@@ -943,4 +948,81 @@ pub(super) fn truth(
         term: condition(cond, &a.term, &b.term, bits),
         defined: format!("(and {} {})", a.defined, b.defined),
     }
+}
+
+/// The registers each block of `blocks` enters holding what a call left in
+/// them, a register it changes and no output takes, on every path from the
+/// first block; none for a block no path reaches.
+pub(super) fn left_on_entry(blocks: &[crate::ir::Block]) -> Vec<BTreeSet<u16>> {
+    let index: BTreeMap<u64, usize> = blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    let mut entries: Vec<Option<BTreeSet<u16>>> = vec![None; blocks.len()];
+    if blocks.is_empty() {
+        return Vec::new();
+    }
+    entries[0] = Some(BTreeSet::new());
+    let mut pending = vec![0];
+    while let Some(position) = pending.pop() {
+        let mut left = entries[position].clone().expect("a block reached");
+        let mut targets = Vec::new();
+        let mut ended = false;
+        for stmt in &blocks[position].stmts {
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                left.remove(&register);
+            }
+            if matches!(stmt, Stmt::Call { .. }) {
+                let routed: BTreeSet<u16> = stmt
+                    .call_outputs()
+                    .iter()
+                    .map(|output| output.register)
+                    .collect();
+                for register in stmt.call_clobbers() {
+                    if !routed.contains(&register) {
+                        left.insert(register);
+                    }
+                }
+                for output in stmt.call_outputs() {
+                    left.remove(&output.dest.index);
+                }
+            }
+            match stmt {
+                Stmt::Brif { target, .. } => targets.push(*target),
+                Stmt::Br { target, .. } => {
+                    targets.extend(*target);
+                    ended = true;
+                }
+                Stmt::Switch { cases, default, .. } => {
+                    targets.extend(cases.iter().map(|(_, target)| *target));
+                    targets.extend(*default);
+                    ended = true;
+                }
+                Stmt::Ret { .. } | Stmt::Trap { .. } | Stmt::BrIndirect { .. } => ended = true,
+                _ => {}
+            }
+            if ended {
+                break;
+            }
+        }
+        let mut next: Vec<usize> = targets
+            .into_iter()
+            .filter_map(|target| index.get(&target).copied())
+            .collect();
+        if !ended && position + 1 < blocks.len() {
+            next.push(position + 1);
+        }
+        for target in next {
+            let joined = match &entries[target] {
+                None => left.clone(),
+                Some(known) => known.intersection(&left).copied().collect(),
+            };
+            if entries[target].as_ref() != Some(&joined) {
+                entries[target] = Some(joined);
+                pending.push(target);
+            }
+        }
+    }
+    entries.into_iter().map(Option::unwrap_or_default).collect()
 }
