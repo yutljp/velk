@@ -1261,6 +1261,53 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(copied(0x1f));
     assert!(!copied(0xf));
 
+    // A byte stored after two paths that each leave the register's low
+    // byte zero, one testing it and one setting it: the store's block
+    // agrees alone that the byte is zero only from the low bits.
+    let zero_byte = |stored: u64| {
+        let blocks = |value: Expr| {
+            vec![
+                block(
+                    0,
+                    vec![Stmt::Brif {
+                        at: None,
+                        cond: Cond::Eq,
+                        lhs: raw_bin(BinOp::And, r(0), Expr::Const(0xff)),
+                        rhs: Expr::Const(0),
+                        target: 20,
+                    }],
+                ),
+                block(10, vec![assign(0, Expr::Const(0)), br(20)]),
+                block(
+                    20,
+                    vec![
+                        Stmt::Store {
+                            at: None,
+                            addr: Expr::Const(0x4000),
+                            value,
+                            width: 1,
+                        },
+                        ret(Expr::Const(0)),
+                    ],
+                ),
+            ]
+        };
+        let application = application(blocks(r(0)), blocks(Expr::Const(stored)));
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(zero_byte(0));
+    assert!(!zero_byte(1));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {

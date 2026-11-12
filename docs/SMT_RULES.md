@@ -308,7 +308,8 @@ time, is decompiled again and checked as a whole:
   branch compares unsigned with a constant gives, on each side, the
   candidate that it is at or below the constant, as a loop's counter stays,
   and the one that it is below it, and so does a register assigned a copy of
-  one, or a selection between copies. The candidates
+  one, or a selection between copies. Paired narrow stores of different
+  values give the equation of the low bits they store. The candidates
   of an edge are asked about together, with word-level queries, then over integers
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation

@@ -108,6 +108,26 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                     });
                 }
             }
+            // A narrow store keeps the low bits of what it stores, which
+            // may agree where the whole values do not.
+            if let (
+                Stmt::Store {
+                    value: a, width, ..
+                },
+                Stmt::Store { value: b, .. },
+            ) = (old_stmt, new_stmt)
+                && *width < 8
+                && a != b
+                && written.0.keeps(a)
+                && written.1.keeps(b)
+                && unmodeled(a).is_none()
+                && unmodeled(b).is_none()
+            {
+                let pair = (kept(a.clone(), width * 8), kept(b.clone(), width * 8));
+                if seen.insert(format!("{pair:?}")) {
+                    found.push(pair);
+                }
+            }
             written.0.record(old_stmt);
             written.1.record(new_stmt);
         }
