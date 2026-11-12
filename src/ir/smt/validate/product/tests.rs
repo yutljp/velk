@@ -1308,6 +1308,42 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(zero_byte(0));
     assert!(!zero_byte(1));
 
+    // A value past a signed check that it is at least 4 and then at most 4
+    // unsigned: the last block agrees alone that it is 4 only knowing the
+    // signed bound the first branch leaves.
+    let pinned = |returned: u64| {
+        let branch = |cond, target| Stmt::Brif {
+            at: None,
+            cond,
+            lhs: r(1),
+            rhs: Expr::Const(4),
+            target,
+        };
+        let blocks = |last: Expr| {
+            vec![
+                block(0, vec![branch(Cond::Lt, 40)]),
+                block(10, vec![branch(Cond::Ls, 20)]),
+                block(15, vec![ret(Expr::Const(0))]),
+                block(20, vec![ret(last)]),
+                block(40, vec![ret(Expr::Const(0))]),
+            ]
+        };
+        let application = application(blocks(r(1)), blocks(Expr::Const(returned)));
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(pinned(4));
+    assert!(!pinned(3));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
