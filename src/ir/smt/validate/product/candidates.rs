@@ -294,25 +294,45 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
     // A register a branch compares unsigned with a constant may stay at or
     // below it, as a loop's counter does, or below it: on each side, the
     // comparison holding is a candidate too.
-    let mut bounded: BTreeSet<(u16, u64)> = BTreeSet::new();
+    // Each bound is a register, a comparison it meets and a constant: at
+    // or below it unsigned, at or below it signed, or at or above it
+    // signed, as either way of a branch leaves it.
+    use crate::ir::Cond;
+    let mut bounded: BTreeSet<(u16, u8, u64)> = BTreeSet::new();
+    const UNSIGNED_AT_MOST: u8 = 0;
+    const AT_MOST: u8 = 1;
+    const AT_LEAST: u8 = 2;
     for stmt in application
         .before
         .iter()
         .chain(&application.after)
         .flat_map(|block| &block.stmts)
     {
-        if let Stmt::Brif {
-            cond:
-                crate::ir::Cond::Cs | crate::ir::Cond::Cc | crate::ir::Cond::Hi | crate::ir::Cond::Ls,
-            lhs,
-            rhs,
-            ..
-        } = stmt
+        if let Stmt::Brif { cond, lhs, rhs, .. } = stmt
             && let (Expr::Reg { index, width: 64 }, Expr::Const(limit)) = (lhs, rhs)
         {
-            bounded.insert((*index, *limit));
-            if let Some(below) = limit.checked_sub(1) {
-                bounded.insert((*index, below));
+            let limit = *limit;
+            match cond {
+                Cond::Cs | Cond::Cc | Cond::Hi | Cond::Ls => {
+                    bounded.insert((*index, UNSIGNED_AT_MOST, limit));
+                    if let Some(below) = limit.checked_sub(1) {
+                        bounded.insert((*index, UNSIGNED_AT_MOST, below));
+                    }
+                }
+                Cond::Lt | Cond::Ge | Cond::Le | Cond::Gt => {
+                    let signed = limit as i64;
+                    for (kind, bound) in [
+                        (AT_MOST, Some(signed)),
+                        (AT_MOST, signed.checked_sub(1)),
+                        (AT_LEAST, Some(signed)),
+                        (AT_LEAST, signed.checked_add(1)),
+                    ] {
+                        if let Some(bound) = bound {
+                            bounded.insert((*index, kind, bound as u64));
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }
@@ -339,23 +359,31 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                     .collect(),
                 _ => Vec::new(),
             };
-            let limits: Vec<u64> = sources
+            let limits: Vec<(u8, u64)> = sources
                 .iter()
                 .flat_map(|source| {
                     bounded
-                        .range((*source, 0)..=(*source, u64::MAX))
-                        .map(|(_, limit)| *limit)
+                        .range((*source, 0, 0)..=(*source, u8::MAX, u64::MAX))
+                        .map(|(_, kind, limit)| (*kind, *limit))
                 })
                 .collect();
-            bounded.extend(limits.into_iter().map(|limit| (dest.index, limit)));
+            bounded.extend(
+                limits
+                    .into_iter()
+                    .map(|(kind, limit)| (dest.index, kind, limit)),
+            );
         }
         if bounded.len() == known {
             break;
         }
     }
-    for (register, limit) in bounded {
+    for (register, kind, limit) in bounded {
         let within = || Expr::Select {
-            cond: crate::ir::Cond::Ls,
+            cond: match kind {
+                UNSIGNED_AT_MOST => Cond::Ls,
+                AT_MOST => Cond::Le,
+                _ => Cond::Ge,
+            },
             lhs: Box::new(Expr::reg(register, 64)),
             rhs: Box::new(Expr::Const(limit)),
             then: Box::new(Expr::Const(1)),
