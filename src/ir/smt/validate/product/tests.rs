@@ -1136,6 +1136,50 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert_eq!(folded(1), Verdict::Proved);
     assert!(not_proved(&folded(2)));
 
+    // The register read in a later block than the call that left it, on
+    // every path; with a path that sets it first, it is no choice.
+    let later = |set: bool| {
+        let read = |upper: Expr| {
+            vec![
+                assign(
+                    1,
+                    raw_bin(
+                        BinOp::Or,
+                        raw_bin(BinOp::And, upper, Expr::Const(!0xff)),
+                        Expr::Const(1),
+                    ),
+                ),
+                store(Expr::Const(0x4000), r(1)),
+                ret(Expr::Const(0)),
+            ]
+        };
+        let first = |set: bool| {
+            let mut stmts = vec![call()];
+            if set {
+                stmts.push(Stmt::Brif {
+                    at: None,
+                    cond: Cond::Eq,
+                    lhs: r(2),
+                    rhs: Expr::Const(0),
+                    target: 2,
+                });
+            }
+            stmts.push(br(1));
+            stmts
+        };
+        let setting = block(2, vec![assign(1, r(3)), br(1)]);
+        let undefined = Expr::Apply {
+            op: crate::ir::Operation::Undefined,
+            args: Vec::new(),
+        };
+        verdict(
+            vec![block(0, first(set)), block(1, read(r(1))), setting.clone()],
+            vec![block(0, first(set)), block(1, read(undefined)), setting],
+        )
+    };
+    assert_eq!(later(false), Verdict::Proved);
+    assert!(not_proved(&later(true)));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {

@@ -65,7 +65,7 @@ mod tests;
 
 use candidates::candidates;
 use horn::horn;
-use run::{Run, run, start, starting};
+use run::{Run, left_on_entry, run, start, starting};
 use solver::Stats;
 pub(super) use solver::{Reply, Solver};
 
@@ -410,6 +410,9 @@ struct Product {
     reached: Vec<bool>,
     /// Whether an edge leads back to the first block.
     entered_again: bool,
+    /// The registers each block enters holding what a call left, on the
+    /// original side.
+    left: Vec<BTreeSet<u16>>,
 }
 
 /// The invariants inferred and the obligation checked under them.
@@ -447,6 +450,7 @@ impl Product {
             })
             .collect();
         let unshared = Rc::new(BTreeSet::new());
+        let left = left_on_entry(before);
         let runs = (0..before.len())
             .map(|index| {
                 run(
@@ -456,6 +460,7 @@ impl Product {
                     &candidates,
                     &registers,
                     &unshared,
+                    &left[index],
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -482,6 +487,7 @@ impl Product {
             start,
             reached,
             entered_again,
+            left,
         })
     }
 
@@ -651,6 +657,7 @@ impl Product {
                 &self.candidates,
                 &self.registers,
                 &Rc::new(shared.clone()),
+                &self.left[index],
             )
             .expect("a block that ran once runs again");
             let mut assumed = format!(
