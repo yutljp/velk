@@ -304,7 +304,10 @@ time, is decompiled again and checked as a whole:
   those widths need of what a register is computed from. A register assigned
   under a mask of low bits, or from a narrow load, also gives, for each
   register a candidate makes it equal to, the equation with its value under
-  the widest such mask, which says it keeps within that mask. The candidates
+  the widest such mask, which says it keeps within that mask. A register a
+  branch compares unsigned with a constant gives, on each side, the
+  candidate that it is at or below the constant, as a loop's counter stays,
+  and the one that it is below it. The candidates
   of an edge are asked about together, with word-level queries, then over integers
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
