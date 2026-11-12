@@ -296,6 +296,43 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             }
         }
     }
+    // So may a register copied from one, or chosen between copies.
+    loop {
+        let known = bounded.len();
+        for stmt in application
+            .before
+            .iter()
+            .chain(&application.after)
+            .flat_map(|block| &block.stmts)
+        {
+            let Stmt::Assign { dest, value, .. } = stmt else {
+                continue;
+            };
+            let sources: Vec<u16> = match value {
+                Expr::Reg { index, width: 64 } => vec![*index],
+                Expr::Select { then, els, .. } => [then, els]
+                    .into_iter()
+                    .filter_map(|arm| match arm.as_ref() {
+                        Expr::Reg { index, width: 64 } => Some(*index),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            let limits: Vec<u64> = sources
+                .iter()
+                .flat_map(|source| {
+                    bounded
+                        .range((*source, 0)..=(*source, u64::MAX))
+                        .map(|(_, limit)| *limit)
+                })
+                .collect();
+            bounded.extend(limits.into_iter().map(|limit| (dest.index, limit)));
+        }
+        if bounded.len() == known {
+            break;
+        }
+    }
     for (register, limit) in bounded {
         let within = || Expr::Select {
             cond: crate::ir::Cond::Ls,

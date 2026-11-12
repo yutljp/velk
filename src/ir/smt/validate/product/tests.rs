@@ -1217,6 +1217,50 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(counted(16));
     assert!(!counted(15));
 
+    // The counter copied when the loop ends and then overwritten: a later
+    // block drops a mask from a sum it computes from the copy only knowing
+    // the copy keeps the counter's bound.
+    let copied = |mask: u64| {
+        let blocks = |last: Expr| {
+            vec![
+                block(0, vec![assign(1, Expr::Const(0)), br(10)]),
+                block(
+                    10,
+                    vec![Stmt::Brif {
+                        at: None,
+                        cond: Cond::Cc,
+                        lhs: r(1),
+                        rhs: Expr::Const(16),
+                        target: 20,
+                    }],
+                ),
+                block(
+                    30,
+                    vec![assign(2, r(1)), assign(1, Expr::Const(99)), br(40)],
+                ),
+                block(40, vec![assign(3, plus(2, 1)), ret(last)]),
+                block(20, vec![assign(1, plus(1, 1)), br(10)]),
+            ]
+        };
+        let application = application(
+            blocks(raw_bin(BinOp::And, r(3), Expr::Const(mask))),
+            blocks(r(3)),
+        );
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(copied(0x1f));
+    assert!(!copied(0xf));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {

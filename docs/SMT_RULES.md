@@ -307,7 +307,8 @@ time, is decompiled again and checked as a whole:
   the widest such mask, which says it keeps within that mask. A register a
   branch compares unsigned with a constant gives, on each side, the
   candidate that it is at or below the constant, as a loop's counter stays,
-  and the one that it is below it. The candidates
+  and the one that it is below it, and so does a register assigned a copy of
+  one, or a selection between copies. The candidates
   of an edge are asked about together, with word-level queries, then over integers
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
