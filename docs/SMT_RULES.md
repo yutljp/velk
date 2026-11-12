@@ -302,7 +302,8 @@ time, is decompiled again and checked as a whole:
   constant offset from the same base. They also come from assignments one side lacks, and from registers a copy or a renaming joins, at
   every width they are read, written, stored or masked at, and at the low bits
   those widths need of what a register is computed from. A register assigned
-  under a mask of low bits, or from a narrow load, also gives, for each
+  under a mask of fewer than 32 low bits, or from a load of one or two
+  bytes, also gives, for each
   register a candidate makes it equal to, the equation with its value under
   the widest such mask, which says it keeps within that mask. A register a
   branch compares unsigned with a constant gives, on each side, the
