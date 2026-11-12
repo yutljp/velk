@@ -309,7 +309,8 @@ time, is decompiled again and checked as a whole:
   candidate that it is at or below the constant, as a loop's counter stays,
   and the one that it is below it; one a branch compares signed gives those
   of each way the branch leaves it, at or below the constant or one less,
-  and at or above it or one more; and so does a register assigned a copy of
+  and at or above it or one more; a branch comparing a register's low 32
+  bits gives the same of those bits; and so does a register assigned a copy of
   one, or a selection between copies. Paired narrow stores of different
   values give the equation of the low bits they store. The candidates
   of an edge are asked about together, with word-level queries, then over integers

@@ -1344,6 +1344,66 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(pinned(4));
     assert!(!pinned(3));
 
+    // A 32-bit load a branch checks is not negative as a 32-bit value: a
+    // later block sets its low bit and drops the sign extension only
+    // knowing the check's bound; setting the sign bit instead is no such
+    // rewrite.
+    let nonnegative = |bit: u64| {
+        let blocks = |last: Expr| {
+            vec![
+                block(
+                    0,
+                    vec![
+                        assign(
+                            1,
+                            Expr::Load {
+                                addr: Box::new(Expr::Const(0x4000)),
+                                width: 4,
+                                signed: false,
+                            },
+                        ),
+                        Stmt::Brif {
+                            at: None,
+                            cond: Cond::Lt,
+                            lhs: raw_bin(BinOp::And, r(1), Expr::Const(0xffff_ffff)),
+                            rhs: Expr::Const(0),
+                            target: 40,
+                        },
+                    ],
+                ),
+                block(10, vec![br(20)]),
+                block(
+                    20,
+                    vec![
+                        assign(1, raw_bin(BinOp::Or, r(1), Expr::Const(bit))),
+                        ret(last),
+                    ],
+                ),
+                block(40, vec![ret(Expr::Const(0))]),
+            ]
+        };
+        let application = application(
+            blocks(Expr::SignExtend {
+                value: Box::new(r(1)),
+                width: 4,
+            }),
+            blocks(r(1)),
+        );
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(nonnegative(1));
+    assert!(!nonnegative(0x8000_0000));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
