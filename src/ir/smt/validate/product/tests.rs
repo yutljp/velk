@@ -1305,6 +1305,54 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(copied(0x1f));
     assert!(!copied(0xf));
 
+    // A 32-bit load masked to its low 32 bits twice, in two blocks, where
+    // the rewrite keeps the load alone in another register: the blocks
+    // agree only joining the masked registers to the loaded one.
+    let extended = |mask: u64| {
+        let load = Expr::Load {
+            addr: Box::new(Expr::Const(0x4000)),
+            width: 4,
+            signed: false,
+        };
+        let before = vec![
+            block(
+                0,
+                vec![
+                    assign(1, load.clone()),
+                    assign(2, raw_bin(BinOp::And, r(1), Expr::Const(mask))),
+                    br(10),
+                ],
+            ),
+            block(
+                10,
+                vec![
+                    assign(3, raw_bin(BinOp::And, r(2), Expr::Const(0xffff_ffff))),
+                    br(20),
+                ],
+            ),
+            block(20, vec![ret(r(3))]),
+        ];
+        let after = vec![
+            block(0, vec![assign(5, load), br(10)]),
+            block(10, vec![br(20)]),
+            block(20, vec![ret(r(5))]),
+        ];
+        let application = application(before, after);
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(extended(0xffff_ffff));
+    assert!(!extended(0xffff));
+
     // A byte stored after two paths that each leave the register's low
     // byte zero, one testing it and one setting it: the store's block
     // agrees alone that the byte is zero only from the low bits.

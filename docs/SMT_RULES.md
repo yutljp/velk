@@ -299,7 +299,7 @@ time, is decompiled again and checked as a whole:
   register they read was assigned or changed before them in the block, and,
   when they load, no call or machine statement came before them and each load
   reads other bytes than every earlier store in the block, at another
-  constant offset from the same base. They also come from assignments one side lacks, and from registers a copy or a renaming joins, at
+  constant offset from the same base. They also come from assignments one side lacks, and from registers a copy, a mask of low bits or a renaming joins, at
   every width they are read, written, stored or masked at, and at the low bits
   those widths need of what a register is computed from. A register assigned
   under a mask of fewer than 32 low bits, or from a load of one or two
