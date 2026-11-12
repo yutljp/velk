@@ -319,7 +319,15 @@ time, is decompiled again and checked as a whole:
   value, chosen independently at each place, except that an assignment of one
   both sides make alike, once each between the same two paired statements,
   gives it one value on both sides: the original may hold any value there, so
-  the rewritten function's is among them. An operation without an SMT model
+  the rewritten function's is among them. Where the two sides assign one
+  register differently at one place, the original's undefined values there
+  are zero, as `simplify` takes an undefined value when it folds one away,
+  and one the rewritten side has in place of an expression of the original
+  is what that expression evaluates to, with its undefined values zero,
+  when the expression reads an undefined value or is a register holding
+  what a call of the block left; in place of anything else it stays any
+  value, so dropping a value the function computes is not proved. An
+  operation without an SMT model
   is one unknown function of its arguments, the same on both sides; in the Horn
   clauses each of its applications is a value of its own, equal to another
   where their arguments are equal, so the engine cannot choose the function.

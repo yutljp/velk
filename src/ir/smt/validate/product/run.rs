@@ -261,6 +261,9 @@ pub(super) fn run(
     let mut path = "true".to_owned();
     let (mut next_old, mut next_new) = (0, 0);
     let mut ended = false;
+    // What calls of the block leave in registers they change and no output
+    // takes: any value.
+    let mut left_by_calls: BTreeSet<String> = BTreeSet::new();
     for (&at_old, &at_new) in old_observable.iter().zip(&new_observable) {
         assign_stretch(
             &mut script,
@@ -268,6 +271,7 @@ pub(super) fn run(
             &mut after,
             &old[next_old..at_old],
             &new[next_new..at_new],
+            &left_by_calls,
         );
         (next_old, next_new) = (at_old + 1, at_new + 1);
         let (old_stmt, new_stmt) = (&old[at_old], &new[at_new]);
@@ -542,6 +546,7 @@ pub(super) fn run(
                     for (&register, term) in &fresh {
                         if !routed.contains(&register) {
                             side.registers.insert(register, term.clone());
+                            left_by_calls.insert(term.clone());
                         }
                     }
                     for (dest, value) in outputs {
@@ -714,6 +719,7 @@ pub(super) fn run(
             &mut after,
             &old[next_old..],
             &new[next_new..],
+            &left_by_calls,
         );
         if index + 1 < application.before.len() {
             edges.push((index + 1, path, before, after));
@@ -774,6 +780,7 @@ fn assign_stretch(
     after: &mut Side,
     old: &[Stmt],
     new: &[Stmt],
+    left_by_calls: &BTreeSet<String>,
 ) {
     type Key<'a> = (Option<u64>, RegRef, &'a Expr);
     fn key(stmt: &Stmt) -> Option<Key<'_>> {
@@ -805,16 +812,121 @@ fn assign_stretch(
             .find(|(paired, _)| Some(*paired) == wanted)
             .map_or_else(Vec::new, |(_, names)| names.clone())
     };
+    // Where the two sides assign one register differently at one place,
+    // the undefined values may be chosen as the passes take them. Those of
+    // the original are zero, as `simplify` takes them when it folds them.
+    // One the rewritten side assigns where the original has an expression
+    // is taken to be what that expression evaluates to, when it reads an
+    // undefined value or a register holding what a call left, both any
+    // value: the rewritten function then does, for one choice of its
+    // undefined values, what the original does. An undefined value in place
+    // of anything else stays any value, as a value the function computes is
+    // not one to drop.
+    type Place = (Option<u64>, RegRef);
+    let mut chosen: Vec<(Place, Vec<String>)> = Vec::new();
     for stmt in old {
+        let mut zeros = Vec::new();
+        if let Stmt::Assign { at, dest, value } = stmt
+            && once(old, (*at, *dest, value))
+            && let [Stmt::Assign { value: other, .. }] = new
+                .iter()
+                .filter(|stmt| {
+                    matches!(stmt, Stmt::Assign { at: a, dest: d, .. } if a == at && d == dest)
+                })
+                .collect::<Vec<_>>()[..]
+            && other != value
+        {
+            zeros = vec![constant(0); undefined_count(value)];
+            let mut holes = Vec::new();
+            if filled(value, other, &mut holes) && !holes.is_empty() {
+                let terms: Vec<String> = holes
+                    .into_iter()
+                    .map(|hole| match hole {
+                        Expr::Reg { index, width: 64 } => {
+                            let term = before.term(script, *index);
+                            if left_by_calls.contains(&term) {
+                                term
+                            } else {
+                                script.havoc(BITS)
+                            }
+                        }
+                        _ if undefined_count(hole) > 0 => {
+                            before.read(script, &zeroed(hole)).term
+                        }
+                        _ => script.havoc(BITS),
+                    })
+                    .collect();
+                chosen.push(((*at, *dest), terms));
+            }
+        }
         if let Stmt::Assign { dest, value, .. } = stmt {
-            before.assign(script, *dest, value, &names(stmt));
+            let names = if zeros.is_empty() { names(stmt) } else { zeros };
+            before.assign(script, *dest, value, &names);
         }
     }
     for stmt in new {
-        if let Stmt::Assign { dest, value, .. } = stmt {
-            after.assign(script, *dest, value, &names(stmt));
+        if let Stmt::Assign { at, dest, value } = stmt {
+            let terms = chosen
+                .iter()
+                .find(|(paired, _)| *paired == (*at, *dest))
+                .map_or_else(|| names(stmt), |(_, terms)| terms.clone());
+            after.assign(script, *dest, value, &terms);
         }
     }
+}
+
+/// `expr` with each undefined value it applies taken as zero.
+fn zeroed(expr: &Expr) -> Expr {
+    if matches!(
+        expr,
+        Expr::Apply {
+            op: crate::ir::Operation::Undefined,
+            ..
+        }
+    ) {
+        return Expr::Const(0);
+    }
+    let mut zeroed = expr.clone();
+    for child in crate::ir::visit::children_mut(&mut zeroed) {
+        *child = self::zeroed(child);
+    }
+    zeroed
+}
+
+/// Whether `new` is `old` with some subexpressions replaced by undefined
+/// values, collecting those subexpressions of `old` in the order the
+/// undefined values are met as unmodeled operations.
+fn filled<'a>(old: &'a Expr, new: &Expr, holes: &mut Vec<&'a Expr>) -> bool {
+    if matches!(
+        new,
+        Expr::Apply {
+            op: crate::ir::Operation::Undefined,
+            ..
+        }
+    ) {
+        holes.push(old);
+        return true;
+    }
+    if old == new {
+        return undefined_count(new) == 0;
+    }
+    let bare = |expr: &Expr| {
+        let mut bare = expr.clone();
+        for child in crate::ir::visit::children_mut(&mut bare) {
+            *child = Expr::Const(0);
+        }
+        bare
+    };
+    let (old_children, new_children) = (
+        crate::ir::visit::children(old),
+        crate::ir::visit::children(new),
+    );
+    bare(old) == bare(new)
+        && old_children.len() == new_children.len()
+        && old_children
+            .into_iter()
+            .zip(new_children)
+            .all(|(old, new)| filled(old, new, holes))
 }
 
 pub(super) fn truth(
