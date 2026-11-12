@@ -244,7 +244,10 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                 } if *width < 8 => (1u64 << (8 * u32::from(*width))) - 1,
                 _ => return None,
             };
-            (mask.wrapping_add(1).is_power_of_two() && mask != u64::MAX)
+            // A 32-bit mask is on nearly every value of a 32-bit
+            // architecture, and of 32-bit operations elsewhere: candidates
+            // for it made the queries of whole functions too slow to decide.
+            (mask.wrapping_add(1).is_power_of_two() && mask < 0xffff_ffff)
                 .then_some((dest.index, mask))
         });
     // The widest mask a register is assigned under is the one all its

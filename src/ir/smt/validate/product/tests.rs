@@ -1345,9 +1345,9 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(!pinned(3));
 
     // A 32-bit load a branch checks is not negative as a 32-bit value: a
-    // later block sets its low bit and drops the sign extension only
-    // knowing the check's bound; setting the sign bit instead is no such
-    // rewrite.
+    // later block sets the low bit of its low 32 bits and drops the sign
+    // extension only knowing the check's bound; setting the sign bit
+    // instead is no such rewrite.
     let nonnegative = |bit: u64| {
         let blocks = |last: Expr| {
             vec![
@@ -1375,7 +1375,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 block(
                     20,
                     vec![
-                        assign(1, raw_bin(BinOp::Or, r(1), Expr::Const(bit))),
+                        assign(2, raw_bin(BinOp::Or, Expr::reg(1, 32), Expr::Const(bit))),
                         ret(last),
                     ],
                 ),
@@ -1384,10 +1384,10 @@ fn functions_are_compared_across_blocks_and_loops() {
         };
         let application = application(
             blocks(Expr::SignExtend {
-                value: Box::new(r(1)),
+                value: Box::new(r(2)),
                 width: 4,
             }),
-            blocks(r(1)),
+            blocks(r(2)),
         );
         let product = Product::new(&application).expect("a product");
         let mut solver = Solver::start().expect("z3");
