@@ -336,7 +336,11 @@ time, is decompiled again and checked as a whole:
   when the expression reads an undefined value or is a register holding
   what a call left in it, a register the call changes and no output takes,
   on every path to that place; in place of anything else it stays any
-  value, so dropping a value the function computes is not proved. An
+  value, so dropping a value the function computes is not proved. The
+  undefined values these rules leave any value, when the two sides have as
+  many between the same two paired statements, as a pass moving or
+  inlining an assignment of one leaves them, are taken pairwise as one
+  value in the order they come: one choice of the rewritten side's. An
   operation without an SMT model
   is one unknown function of its arguments, the same on both sides; in the Horn
   clauses each of its applications is a value of its own, equal to another
