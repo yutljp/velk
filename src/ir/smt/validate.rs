@@ -249,10 +249,8 @@ pub(crate) fn pass<R>(
                     })
                 })
                 .flatten();
-            let narrow_entries = [&before, &ir.blocks].map(|blocks| {
-                (crate::arch::pointer_bytes(ir.isa) == 4)
-                    .then(|| product::stack_offsets(blocks, sp))
-                    .flatten()
+            let stack_entries = [&before, &ir.blocks].map(|blocks| {
+                product::stack_offsets(blocks, sp)
                     .map(|offsets| {
                         offsets
                             .iter()
@@ -269,7 +267,7 @@ pub(crate) fn pass<R>(
                 after: ir.blocks.clone(),
                 landing_pads: !ir.landing_pads.is_empty(),
                 narrow_stack: (crate::arch::pointer_bytes(ir.isa) == 4).then_some(sp),
-                narrow_entries,
+                stack_entries: (sp, stack_entries),
                 private_frame,
                 frames,
                 convention: ir.convention,

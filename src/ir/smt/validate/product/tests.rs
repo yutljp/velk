@@ -69,7 +69,7 @@ fn application(before: Vec<Block>, after: Vec<Block>) -> Application {
         after,
         landing_pads: false,
         narrow_stack: None,
-        narrow_entries: Default::default(),
+        stack_entries: Default::default(),
         private_frame: None,
         frames: None,
         convention: crate::ir::Convention::SysV,
@@ -105,7 +105,7 @@ fn assuming(
             after,
             landing_pads: false,
             narrow_stack: None,
-            narrow_entries: Default::default(),
+            stack_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,
@@ -135,7 +135,7 @@ fn aligned(
             after,
             landing_pads: false,
             narrow_stack: None,
-            narrow_entries: Default::default(),
+            stack_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,
@@ -863,7 +863,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 )],
                 landing_pads: false,
                 narrow_stack: None,
-                narrow_entries: Default::default(),
+                stack_entries: Default::default(),
                 private_frame: None,
                 frames: None,
                 convention: crate::ir::Convention::SysV,
@@ -903,7 +903,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 )],
                 landing_pads: false,
                 narrow_stack: narrow.then_some(13),
-                narrow_entries: Default::default(),
+                stack_entries: Default::default(),
                 private_frame: None,
                 frames: None,
                 convention: crate::ir::Convention::SysV,
@@ -948,7 +948,7 @@ fn functions_are_compared_across_blocks_and_loops() {
         );
         application.narrow_stack = Some(13);
         application.narrow_registers = [13].into();
-        application.narrow_entries = entries;
+        application.stack_entries = (13, entries);
         // Inference over paths from the start finds the bound by itself in
         // a function this small, so the blocks are checked alone as well.
         let product = Product::new(&application).expect("a product");
@@ -968,6 +968,38 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert_eq!(later32([unmoved.clone(), unmoved]), (Verdict::Proved, true));
     assert_eq!(later32([Vec::new(), Vec::new()]), (Verdict::Proved, false));
 
+    // A slot one side reaches below pushes in this block and an earlier one
+    // and the other from where the function entered: the blocks agree on it
+    // alone only knowing how far apart the two stack pointers start, which
+    // no single push's candidate says.
+    let pushed = |entries: [Vec<Option<i64>>; 2]| {
+        let push = || assign(4, plus(4, -8));
+        let mut application = application(
+            vec![
+                block(0, vec![push(), push(), br(1)]),
+                block(1, vec![push(), store(r(4), r(1)), ret(Expr::Const(0))]),
+            ],
+            vec![
+                block(0, vec![br(1)]),
+                block(1, vec![store(plus(4, -24), r(1)), ret(Expr::Const(0))]),
+            ],
+        );
+        application.stack_entries = (4, entries);
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(pushed([vec![Some(0), Some(-16)], vec![Some(0), Some(0)]]));
+    assert!(!pushed([Vec::new(), vec![Some(0), Some(0)]]));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
@@ -986,7 +1018,7 @@ fn functions_are_compared_across_blocks_and_loops() {
             after: vec![block(0, vec![calling]), block(1, vec![ret(Expr::Const(0))])],
             landing_pads: false,
             narrow_stack: None,
-            narrow_entries: Default::default(),
+            stack_entries: Default::default(),
             private_frame: None,
             frames: None,
             convention: crate::ir::Convention::SysV,

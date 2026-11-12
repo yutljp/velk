@@ -215,26 +215,33 @@ pub(super) fn run(
             .map(|candidate| instantiate(&mut script, &mut before, &mut after, candidate))
             .collect()
     };
-    // A stack pointer only constants move stays as far from the ends of a
-    // 32-bit address space as it entered.
+    // Both sides enter with one stack pointer; one that only constants move
+    // starts each block that far from it, which on a 32-bit architecture
+    // lies clear of the ends of the address space.
     let mut facts = vec!["true".to_owned()];
-    if let Some(sp) = application.narrow_stack {
-        for (side, entries) in [&mut before, &mut after]
-            .into_iter()
-            .zip(&application.narrow_entries)
-        {
-            if let Some(Some(offset)) = entries.get(index) {
-                let entered = format!(
-                    "(bvsub {} {})",
-                    side.term(&mut script, sp),
-                    constant(*offset as u64)
-                );
-                facts.push(format!(
-                    "(bvuge {entered} {}) (bvule {entered} {})",
-                    constant(NARROW_STACK.0),
-                    constant(NARROW_STACK.1)
-                ));
-            }
+    let (sp, entries) = &application.stack_entries;
+    let entered: Vec<Option<String>> = [&mut before, &mut after]
+        .into_iter()
+        .zip(entries)
+        .map(|(side, entries)| {
+            let offset = (*entries.get(index)?)?;
+            Some(format!(
+                "(bvsub {} {})",
+                side.term(&mut script, *sp),
+                constant(offset as u64)
+            ))
+        })
+        .collect();
+    if let [Some(old), Some(new)] = &entered[..] {
+        facts.push(format!("(= {old} {new})"));
+    }
+    if application.narrow_stack.is_some() {
+        for entered in entered.iter().flatten() {
+            facts.push(format!(
+                "(bvuge {entered} {}) (bvule {entered} {})",
+                constant(NARROW_STACK.0),
+                constant(NARROW_STACK.1)
+            ));
         }
     }
     let facts = format!("(and {})", facts.join(" "));
