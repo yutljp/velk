@@ -1071,6 +1071,71 @@ fn functions_are_compared_across_blocks_and_loops() {
         signed: false,
     }));
 
+    // A register a call clobbers, read to keep its upper bits beside a new
+    // low byte and then stored: the rewrite reads an undefined value in its
+    // place, which may be what the call left.
+    let kept = |undefined: bool| {
+        let low = |upper: Expr| {
+            raw_bin(
+                BinOp::Or,
+                raw_bin(BinOp::And, upper, Expr::Const(!0xff)),
+                Expr::Const(1),
+            )
+        };
+        let upper = if undefined {
+            Expr::Apply {
+                op: crate::ir::Operation::Undefined,
+                args: Vec::new(),
+            }
+        } else {
+            r(2)
+        };
+        let stored = |value: Expr| {
+            vec![
+                call(),
+                assign(1, value),
+                store(Expr::Const(0x4000), r(1)),
+                ret(Expr::Const(0)),
+            ]
+        };
+        verdict(
+            vec![block(0, stored(low(r(1))))],
+            vec![block(0, stored(low(upper)))],
+        )
+    };
+    assert_eq!(kept(true), Verdict::Proved);
+    // An expression in its place is no choice.
+    assert!(not_proved(&kept(false)));
+
+    // The same undefined upper bits folded away, as `simplify` takes an
+    // undefined value as zero; a different low byte is no such choice.
+    let folded = |byte: u64| {
+        let undefined = Expr::Apply {
+            op: crate::ir::Operation::Undefined,
+            args: Vec::new(),
+        };
+        let stored = |value: Expr| {
+            vec![
+                assign(1, value),
+                store(Expr::Const(0x4000), r(1)),
+                ret(Expr::Const(0)),
+            ]
+        };
+        verdict(
+            vec![block(
+                0,
+                stored(raw_bin(
+                    BinOp::Or,
+                    raw_bin(BinOp::And, undefined, Expr::Const(!0xff)),
+                    Expr::Const(1),
+                )),
+            )],
+            vec![block(0, stored(Expr::Const(byte)))],
+        )
+    };
+    assert_eq!(folded(1), Verdict::Proved);
+    assert!(not_proved(&folded(2)));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
