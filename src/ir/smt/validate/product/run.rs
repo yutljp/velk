@@ -810,7 +810,7 @@ fn assign_stretch(
             given.push((wanted, (0..count).map(|_| script.havoc(BITS)).collect()));
         }
     }
-    let names = |stmt| -> Vec<String> {
+    let names = |stmt: &Stmt| -> Vec<String> {
         let wanted = key(stmt);
         given
             .iter()
@@ -828,18 +828,72 @@ fn assign_stretch(
     // of anything else stays any value, as a value the function computes is
     // not one to drop.
     type Place = (Option<u64>, RegRef);
+    let paired = |stmt: &Stmt| -> Option<&Expr> {
+        let Stmt::Assign { at, dest, value } = stmt else {
+            return None;
+        };
+        if !once(old, (*at, *dest, value)) {
+            return None;
+        }
+        match new
+            .iter()
+            .filter(
+                |stmt| matches!(stmt, Stmt::Assign { at: a, dest: d, .. } if a == at && d == dest),
+            )
+            .collect::<Vec<_>>()[..]
+        {
+            [Stmt::Assign { value: other, .. }] if other != value => Some(other),
+            _ => None,
+        }
+    };
+    // The undefined values no rule here chooses are any value on each side;
+    // when the two sides have as many of them, in assignments a pass may
+    // have moved or merged, as one inlining a copy, the rewritten side's
+    // may be chosen as the original's in the order they come.
+    let free = |stmt: &Stmt, original: bool| -> usize {
+        let Stmt::Assign { value, .. } = stmt else {
+            return 0;
+        };
+        if !names(stmt).is_empty() {
+            return 0;
+        }
+        if original {
+            if paired(stmt).is_some() {
+                return 0;
+            }
+        } else if let Some(original) = old
+            .iter()
+            .find(|candidate| paired(candidate).is_some_and(|other| std::ptr::eq(other, value)))
+        {
+            let Stmt::Assign { value: kept, .. } = original else {
+                unreachable!("a paired statement is an assignment");
+            };
+            let mut holes = Vec::new();
+            if filled(kept, value, &mut holes) && !holes.is_empty() {
+                return 0;
+            }
+        }
+        undefined_count(value)
+    };
+    let old_free: Vec<usize> = old.iter().map(|stmt| free(stmt, true)).collect();
+    let new_free: Vec<usize> = new.iter().map(|stmt| free(stmt, false)).collect();
+    let mut shared_old: Vec<Vec<String>> = vec![Vec::new(); old.len()];
+    let mut shared_new: Vec<Vec<String>> = vec![Vec::new(); new.len()];
+    let total: usize = old_free.iter().sum();
+    if total > 0 && total == new_free.iter().sum::<usize>() {
+        let values: Vec<String> = (0..total).map(|_| script.havoc(BITS)).collect();
+        for (free, shared) in [(&old_free, &mut shared_old), (&new_free, &mut shared_new)] {
+            let mut next = values.iter();
+            for (count, names) in free.iter().zip(shared.iter_mut()) {
+                names.extend(next.by_ref().take(*count).cloned());
+            }
+        }
+    }
     let mut chosen: Vec<(Place, Vec<String>)> = Vec::new();
-    for stmt in old {
+    for (position, stmt) in old.iter().enumerate() {
         let mut zeros = Vec::new();
-        if let Stmt::Assign { at, dest, value } = stmt
-            && once(old, (*at, *dest, value))
-            && let [Stmt::Assign { value: other, .. }] = new
-                .iter()
-                .filter(|stmt| {
-                    matches!(stmt, Stmt::Assign { at: a, dest: d, .. } if a == at && d == dest)
-                })
-                .collect::<Vec<_>>()[..]
-            && other != value
+        if let Some(other) = paired(stmt)
+            && let Stmt::Assign { at, dest, value } = stmt
         {
             zeros = vec![constant(0); undefined_count(value)];
             let mut holes = Vec::new();
@@ -855,9 +909,7 @@ fn assign_stretch(
                                 script.havoc(BITS)
                             }
                         }
-                        _ if undefined_count(hole) > 0 => {
-                            before.read(script, &zeroed(hole)).term
-                        }
+                        _ if undefined_count(hole) > 0 => before.read(script, &zeroed(hole)).term,
                         _ => script.havoc(BITS),
                     })
                     .collect();
@@ -865,16 +917,30 @@ fn assign_stretch(
             }
         }
         if let Stmt::Assign { dest, value, .. } = stmt {
-            let names = if zeros.is_empty() { names(stmt) } else { zeros };
+            let names = if !zeros.is_empty() {
+                zeros
+            } else if !shared_old[position].is_empty() {
+                shared_old[position].clone()
+            } else {
+                names(stmt)
+            };
             before.assign(script, *dest, value, &names);
         }
     }
-    for stmt in new {
+    for (position, stmt) in new.iter().enumerate() {
         if let Stmt::Assign { at, dest, value } = stmt {
             let terms = chosen
                 .iter()
                 .find(|(paired, _)| *paired == (*at, *dest))
-                .map_or_else(|| names(stmt), |(_, terms)| terms.clone());
+                .map(|(_, terms)| terms.clone())
+                .filter(|_| shared_new[position].is_empty())
+                .unwrap_or_else(|| {
+                    if shared_new[position].is_empty() {
+                        names(stmt)
+                    } else {
+                        shared_new[position].clone()
+                    }
+                });
             after.assign(script, *dest, value, &terms);
         }
     }

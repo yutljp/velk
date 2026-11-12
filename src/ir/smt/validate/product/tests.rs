@@ -322,8 +322,9 @@ fn functions_are_compared_across_blocks_and_loops() {
 
     // An undefined value both sides assign alike, stored in the next block
     // after an assignment no one reads is dropped: one value on both sides.
-    // Not so when either side assigns it twice there, or the rewritten side
-    // assigns it at another place.
+    // So too when both assign it twice there, or the rewritten side assigns
+    // it at another place, the rewritten side's values being chosen as the
+    // original's in order; not when the original assigns a value there.
     let alike = |times: usize, place: u64| {
         let unknown = |at: u64| Stmt::Assign {
             at: Some(at),
@@ -348,8 +349,51 @@ fn functions_are_compared_across_blocks_and_loops() {
         verdict(vec![block(0, old), tail.clone()], vec![block(0, new), tail])
     };
     assert_eq!(alike(1, 0x10), Verdict::Proved);
-    assert!(not_proved(&alike(2, 0x10)));
-    assert!(not_proved(&alike(1, 0x14)));
+    assert_eq!(alike(2, 0x10), Verdict::Proved);
+    assert_eq!(alike(1, 0x14), Verdict::Proved);
+    let dropped_value = verdict(
+        vec![
+            block(
+                0,
+                vec![
+                    Stmt::Assign {
+                        at: Some(0x10),
+                        dest: RegRef {
+                            index: 3,
+                            width: 64,
+                        },
+                        value: r(9),
+                    },
+                    br(1),
+                ],
+            ),
+            block(
+                1,
+                vec![store(Expr::Const(0x1000), r(3)), ret(Expr::Const(0))],
+            ),
+        ],
+        vec![
+            block(
+                0,
+                vec![
+                    Stmt::Assign {
+                        at: Some(0x14),
+                        dest: RegRef {
+                            index: 3,
+                            width: 64,
+                        },
+                        value: Expr::apply(crate::ir::Operation::Undefined, Vec::new()),
+                    },
+                    br(1),
+                ],
+            ),
+            block(
+                1,
+                vec![store(Expr::Const(0x1000), r(3)), ret(Expr::Const(0))],
+            ),
+        ],
+    );
+    assert!(not_proved(&dropped_value));
 
     // High bits dropped that only a narrow store in another block would
     // read, and a store wide enough to read them.
