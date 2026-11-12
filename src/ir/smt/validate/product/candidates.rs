@@ -271,6 +271,45 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             }
         }
     }
+    // A register a branch compares unsigned with a constant may stay at or
+    // below it, as a loop's counter does, or below it: on each side, the
+    // comparison holding is a candidate too.
+    let mut bounded: BTreeSet<(u16, u64)> = BTreeSet::new();
+    for stmt in application
+        .before
+        .iter()
+        .chain(&application.after)
+        .flat_map(|block| &block.stmts)
+    {
+        if let Stmt::Brif {
+            cond:
+                crate::ir::Cond::Cs | crate::ir::Cond::Cc | crate::ir::Cond::Hi | crate::ir::Cond::Ls,
+            lhs,
+            rhs,
+            ..
+        } = stmt
+            && let (Expr::Reg { index, width: 64 }, Expr::Const(limit)) = (lhs, rhs)
+        {
+            bounded.insert((*index, *limit));
+            if let Some(below) = limit.checked_sub(1) {
+                bounded.insert((*index, below));
+            }
+        }
+    }
+    for (register, limit) in bounded {
+        let within = || Expr::Select {
+            cond: crate::ir::Cond::Ls,
+            lhs: Box::new(Expr::reg(register, 64)),
+            rhs: Box::new(Expr::Const(limit)),
+            then: Box::new(Expr::Const(1)),
+            els: Box::new(Expr::Const(0)),
+        };
+        for pair in [(within(), Expr::Const(1)), (Expr::Const(1), within())] {
+            if seen.insert(format!("{pair:?}")) {
+                found.push(pair);
+            }
+        }
+    }
     found
 }
 

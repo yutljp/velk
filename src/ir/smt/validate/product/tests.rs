@@ -1180,6 +1180,43 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert_eq!(later(false), Verdict::Proved);
     assert!(not_proved(&later(true)));
 
+    // A loop counter counting from zero while below 16, which leaves the
+    // loop at 16: the blocks agree alone that it is 16 there only knowing
+    // it stays at or below the bound the branch compares it with.
+    let counted = |returned: u64| {
+        let blocks = |last: Expr| {
+            vec![
+                block(0, vec![assign(1, Expr::Const(0)), br(10)]),
+                block(
+                    10,
+                    vec![Stmt::Brif {
+                        at: None,
+                        cond: Cond::Cc,
+                        lhs: r(1),
+                        rhs: Expr::Const(16),
+                        target: 20,
+                    }],
+                ),
+                block(30, vec![ret(last)]),
+                block(20, vec![assign(1, plus(1, 1)), br(10)]),
+            ]
+        };
+        let application = application(blocks(r(1)), blocks(Expr::Const(returned)));
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(counted(16));
+    assert!(!counted(15));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
