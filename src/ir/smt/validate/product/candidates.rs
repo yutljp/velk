@@ -161,8 +161,20 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                 let Stmt::Assign { dest, value, .. } = stmt else {
                     continue;
                 };
-                if let Expr::Reg { index, .. } = value {
-                    copies.push((dest.index, *index));
+                match value {
+                    Expr::Reg { index, .. } => copies.push((dest.index, *index)),
+                    // A mask of the low bits copies a value that fits in them.
+                    Expr::Bin {
+                        op: crate::ir::BinOp::And,
+                        lhs,
+                        rhs,
+                    } if let (Expr::Reg { index, .. }, Expr::Const(mask)) =
+                        (lhs.as_ref(), rhs.as_ref())
+                        && mask.wrapping_add(1).is_power_of_two() =>
+                    {
+                        copies.push((dest.index, *index));
+                    }
+                    _ => {}
                 }
                 if others.contains(&format!("{stmt:?}")) {
                     continue;
