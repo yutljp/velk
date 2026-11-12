@@ -77,6 +77,7 @@ fn application(before: Vec<Block>, after: Vec<Block>) -> Application {
         returned: Some(64),
         narrow_results: BTreeSet::new(),
         without_result_address: BTreeSet::new(),
+        scratch_reads: BTreeMap::new(),
         narrow_registers: BTreeSet::new(),
         entry_pairs: BTreeMap::new(),
     }
@@ -113,6 +114,7 @@ fn assuming(
             returned,
             narrow_results,
             without_result_address: BTreeSet::new(),
+            scratch_reads: BTreeMap::new(),
             narrow_registers: BTreeSet::new(),
             entry_pairs: BTreeMap::new(),
         },
@@ -143,6 +145,7 @@ fn aligned(
             returned: Some(64),
             narrow_results: BTreeSet::new(),
             without_result_address: BTreeSet::new(),
+            scratch_reads: BTreeMap::new(),
             narrow_registers: BTreeSet::new(),
             entry_pairs: BTreeMap::new(),
         },
@@ -871,6 +874,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 returned: Some(64),
                 narrow_results: BTreeSet::new(),
                 without_result_address: BTreeSet::new(),
+                scratch_reads: BTreeMap::new(),
                 narrow_registers: narrow,
                 entry_pairs: [(5000, (0, 1))].into(),
             },
@@ -911,6 +915,7 @@ fn functions_are_compared_across_blocks_and_loops() {
                 returned: Some(64),
                 narrow_results: BTreeSet::new(),
                 without_result_address: BTreeSet::new(),
+                scratch_reads: BTreeMap::new(),
                 narrow_registers: if narrow { [13].into() } else { BTreeSet::new() },
                 entry_pairs: BTreeMap::new(),
             },
@@ -1000,6 +1005,72 @@ fn functions_are_compared_across_blocks_and_loops() {
     assert!(pushed([vec![Some(0), Some(-16)], vec![Some(0), Some(0)]]));
     assert!(!pushed([Vec::new(), vec![Some(0), Some(0)]]));
 
+    // A value moved out of a register a call of unknown floating-point
+    // arguments reads unnamed: the same call only when the register holds
+    // scratch the call passes by.
+    let passed_by = |scratch: BTreeMap<(u64, usize), BTreeSet<u16>>| {
+        let lanes = || assign(18, raw_bin(BinOp::Add, r(7), Expr::Const(1)));
+        let mut moved = lanes();
+        if let Stmt::Assign { dest, .. } = &mut moved {
+            dest.index = crate::ir::VARIABLE_BASE;
+        }
+        let mut application = application(
+            vec![block(0, vec![lanes(), call(), ret(Expr::Const(0))])],
+            vec![block(0, vec![moved, call(), ret(Expr::Const(0))])],
+        );
+        application.scratch_reads = scratch;
+        check(&application, 50_000_000, 1_000_000_000)
+    };
+    assert_eq!(passed_by([((0, 1), [18].into())].into()), Verdict::Proved);
+    assert!(not_proved(&passed_by(BTreeMap::new())));
+
+    // A mask a later block drops from a sum of a register a byte load
+    // assigned: the blocks agree alone only knowing the register keeps
+    // within a byte, which no differing expression says, the sum being
+    // computed in the block.
+    let byte = Expr::Load {
+        addr: Box::new(Expr::Const(0x4000)),
+        width: 1,
+        signed: false,
+    };
+    let within = |load: Expr| {
+        let sum = || assign(2, plus(1, 1));
+        let application = application(
+            vec![
+                block(0, vec![assign(1, load.clone()), br(1)]),
+                block(
+                    1,
+                    vec![sum(), ret(raw_bin(BinOp::And, r(2), Expr::Const(0x1ff)))],
+                ),
+            ],
+            vec![
+                block(0, vec![assign(1, load), br(1)]),
+                block(1, vec![sum(), ret(r(2))]),
+            ],
+        );
+        let product = Product::new(&application).expect("a product");
+        let mut solver = Solver::start().expect("z3");
+        product
+            .equations(
+                &application,
+                &mut solver,
+                &[(Strategy::WordLevel, 50_000_000)],
+                false,
+            )
+            .failed
+            .is_none()
+    };
+    assert!(within(byte.clone()));
+    // A load of two bytes does not keep within one.
+    let Expr::Load { addr, .. } = byte else {
+        unreachable!()
+    };
+    assert!(!within(Expr::Load {
+        addr,
+        width: 2,
+        signed: false,
+    }));
+
     // A value left in x8 before a call that reads it as a result address
     // unless the callee's summary says it takes none.
     let scratch = |without: BTreeSet<u64>| {
@@ -1026,6 +1097,7 @@ fn functions_are_compared_across_blocks_and_loops() {
             returned: Some(64),
             narrow_results: BTreeSet::new(),
             without_result_address: BTreeSet::new(),
+            scratch_reads: BTreeMap::new(),
             narrow_registers: BTreeSet::new(),
             entry_pairs: BTreeMap::new(),
         };

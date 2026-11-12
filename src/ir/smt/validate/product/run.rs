@@ -484,6 +484,14 @@ pub(super) fn run(
                 {
                     read.remove(&8);
                 }
+                // Scratch a call passes by in a register it reads unnamed is
+                // not what it reads, as `split_variables` takes it.
+                if let Some(scratch) = application
+                    .scratch_reads
+                    .get(&(application.before[index].start, at_old))
+                {
+                    read.retain(|register| !scratch.contains(register));
+                }
                 for register in read {
                     let old = before.term(&mut script, register);
                     let new = after.term(&mut script, register);

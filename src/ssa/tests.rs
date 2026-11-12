@@ -1691,3 +1691,51 @@ fn declared_calls_do_not_reconstruct_variadic_fallback_arguments() {
         matches!(&ir.blocks[0].stmts[2], Stmt::Call { args: Some(args), .. } if args.len() == 2)
     );
 }
+
+#[test]
+fn scratch_call_reads_name_vector_data_in_a_float_argument_register() {
+    // xmm0 holds a lane comparison when a call of unknown floating-point
+    // arguments is made: the call passes it by as scratch, as no float
+    // argument is vector data.
+    let call = || Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
+        target: Some(0x2000),
+        through: None,
+        convention: crate::ir::Convention::SysV,
+        args: Some(Vec::new()),
+        floats_named: false,
+        abi: None,
+        outputs: Vec::new(),
+        clobbers: None,
+        via: None,
+        at: None,
+    };
+    let load = |offset: u64| Expr::Load {
+        addr: Box::new(Expr::Const(0x4000 + offset)),
+        width: 8,
+        signed: false,
+    };
+    let block = |value: Expr| {
+        FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(18, value),
+                call(),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                    at: None,
+                },
+            ],
+        )
+    };
+    let lanes = block(Expr::Apply {
+        op: Operation::Lanes(crate::ir::LaneOp::Equal, 8),
+        args: vec![load(0), load(8)],
+    });
+    assert_eq!(
+        super::split::scratch_call_reads(&lanes).get(&(lanes.blocks[0].start, 1)),
+        Some(&[18].into_iter().collect())
+    );
+    // A scalar there may be a float argument.
+    assert!(super::split::scratch_call_reads(&block(load(0))).is_empty());
+}

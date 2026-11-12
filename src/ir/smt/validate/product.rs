@@ -207,6 +207,10 @@ pub struct Application {
     /// Callees the pass takes to read no result address in `AArch64`'s x8,
     /// as their summaries find them.
     pub without_result_address: BTreeSet<u64>,
+    /// Registers each call of the original side, by block start and
+    /// position, reads unnamed that hold only scratch it passes by, as
+    /// `split_variables` takes them.
+    pub scratch_reads: BTreeMap<(u64, usize), BTreeSet<u16>>,
     /// Machine registers whose values on entry fit in 32 bits.
     pub narrow_registers: BTreeSet<u16>,
     /// Parameters the function enters with in two registers, low half first.

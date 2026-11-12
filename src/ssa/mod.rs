@@ -7,7 +7,7 @@
 //! the statements.
 
 mod demand;
-mod split;
+pub(crate) mod split;
 mod variadic;
 
 #[cfg(test)]
