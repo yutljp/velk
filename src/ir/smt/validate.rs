@@ -259,6 +259,10 @@ pub(crate) fn pass<R>(
                     })
                     .unwrap_or_default()
             });
+            let scratch_reads = crate::ssa::split::scratch_call_reads(&crate::ir::FunctionIr {
+                blocks: before.clone(),
+                ..ir.clone()
+            });
             state.applications.push(product::Application {
                 site,
                 tag,
@@ -276,6 +280,7 @@ pub(crate) fn pass<R>(
                     .map(|alignment| (crate::arch::stack_pointer(ir.isa), alignment)),
                 narrow_results: callees.narrow_results.iter().copied().collect(),
                 without_result_address: callees.without_result_address.iter().copied().collect(),
+                scratch_reads,
                 narrow_registers: match ir.isa {
                     crate::loader::Isa::Arm32 => (0..16).collect(),
                     crate::loader::Isa::I386 => (0..8).collect(),

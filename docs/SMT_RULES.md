@@ -301,8 +301,11 @@ time, is decompiled again and checked as a whole:
   reads other bytes than every earlier store in the block, at another
   constant offset from the same base. They also come from assignments one side lacks, and from registers a copy or a renaming joins, at
   every width they are read, written, stored or masked at, and at the low bits
-  those widths need of what a register is computed from. The candidates of an
-  edge are asked about together, with word-level queries, then over integers
+  those widths need of what a register is computed from. A register assigned
+  under a mask of low bits, or from a narrow load, also gives, for each
+  register a candidate makes it equal to, the equation with its value under
+  the widest such mask, which says it keeps within that mask. The candidates
+  of an edge are asked about together, with word-level queries, then over integers
   and with bounds propagation; those still undecided are asked about in halves with word-level
   queries, and a candidate undecided alone is dropped. Only when an obligation
   is then not proved and a query was left undecided are single candidates asked
@@ -354,7 +357,12 @@ The check assumes the following:
   only in that output's destination, as the passes read calls. A callee whose
   summary finds it returning 32-bit values returns its result zero-extended,
   and one whose summary finds it taking no result address reads none in
-  AArch64's x8, for a pass that relies on the summary.
+  AArch64's x8, for a pass that relies on the summary. A call whose
+  floating-point arguments are not named does not read vector data the
+  function computes into one of their registers, and a register a call reads
+  besides its arguments, AArch64's x8 or SysV's al, does not take a value the
+  function also computes with, as `split_variables` takes them: such a value
+  is scratch the call passes by.
 - On a 32-bit architecture, the general registers enter the function with
   32-bit values, and the stack pointer starts more than any frame away from
   address zero and from the top of the address space. A parameter passed in two

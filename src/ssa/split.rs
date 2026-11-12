@@ -1,6 +1,6 @@
 use super::{Phi, Ssa, build, dom, explicit_reads, lower_with, named, rename_reads};
 use crate::ir::{Expr, FunctionIr, Stmt, VALUE_BASE};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 #[derive(Clone, Copy)]
 enum UpdateScope {
@@ -346,6 +346,69 @@ fn address_difference(low: &Expr, high: &Expr) -> Option<i64> {
     (low_base == high_base).then(|| high_offset.wrapping_sub(low_offset))
 }
 
+/// Registers read unnamed that hold only scratch, by the block, as an
+/// index or a start, and the position of the statement reading them.
+pub(crate) type ScratchReads<B> = BTreeMap<(B, usize), BTreeSet<u16>>;
+
+/// The values statements of `ssa` read without naming them that must stay
+/// in their registers, and the registers each statement, by block and
+/// position, reads unnamed that hold only scratch it passes by.
+///
+/// A value a statement reads without naming it must be in its register,
+/// but for vector data a call of unknown floating-point arguments could
+/// only take as a scalar one, and for a value the code computes with in a
+/// register a call reads unnamed besides its arguments, `AArch64`'s indirect
+/// result register or `SysV`'s vector count: that is scratch the call passes
+/// by. `needed` holds the values statements name.
+fn unnamed_reads(ssa: &Ssa, needed: &HashSet<u16>) -> (HashSet<u16>, ScratchReads<usize>) {
+    let vectors = vector_values(ssa);
+    let mut implicit: HashSet<u16> = HashSet::new();
+    let mut scratch: ScratchReads<usize> = BTreeMap::new();
+    for (&(block, position), reads) in &ssa.implicit_reads {
+        let stmt = &ssa.ir.blocks[block].stmts[position];
+        let preserved = stmt.preserved_output_sources();
+        let (floats, extra) = match stmt {
+            Stmt::Call { convention, .. } => {
+                (convention.float_arguments(), convention.call_extra())
+            }
+            _ => (&[][..], &[][..]),
+        };
+        for (register, value) in reads {
+            if stmt.declared_call_reads().contains(register)
+                || preserved.iter().any(|(_, source)| source == register)
+                || (!(floats.contains(register) && vectors.contains(value))
+                    && !(extra.contains(register) && needed.contains(value)))
+            {
+                implicit.insert(*value);
+            } else {
+                scratch
+                    .entry((block, position))
+                    .or_default()
+                    .insert(*register);
+            }
+        }
+    }
+    (implicit, scratch)
+}
+
+/// The registers each call of `ir`, by block start and position, reads
+/// unnamed that hold only scratch it passes by, as `split_variables` takes
+/// them.
+pub(crate) fn scratch_call_reads(ir: &FunctionIr) -> ScratchReads<u64> {
+    let Some(ssa) = build(ir) else {
+        return BTreeMap::new();
+    };
+    let mut needed: HashSet<u16> = HashSet::new();
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        needed.extend(explicit_reads(stmt));
+    }
+    unnamed_reads(&ssa, &needed)
+        .1
+        .into_iter()
+        .map(|((block, position), registers)| ((ir.blocks[block].start, position), registers))
+        .collect()
+}
+
 /// Gives each variable a register of `registers` holds once the value it
 /// held on entry is dead a name of its own, from `VARIABLE_BASE` up. The
 /// variable holding the entry value keeps the register, and so does one a
@@ -375,35 +438,7 @@ fn split(ir: &mut FunctionIr, registers: &[u16], scope: UpdateScope) {
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
         needed.extend(explicit_reads(stmt));
     }
-    // A value a statement reads without naming it must be in its register,
-    // but for vector data a call of unknown floating-point arguments could
-    // only take as a scalar one, and for a value the code computes with in
-    // a register a call reads unnamed besides its arguments, AArch64's
-    // indirect result register or SysV's vector count: that is scratch the
-    // call passes by.
-    let vectors = vector_values(&ssa);
-    let mut implicit: HashSet<u16> = HashSet::new();
-    for (&(block, position), reads) in &ssa.implicit_reads {
-        let stmt = &ssa.ir.blocks[block].stmts[position];
-        let preserved = stmt.preserved_output_sources();
-        let (floats, extra) = match stmt {
-            Stmt::Call { convention, .. } => {
-                (convention.float_arguments(), convention.call_extra())
-            }
-            _ => (&[][..], &[][..]),
-        };
-        implicit.extend(
-            reads
-                .iter()
-                .filter(|(register, value)| {
-                    stmt.declared_call_reads().contains(register)
-                        || preserved.iter().any(|(_, source)| source == register)
-                        || (!(floats.contains(register) && vectors.contains(value))
-                            && !(extra.contains(register) && needed.contains(value)))
-                })
-                .map(|(_, value)| *value),
-        );
-    }
+    let (implicit, _) = unnamed_reads(&ssa, &needed);
     needed.extend(&implicit);
     // A φ only such a call reads joins nothing, so the vector data and what
     // the register held before it can be variables apart.

@@ -195,6 +195,82 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             }
         }
     }
+    // A register assigned under a mask, or from a narrow load, may keep
+    // within the mask, as a range the equations can say: a register equal
+    // to one on the other side is equal to its masked value too.
+    let mut masks: BTreeMap<u16, u64> = BTreeMap::new();
+    let assigned = application
+        .before
+        .iter()
+        .chain(&application.after)
+        .flat_map(|block| &block.stmts)
+        .filter_map(|stmt| {
+            let Stmt::Assign { dest, value, .. } = stmt else {
+                return None;
+            };
+            let mask = match value {
+                Expr::Bin {
+                    op: crate::ir::BinOp::And,
+                    rhs,
+                    ..
+                } => match rhs.as_ref() {
+                    Expr::Const(mask) => *mask,
+                    _ => return None,
+                },
+                Expr::Load {
+                    width,
+                    signed: false,
+                    ..
+                } if *width < 8 => (1u64 << (8 * u32::from(*width))) - 1,
+                _ => return None,
+            };
+            (mask.wrapping_add(1).is_power_of_two() && mask != u64::MAX)
+                .then_some((dest.index, mask))
+        });
+    // The widest mask a register is assigned under is the one all its
+    // assignments may keep within.
+    for (register, mask) in assigned {
+        let widest = masks.entry(register).or_insert(mask);
+        *widest = (*widest).max(mask);
+    }
+    let pairs: Vec<(u16, u16)> = found
+        .iter()
+        .filter_map(|pair| match pair {
+            (
+                Expr::Reg {
+                    index: a,
+                    width: 64,
+                },
+                Expr::Reg {
+                    index: b,
+                    width: 64,
+                },
+            ) => Some((*a, *b)),
+            _ => None,
+        })
+        .collect();
+    let masked = |register: u16, mask: u64| Expr::Bin {
+        op: crate::ir::BinOp::And,
+        lhs: Box::new(Expr::reg(register, 64)),
+        rhs: Box::new(Expr::Const(mask)),
+    };
+    for (a, b) in pairs {
+        for pair in [
+            masks
+                .get(&a)
+                .map(|&mask| (masked(a, mask), Expr::reg(b, 64))),
+            masks
+                .get(&b)
+                .map(|&mask| (Expr::reg(a, 64), masked(b, mask))),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            if seen.insert(format!("{pair:?}")) {
+                found.push(pair);
+            }
+        }
+    }
     found
 }
 
