@@ -257,11 +257,14 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                 _ => return None,
             };
             // A 32-bit mask is on nearly every value of a 32-bit
-            // architecture: candidates for it there made the queries of
-            // whole functions too slow to decide.
+            // architecture, and of 32-bit operations elsewhere: candidates
+            // for it made the queries of whole functions too slow to decide.
+            // Only a 32-bit load gives one, where addresses are 64-bit.
             (mask.wrapping_add(1).is_power_of_two()
                 && (mask < 0xffff_ffff
-                    || (mask == 0xffff_ffff && application.narrow_stack.is_none())))
+                    || (mask == 0xffff_ffff
+                        && matches!(value, Expr::Load { .. })
+                        && application.narrow_stack.is_none())))
             .then_some((dest.index, mask))
         });
     // The widest mask a register is assigned under is the one all its

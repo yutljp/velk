@@ -306,7 +306,7 @@ time, is decompiled again and checked as a whole:
   register a candidate makes it equal to, the equation with its value under
   the widest such mask, which says it keeps within that mask; on an
   architecture with 32-bit addresses, where nearly every value is masked to
-  32 bits, a 32-bit mask gives none. A register a
+  32 bits, a 32-bit mask gives none, and elsewhere only a 32-bit load gives one. A register a
   branch compares unsigned with a constant gives, on each side, the
   candidate that it is at or below the constant, as a loop's counter stays,
   and the one that it is below it; one a branch compares signed gives those
