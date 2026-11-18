@@ -41,7 +41,7 @@ pub(crate) fn dependencies(image: &Image, root: &Analysis) -> BTreeSet<u64> {
     let mut addresses = BTreeSet::new();
     for target in targets {
         if crate::analysis::declarations::unknown_import(image, target) {
-            addresses.extend(crate::analysis::results::callers(image, target));
+            addresses.extend(few_callers(image, target));
             continue;
         }
         if target != root.ir.addr
@@ -62,9 +62,24 @@ pub(crate) fn dependencies(image: &Image, root: &Analysis) -> BTreeSet<u64> {
             continue;
         }
         addresses.insert(target);
-        addresses.extend(crate::analysis::results::callers(image, target));
+        addresses.extend(few_callers(image, target));
     }
     addresses
+}
+
+/// The callers of `target` when they are few enough to analyse for one
+/// request, and none otherwise.
+///
+/// A declaration is recovered only from all the callers of a function, so
+/// some of them would be no use; and a function that much of a large binary
+/// calls has thousands, each of which would be analysed whole.
+fn few_callers(image: &Image, target: u64) -> Vec<u64> {
+    const MOST: usize = 16;
+    let callers = crate::analysis::results::callers(image, target);
+    if callers.len() > MOST {
+        return Vec::new();
+    }
+    callers
 }
 
 #[cfg(test)]

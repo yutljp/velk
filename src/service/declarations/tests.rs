@@ -432,6 +432,66 @@ fn address_operands_request_the_function_and_its_callers() {
     assert!(dependencies(&image, &root).contains(&0x1000));
 }
 
+/// A function at 0x1000 that only returns, followed by `count` functions
+/// that call it and return.
+fn called_by(count: u64) -> (Image, Vec<u64>) {
+    let isa = Isa::X86_64;
+    let mut code = vec![0xc3];
+    let mut callers = Vec::new();
+    for index in 0..count {
+        let start = 0x1001 + 6 * index;
+        callers.push(start);
+        let displacement = 0x1000_i64 - (start as i64 + 5);
+        code.push(0xe8);
+        code.extend((displacement as i32).to_le_bytes());
+        code.push(0xc3);
+    }
+    let mut image = Image::from_code(isa, 0x1000, code);
+    for (addr, size, name) in std::iter::once((0x1000, 1, "target".to_owned())).chain(
+        callers
+            .iter()
+            .map(|&addr| (addr, 6, format!("caller_{addr:x}"))),
+    ) {
+        image.functions.insert(
+            addr,
+            crate::loader::Function {
+                addr,
+                size: Some(size),
+                size_estimated: false,
+                name: Some(name),
+                aliases: Vec::new(),
+                library: None,
+                sources: Vec::new(),
+            },
+        );
+    }
+    (image, callers)
+}
+
+#[test]
+fn callers_are_requested_only_when_they_are_few() {
+    let root = |image: &Image| {
+        let root = analysis(
+            Isa::X86_64,
+            0x9000,
+            "root",
+            vec![call(Isa::X86_64, 0x1000, Vec::new())],
+        );
+        dependencies(image, &root)
+    };
+    let (image, callers) = called_by(16);
+    let requested = root(&image);
+    assert!(requested.contains(&0x1000));
+    assert!(callers.iter().all(|caller| requested.contains(caller)));
+
+    // One more caller, and analysing them all for one request is not worth
+    // it: the function itself is still requested.
+    let (image, callers) = called_by(17);
+    let requested = root(&image);
+    assert!(requested.contains(&0x1000));
+    assert!(callers.iter().all(|caller| !requested.contains(caller)));
+}
+
 #[test]
 fn parameterized_function_addresses_do_not_request_body_analysis() {
     for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
