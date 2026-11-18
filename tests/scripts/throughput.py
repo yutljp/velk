@@ -36,7 +36,8 @@ with tempfile.TemporaryDirectory(dir="target") as directory:
         output.seek(0)
         summary = b""
         for line in output:
-            summary = line
+            if line.strip():
+                summary = line
         result = json.loads(summary)
         result.update(wall_seconds=round(elapsed, 3), peak_rss_bytes=rss, sha256=digest)
         print(json.dumps(result))
