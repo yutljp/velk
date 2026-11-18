@@ -5,6 +5,20 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-18
+
+### Changed
+
+- Expressions that follow several pointers print far faster: what a load or a sum prints is kept
+  while a function body is rendered instead of being printed again at every level.
+
+### Fixed
+
+- A Go binary opened from a saved analysis prints the same as without one. The argument sizes
+  read from Go's function table were not saved, so calls and parameters lost their cap when the
+  analysis had been saved before the functions were analysed, as after listing them.
+- `tests/scripts/throughput.py` reads its summary again.
+
 ## [0.2.0] - 2026-11-18
 
 ### Added
