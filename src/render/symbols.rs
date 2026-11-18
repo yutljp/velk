@@ -106,9 +106,59 @@ pub struct Symbols {
     /// Additional source names to keep generated identifiers distinct from.
     /// Only names supplied by the caller or retained by the loader are known.
     pub reserved_names: HashSet<String>,
+    /// The names of the three tables as sets, built on first use. Whatever
+    /// changes a table afterwards must call [`Symbols::renamed`].
+    pub shared: SharedNames,
+}
+
+/// The sets [`Symbols::shared`] and [`Symbols::written`] build once.
+#[derive(Clone, Default)]
+pub struct SharedNames {
+    sanitized: std::sync::OnceLock<Shared>,
+    written: std::sync::OnceLock<Shared>,
+}
+
+/// The names of the functions, the import slots and the data as sets.
+#[derive(Clone, Default)]
+pub(crate) struct Shared {
+    pub(crate) functions: HashSet<String>,
+    pub(crate) import_slots: HashSet<String>,
+    pub(crate) data: HashSet<String>,
 }
 
 impl Symbols {
+    /// The names of the tables as C identifiers, for every function to
+    /// share.
+    pub(crate) fn shared(&self) -> &Shared {
+        self.shared.sanitized.get_or_init(|| {
+            let names = |table: &HashMap<u64, String>| {
+                table.values().map(|name| super::sanitize(name)).collect()
+            };
+            Shared {
+                functions: names(&self.functions),
+                import_slots: names(&self.import_slots),
+                data: names(&self.data),
+            }
+        })
+    }
+
+    /// The names of the tables as they are written there.
+    pub(crate) fn written(&self) -> &Shared {
+        self.shared.written.get_or_init(|| {
+            let names = |table: &HashMap<u64, String>| table.values().cloned().collect();
+            Shared {
+                functions: names(&self.functions),
+                import_slots: names(&self.import_slots),
+                data: names(&self.data),
+            }
+        })
+    }
+
+    /// Forgets the shared sets after a table changed.
+    pub(crate) fn renamed(&mut self) {
+        self.shared = SharedNames::default();
+    }
+
     pub(super) fn import_name(&self, slot: &u64) -> Option<&String> {
         if self
             .import_addends
@@ -242,6 +292,43 @@ mod tests {
         let code = super::super::render(&ir, &[], &symbols, &[(8, 4)]);
         assert!(code.contains("extern int64_t object;"), "{code}");
         assert!(code.contains("return object;"), "{code}");
+    }
+
+    #[test]
+    fn shared_names_follow_the_tables_once_told_of_a_change() {
+        let mut symbols = Symbols {
+            functions: HashMap::from([(0x40, "ns::run".to_owned())]),
+            import_slots: HashMap::from([(0x50, "puts".to_owned())]),
+            data: HashMap::from([(0x60, "table.1".to_owned())]),
+            ..Default::default()
+        };
+        assert_eq!(
+            symbols.shared().functions,
+            HashSet::from(["ns__run".to_owned()])
+        );
+        assert_eq!(
+            symbols.written().functions,
+            HashSet::from(["ns::run".to_owned()])
+        );
+        assert_eq!(
+            symbols.shared().import_slots,
+            HashSet::from(["puts".to_owned()])
+        );
+        assert_eq!(symbols.shared().data, HashSet::from(["table_1".to_owned()]));
+        assert_eq!(
+            symbols.written().data,
+            HashSet::from(["table.1".to_owned()])
+        );
+        symbols.functions.insert(0x40, "renamed".to_owned());
+        symbols.renamed();
+        assert_eq!(
+            symbols.shared().functions,
+            HashSet::from(["renamed".to_owned()])
+        );
+        assert_eq!(
+            symbols.written().functions,
+            HashSet::from(["renamed".to_owned()])
+        );
     }
 
     #[test]

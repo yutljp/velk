@@ -112,7 +112,7 @@ impl Outputs {
     pub(super) fn new(
         ir: &FunctionIr,
         machine: &[(u16, String)],
-        reserved: &mut HashSet<String>,
+        reserved: &mut super::names::Names<'_>,
     ) -> Self {
         let mut outputs = Self::default();
         if !ir
@@ -981,7 +981,7 @@ pub(super) fn system_call_name(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
 
     use crate::ir::{CType, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
@@ -1500,7 +1500,8 @@ mod tests {
                     },
                 ],
             );
-            let outputs = super::Outputs::new(&ir, &[], &mut HashSet::new());
+            let outputs =
+                super::Outputs::new(&ir, &[], &mut crate::render::names::Names::default());
             let first = &ir.blocks[0].stmts[0];
             let second = &ir.blocks[0].stmts[2];
             assert!(outputs.used(first, &first.call_outputs()[0]));

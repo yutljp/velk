@@ -236,21 +236,23 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     let Ok(abi) = signature.abi.as_ref() else {
         unreachable!("ABI validation requires a supported signature");
     };
-    let mut reserved: HashSet<String> = ir
-        .params
-        .iter()
-        .map(|param| param.name.clone())
-        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-        .chain(signature.params.iter().map(|(name, _)| sanitize(name)))
-        .chain(symbols.reserved_names.iter().cloned())
-        .chain(symbols.functions.values().cloned())
-        .chain(symbols.data.values().cloned())
-        .chain(
-            ir.definitions
-                .iter()
-                .flat_map(|definition| definition.fields.iter().cloned()),
-        )
-        .collect();
+    let mut reserved = super::names::Names::over(
+        [
+            &symbols.reserved_names,
+            &symbols.written().functions,
+            &symbols.written().data,
+        ],
+        ir.params
+            .iter()
+            .map(|param| param.name.clone())
+            .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+            .chain(signature.params.iter().map(|(name, _)| sanitize(name)))
+            .chain(
+                ir.definitions
+                    .iter()
+                    .flat_map(|definition| definition.fields.iter().cloned()),
+            ),
+    );
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Assign { dest, .. } = stmt {
             reserved.insert(crate::ir::reg_name(ir.isa, dest.index, 64));

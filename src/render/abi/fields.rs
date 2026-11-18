@@ -94,7 +94,7 @@ fn integer_members(
 fn projection(
     ir: &FunctionIr,
     plan: &Plan,
-    mut reserved: std::collections::HashSet<String>,
+    mut reserved: super::super::names::Names<'_>,
 ) -> Option<Projection> {
     let Some(result) = &plan.result else {
         return None;
@@ -360,7 +360,7 @@ struct Projection {
 pub(super) fn project(
     ir: &mut FunctionIr,
     plan: &mut Plan,
-    reserved: std::collections::HashSet<String>,
+    reserved: super::super::names::Names<'_>,
 ) {
     let Some(Projection {
         fields,

@@ -149,6 +149,7 @@ impl Project {
                             .unwrap_or_else(|| format!("sub_{address:x}"));
                         symbols.original_functions.insert(*address, original);
                         symbols.functions.insert(*address, name.clone());
+                        symbols.renamed();
                         if *address == ir.addr {
                             ir.name = Some(name.clone());
                         }
@@ -176,6 +177,7 @@ impl Project {
                         }
                         symbols.constant_names.remove(address);
                         symbols.data.insert(*address, name.clone());
+                        symbols.renamed();
                     }
                     if let Some(ty) = ty {
                         let (size, _) = match types.layout(&ty) {

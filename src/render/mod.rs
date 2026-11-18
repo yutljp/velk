@@ -19,6 +19,7 @@ mod jumps;
 mod layouts;
 mod locals;
 mod machine;
+mod names;
 mod naming;
 mod params;
 mod prelude;

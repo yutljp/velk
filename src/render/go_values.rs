@@ -27,7 +27,7 @@ pub(super) fn groups(
     ir: &FunctionIr,
     symbols: &Symbols,
     types: &mut BTreeMap<u16, CType>,
-    reserved: &mut HashSet<String>,
+    reserved: &mut super::names::Names<'_>,
 ) -> Vec<Group> {
     if !matches!(
         ir.convention,

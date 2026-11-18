@@ -51,15 +51,15 @@ struct Global {
 }
 
 #[derive(Default)]
-struct Used {
+struct Used<'shared> {
     objects: BTreeMap<u64, String>,
     view_names: BTreeMap<u64, String>,
     views: BTreeMap<(u64, u8), Global>,
-    names: HashSet<String>,
+    names: super::names::Names<'shared>,
 }
 
 #[derive(Default)]
-pub(super) struct Globals {
+pub(super) struct Globals<'shared> {
     linkable: HashSet<u64>,
     types: HashMap<u64, CType>,
     sizes: HashMap<u64, u64>,
@@ -67,12 +67,13 @@ pub(super) struct Globals {
     names: HashMap<u64, String>,
     repeated: HashSet<String>,
     bindings: HashMap<u64, (String, i64)>,
-    used: RefCell<Used>,
+    used: RefCell<Used<'shared>>,
 }
 
-impl Globals {
+impl<'shared> Globals<'shared> {
     pub(super) fn new(
         symbols: &super::Symbols,
+        shared: impl IntoIterator<Item = &'shared HashSet<String>>,
         reserved: impl IntoIterator<Item = String>,
     ) -> Self {
         let mut names: HashMap<_, _> = symbols
@@ -144,7 +145,7 @@ impl Globals {
                 })
                 .collect(),
             used: RefCell::new(Used {
-                names: reserved.into_iter().collect(),
+                names: super::names::Names::over(shared, reserved),
                 ..Used::default()
             }),
         }
@@ -709,7 +710,7 @@ mod tests {
             data: HashMap::from([(0x1000, "value".to_owned())]),
             ..Default::default()
         };
-        let globals = Globals::new(&symbols, []);
+        let globals = Globals::new(&symbols, [], []);
         let wide = globals.pointer(0x1000, View::Unsigned(8));
         let byte = globals.pointer(0x1000, View::Unsigned(1));
         let float = globals.pointer(0x1000, View::Float(Precision::Single));
@@ -739,7 +740,7 @@ mod tests {
             ]),
             ..Default::default()
         };
-        let globals = Globals::new(&symbols, ["value".to_owned(), "value_10".to_owned()]);
+        let globals = Globals::new(&symbols, [], ["value".to_owned(), "value_10".to_owned()]);
         let view = globals.pointer(0x10, View::Unsigned(4));
         assert_eq!(view, "(&value_10_2)");
         assert_eq!(globals.pointer(0x20, View::Unsigned(4)), "(&same_name_20)");
@@ -767,7 +768,7 @@ mod tests {
             data: HashMap::from([(0x1000, "value".to_owned())]),
             ..Default::default()
         };
-        let globals = Globals::new(&symbols, []);
+        let globals = Globals::new(&symbols, [], []);
         let float = globals.pointer(0x1000, View::Float(Precision::Single));
         let wide = globals.pointer(0x1000, View::Unsigned(8));
         let body = format!("*{float}; *{wide}; puts(\"*{wide} λ\"); /* *{float} */");

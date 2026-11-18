@@ -884,7 +884,7 @@ fn name_storage(
     accesses: &[FrameAccess],
     order: &[i64],
     slot_names: &mut HashMap<i64, Local>,
-    reserved: &mut std::collections::HashSet<String>,
+    reserved: &mut super::names::Names<'_>,
 ) {
     for (number, slot) in order.iter().enumerate() {
         if let Some(local) = slot_names.get_mut(slot) {

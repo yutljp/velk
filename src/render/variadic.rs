@@ -651,10 +651,15 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
             {
                 continue;
             }
-            let mut reserved = symbols.reserved_names.clone();
-            reserved.extend(symbols.functions.values().cloned());
-            reserved.extend(symbols.data.values().cloned());
-            reserved.extend(symbols.import_slots.values().cloned());
+            let mut reserved = super::names::Names::over(
+                [
+                    &symbols.reserved_names,
+                    &symbols.written().functions,
+                    &symbols.written().data,
+                    &symbols.written().import_slots,
+                ],
+                [],
+            );
             reserved.extend(ir.debug_registers.iter().map(|(_, name)| name.clone()));
             reserved.extend(ir.params.iter().map(|param| param.name.clone()));
             reserved.extend(ir.debug_locals.iter().map(|local| local.name.clone()));

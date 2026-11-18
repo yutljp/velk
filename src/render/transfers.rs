@@ -594,7 +594,7 @@ fn ordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             .collect::<Vec<_>>()
             .join("\n    ");
         let expressions = format!("{source} {destination} {statements}");
-        let mut reserved = expressions
+        let mut reserved: std::collections::HashSet<String> = expressions
             .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
             .map(str::to_owned)
             .collect();

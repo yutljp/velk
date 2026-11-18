@@ -103,16 +103,19 @@ pub(super) fn apply(
     accesses: &[(Option<i64>, Expr, u8, Option<bool>)],
 ) -> HashSet<i64> {
     let mut applied = HashSet::new();
-    let mut reserved: HashSet<_> = slots
-        .values()
-        .map(|local| local.name.clone())
-        .chain(ir.params.iter().map(|param| param.name.clone()))
-        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-        .chain(symbols.functions.values().cloned())
-        .chain(symbols.import_slots.values().cloned())
-        .chain(symbols.data.values().cloned())
-        .chain(symbols.reserved_names.iter().cloned())
-        .collect();
+    let mut reserved = crate::render::names::Names::over(
+        [
+            &symbols.written().functions,
+            &symbols.written().import_slots,
+            &symbols.written().data,
+            &symbols.reserved_names,
+        ],
+        slots
+            .values()
+            .map(|local| local.name.clone())
+            .chain(ir.params.iter().map(|param| param.name.clone()))
+            .chain(ir.stack_params.iter().map(|param| param.name.clone())),
+    );
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let (writes, reads) = crate::ir::visit::statement_registers(stmt);
         for reg in writes.into_iter().chain(reads) {

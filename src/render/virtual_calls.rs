@@ -190,7 +190,11 @@ pub(super) struct Tables {
 }
 
 impl Tables {
-    pub(super) fn new(ir: &FunctionIr, symbols: &Symbols, reserved: &mut HashSet<String>) -> Self {
+    pub(super) fn new(
+        ir: &FunctionIr,
+        symbols: &Symbols,
+        reserved: &mut super::names::Names<'_>,
+    ) -> Self {
         reserved.extend(
             ir.structures
                 .iter()

@@ -19,7 +19,7 @@ enum Use {
 pub(super) fn groups(
     ir: &FunctionIr,
     types: &BTreeMap<u16, CType>,
-    reserved: &mut HashSet<String>,
+    reserved: &mut super::names::Names<'_>,
 ) -> Vec<Group> {
     let origin = |index| ir.variable_registers.get(&index).copied().unwrap_or(index);
     if !types
@@ -277,6 +277,6 @@ mod tests {
             ],
         );
         let types = [(18, CType::U64), (19, CType::U64)].into();
-        assert!(groups(&ir, &types, &mut HashSet::new()).is_empty());
+        assert!(groups(&ir, &types, &mut crate::render::names::Names::default()).is_empty());
     }
 }

@@ -102,7 +102,7 @@ pub(crate) struct Ctx<'a> {
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_parameters: std::collections::HashSet<u16>,
     pub(super) symbols: &'a super::FunctionSymbols<'a>,
-    pub(super) globals: crate::render::globals::Globals,
+    pub(super) globals: crate::render::globals::Globals<'a>,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
     pub(super) data_ranges: &'a [(u64, u64)],
     /// Structure fields the debug info names, by struct and byte offset.

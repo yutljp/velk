@@ -312,23 +312,25 @@ fn render_prepared(
         );
     }
     if let Some(incoming) = &mut incoming {
-        let mut reserved: std::collections::HashSet<String> = ir
-            .params
-            .iter()
-            .map(|param| param.name.clone())
-            .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-            .chain(
-                locals
-                    .declarations
-                    .iter()
-                    .flat_map(|local| local.named())
-                    .map(|local| local.name.clone()),
-            )
-            .chain(symbols.functions.values().map(|name| sanitize(name)))
-            .chain(symbols.import_slots.values().map(|name| sanitize(name)))
-            .chain(symbols.data.values().map(|name| sanitize(name)))
-            .chain(symbols.reserved_names.iter().cloned())
-            .collect();
+        let mut reserved = super::names::Names::over(
+            [
+                &symbols.shared().functions,
+                &symbols.shared().import_slots,
+                &symbols.shared().data,
+                &symbols.reserved_names,
+            ],
+            ir.params
+                .iter()
+                .map(|param| param.name.clone())
+                .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+                .chain(
+                    locals
+                        .declarations
+                        .iter()
+                        .flat_map(|local| local.named())
+                        .map(|local| local.name.clone()),
+                ),
+        );
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);
             reserved.extend(
@@ -545,28 +547,31 @@ fn render_with(
             variable_types.remove(&pointer.register);
         }
     }
-    let mut machine_reserved: std::collections::HashSet<String> = names
-        .values()
-        .map(|name| (*name).to_owned())
-        .chain(ir.params.iter().map(|param| param.name.clone()))
-        .chain(
-            locals
-                .declarations
-                .iter()
-                .flat_map(|local| local.named())
-                .map(|local| local.name.clone()),
-        )
-        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-        .chain(
-            variable_types
-                .keys()
-                .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
-        )
-        .chain(symbols.reserved_names.iter().cloned())
-        .chain(symbols.functions.values().map(|name| sanitize(name)))
-        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
-        .chain(symbols.data.values().map(|name| sanitize(name)))
-        .collect();
+    let mut machine_reserved = super::names::Names::over(
+        [
+            &symbols.reserved_names,
+            &symbols.shared().functions,
+            &symbols.shared().import_slots,
+            &symbols.shared().data,
+        ],
+        names
+            .values()
+            .map(|name| (*name).to_owned())
+            .chain(ir.params.iter().map(|param| param.name.clone()))
+            .chain(
+                locals
+                    .declarations
+                    .iter()
+                    .flat_map(|local| local.named())
+                    .map(|local| local.name.clone()),
+            )
+            .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+            .chain(
+                variable_types
+                    .keys()
+                    .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
+            ),
+    );
     if let Some(logical) = logical {
         machine_reserved.extend(logical.reserved_names());
     }
@@ -848,9 +853,16 @@ fn render_with(
                 .keys()
                 .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
         )
-        .chain(symbols.functions.values().map(|name| sanitize(name)))
-        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
         .collect();
+    // With the names of every function and import slot, which the sets
+    // made from these share with the whole binary.
+    let shared_code = [&symbols.shared().functions, &symbols.shared().import_slots];
+    let shared_all = [
+        &symbols.shared().functions,
+        &symbols.shared().import_slots,
+        &symbols.reserved_names,
+        &symbols.shared().data,
+    ];
     if let Some(logical) = logical {
         reserved.extend(logical.reserved_names());
     }
@@ -880,12 +892,7 @@ fn render_with(
                 | crate::ir::Convention::GoAbi0
                 | crate::ir::Convention::Win64
         ) {
-        let mut used = reserved
-            .iter()
-            .cloned()
-            .chain(symbols.reserved_names.iter().cloned())
-            .chain(symbols.data.values().map(|name| sanitize(name)))
-            .collect();
+        let mut used = super::names::Names::over(shared_all, reserved.iter().cloned());
         let provider = vacant_name("velk_return_address_slot", &mut used);
         reserved.push(provider.clone());
         Some(provider)
@@ -912,12 +919,7 @@ fn render_with(
     .collect();
     let mut segment_bases = Vec::new();
     if !needed.is_empty() {
-        let mut segment_reserved: std::collections::HashSet<String> = reserved
-            .iter()
-            .cloned()
-            .chain(symbols.reserved_names.iter().cloned())
-            .chain(symbols.data.values().map(|name| sanitize(name)))
-            .collect();
+        let mut segment_reserved = super::names::Names::over(shared_all, reserved.iter().cloned());
         for (segment, index, base) in needed {
             let provider = vacant_name(&format!("velk_x86_{base}_base"), &mut segment_reserved);
             let snapshot = vacant_name(&format!("{base}_base"), &mut segment_reserved);
@@ -929,12 +931,7 @@ fn render_with(
     for (_, index, _, snapshot) in &segment_bases {
         names.insert(*index, snapshot);
     }
-    let mut call_reserved: std::collections::HashSet<String> = reserved
-        .iter()
-        .cloned()
-        .chain(symbols.reserved_names.iter().cloned())
-        .chain(symbols.data.values().map(|name| sanitize(name)))
-        .collect();
+    let mut call_reserved = super::names::Names::over(shared_all, reserved.iter().cloned());
     let mut call_outputs = calls::Outputs::new(ir, &machine, &mut call_reserved);
     if !symbols.objc_selectors.is_empty() {
         call_outputs.find_selector_slots(ir);
@@ -1061,7 +1058,7 @@ fn render_with(
         wide_parameters,
         symbols,
         globals: {
-            let mut globals = globals::Globals::new(symbols, reserved);
+            let mut globals = globals::Globals::new(symbols, shared_code, reserved);
             globals.add_types(ir, &arrays);
             globals.add_guids(references);
             globals
@@ -1364,7 +1361,7 @@ fn render_with(
                     &types.ret
                 };
                 let parameters = if types.params.iter().any(super::prelude::promoted_parameter) {
-                    unused_signature(&types.params, &mut Default::default())
+                    unused_signature(&types.params, &mut std::collections::HashSet::<String>::new())
                 } else {
                     String::new()
                 };
@@ -1377,7 +1374,7 @@ fn render_with(
                 (name == *taken).then_some(types)
             }) {
                 let ret = call_returns.get(taken).copied().unwrap_or(&CType::U64);
-                let params = unused_signature(types, &mut Default::default());
+                let params = unused_signature(types, &mut std::collections::HashSet::<String>::new());
                 return format!("{};\n", declaration(ret, &format!("{taken}({params})")));
             }
             if body.contains(&format!("{taken}(")) {
@@ -1650,20 +1647,20 @@ fn render_body(
     body
 }
 
-pub(super) fn variable_name(reserved: &mut std::collections::HashSet<String>) -> String {
+pub(super) fn variable_name(reserved: &mut impl super::names::Taken) -> String {
     for index in 1usize.. {
         let name = format!("v{index}");
-        if reserved.insert(name.clone()) {
+        if reserved.take(name.clone()) {
             return name;
         }
     }
     unreachable!("all variable names are reserved")
 }
 
-pub(super) fn vacant_name(base: &str, reserved: &mut std::collections::HashSet<String>) -> String {
+pub(super) fn vacant_name(base: &str, reserved: &mut impl super::names::Taken) -> String {
     let mut name = base.to_owned();
     let mut suffix = 2;
-    while !reserved.insert(name.clone()) {
+    while !reserved.take(name.clone()) {
         name = format!("{base}_{suffix}");
         suffix += 1;
     }
@@ -2107,7 +2104,7 @@ fn signature(ir: &FunctionIr) -> String {
     parts.join(", ")
 }
 
-fn unused_signature(types: &[CType], reserved: &mut std::collections::HashSet<String>) -> String {
+fn unused_signature(types: &[CType], reserved: &mut impl super::names::Taken) -> String {
     if types.is_empty() {
         return "void".into();
     }

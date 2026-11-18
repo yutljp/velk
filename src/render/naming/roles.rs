@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
 use crate::render::Symbols;
@@ -415,32 +415,23 @@ fn usable_parameter_name(name: &str) -> Option<&str> {
     Some(name)
 }
 
-pub(in crate::render) fn reserved(ir: &FunctionIr, symbols: &Symbols) -> HashSet<String> {
-    let mut names: HashSet<_> = ir
-        .params
-        .iter()
-        .map(|param| param.name.clone())
-        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-        .chain(
-            symbols
-                .functions
-                .values()
-                .map(|name| crate::render::sanitize(name)),
-        )
-        .chain(
-            symbols
-                .import_slots
-                .values()
-                .map(|name| crate::render::sanitize(name)),
-        )
-        .chain(
-            symbols
-                .data
-                .values()
-                .map(|name| crate::render::sanitize(name)),
-        )
-        .chain(symbols.reserved_names.iter().cloned())
-        .collect();
+pub(in crate::render) fn reserved<'symbols>(
+    ir: &FunctionIr,
+    symbols: &'symbols Symbols,
+) -> crate::render::names::Names<'symbols> {
+    let shared = symbols.shared();
+    let mut names = crate::render::names::Names::over(
+        [
+            &shared.functions,
+            &shared.import_slots,
+            &shared.data,
+            &symbols.reserved_names,
+        ],
+        ir.params
+            .iter()
+            .map(|param| param.name.clone())
+            .chain(ir.stack_params.iter().map(|param| param.name.clone())),
+    );
     if let Some(name) = &ir.name {
         names.insert(crate::render::sanitize(name));
     }
