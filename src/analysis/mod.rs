@@ -1072,17 +1072,7 @@ fn stack_results(image: &Image, addr: u64) -> Vec<crate::ir::Expr> {
 }
 
 fn landing_pads(image: &Image, extent: std::ops::Range<u64>) -> Vec<(u64, Vec<(u64, u64)>)> {
-    image
-        .landing_pads
-        .iter()
-        .filter(|(pad, sites)| {
-            extent.contains(*pad)
-                || sites
-                    .iter()
-                    .any(|(from, to)| from < to && extent.start < *to && *from < extent.end)
-        })
-        .map(|(&pad, sites)| (pad, sites.clone()))
-        .collect()
+    image.landing_pads_of(extent)
 }
 
 fn exception_starts(
@@ -1396,7 +1386,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         members: Vec::new(),
         definitions: Vec::new(),
         structures,
-        signed_params: signature.signed,
+        signed_params: signature.signed.into_iter().collect(),
         landing_pads,
         pointer_values: Vec::new(),
         saved_slots: Vec::new(),

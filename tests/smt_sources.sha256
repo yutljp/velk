@@ -1,7 +1,7 @@
 27f033782776255df34fc058285a688aecfe2c8d7dcab734f53e3583a3837c8a  src/analysis/indirect.rs	(BinOp::And, value, Value::Const(0xffff_ffff, _))
 c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/indirect.rs	fn pointer_value(
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
-7ecf49d11fc91ffe5ed3789ad9c898c27abb7192cb683a7de771b9e231f54f13  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
+4fbbd30b31fcef84cc5899f25cb7b197cd12c50b8049863d2571147d1d399f78  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
 71c6d88d08c29bc422579026a418bccf936e7b6566b9d50c35b6fb189ac2fb64  src/analysis/structures.rs	fn rewrite(
 614640da82c7164dcd1e11a96fa4404941f208170a0b0796344169283f77abf3  src/analysis/structures.rs	pub(super) fn layout_with_size(
 19954210ca7952d10273993b9a1f77057a22914ce61858178488a189ea81e06c  src/analysis/structures/pointers.rs	pub(super) fn normalize(

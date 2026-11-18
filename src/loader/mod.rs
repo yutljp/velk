@@ -300,6 +300,9 @@ pub struct Image {
     pub go_abi0: std::sync::OnceLock<std::collections::HashSet<u64>>,
     /// The unwind table's rows, by address. Built on first use.
     stack_rows: std::sync::OnceLock<Vec<unwind::StackRow>>,
+    /// The call ranges of `landing_pads` in address order, each with the
+    /// furthest end among the ranges up to it. Built on first use.
+    landing_sites: std::sync::OnceLock<Vec<LandingSite>>,
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
@@ -323,7 +326,8 @@ pub struct Image {
     pub(crate) qualified_imports: HashMap<u64, String>,
     pub(crate) exception_regions: Vec<unwind::Region>,
     /// The landing pads of the exception tables, each with the code ranges
-    /// whose calls unwind into it.
+    /// whose calls unwind into it. Changed through `set_landing_pad` once
+    /// functions have been analyzed.
     pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
     pub(crate) exception_handlers: Vec<seh::Handler>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
@@ -357,6 +361,16 @@ pub enum Pointer<'image> {
     Address(u64),
     /// An imported symbol address plus a byte displacement.
     Import { name: &'image str, addend: i64 },
+}
+
+/// One call range of a landing pad.
+#[derive(Debug)]
+struct LandingSite {
+    from: u64,
+    to: u64,
+    pad: u64,
+    /// The furthest end among this range and those that start before it.
+    furthest: u64,
 }
 
 impl Image {
@@ -595,6 +609,7 @@ impl Image {
             go_argument_sizes: Default::default(),
             go_abi0: Default::default(),
             stack_rows: Default::default(),
+            landing_sites: Default::default(),
             imports: BTreeMap::new(),
             import_addends: BTreeMap::new(),
             qualified_imports: HashMap::new(),
@@ -899,6 +914,60 @@ impl Image {
                 self.fragments.insert(frame.start, frame.size);
             }
         }
+    }
+
+    /// The landing pads inside `extent` or reached from calls in it, in
+    /// address order, each with all its call ranges.
+    pub(crate) fn landing_pads_of(
+        &self,
+        extent: std::ops::Range<u64>,
+    ) -> Vec<(u64, Vec<(u64, u64)>)> {
+        let sites = self.landing_sites.get_or_init(|| {
+            let mut sites: Vec<_> = self
+                .landing_pads
+                .iter()
+                .flat_map(|(&pad, sites)| sites.iter().map(move |&(from, to)| (from, to, pad)))
+                .filter(|(from, to, _)| from < to)
+                .collect();
+            sites.sort_unstable();
+            let mut furthest = 0;
+            sites
+                .into_iter()
+                .map(|(from, to, pad)| {
+                    furthest = furthest.max(to);
+                    LandingSite {
+                        from,
+                        to,
+                        pad,
+                        furthest,
+                    }
+                })
+                .collect()
+        });
+        let mut pads: std::collections::BTreeSet<u64> = self
+            .landing_pads
+            .range(extent.clone())
+            .map(|(&pad, _)| pad)
+            .collect();
+        let before = sites.partition_point(|site| site.from < extent.end);
+        pads.extend(
+            sites[..before]
+                .iter()
+                .rev()
+                .take_while(|site| extent.start < site.furthest)
+                .filter(|site| extent.start < site.to)
+                .map(|site| site.pad),
+        );
+        pads.into_iter()
+            .map(|pad| (pad, self.landing_pads[&pad].clone()))
+            .collect()
+    }
+
+    /// Gives `pad` the call ranges `sites`.
+    #[cfg(test)]
+    pub(crate) fn set_landing_pad(&mut self, pad: u64, sites: Vec<(u64, u64)>) {
+        self.landing_pads.insert(pad, sites);
+        self.landing_sites = Default::default();
     }
 
     /// Whether the unwind table has the stack pointer where it was on the
@@ -1449,6 +1518,7 @@ pub(crate) fn load_input_with_saved(
         go_argument_sizes: Default::default(),
         go_abi0: Default::default(),
         stack_rows: Default::default(),
+        landing_sites: Default::default(),
         result_reads: Default::default(),
         lifts: Default::default(),
         word_pairs: Default::default(),

@@ -329,18 +329,26 @@ pub(super) fn body(
     addr: u64,
     summaries: crate::lift::Summaries<'_>,
 ) -> Option<Arc<Vec<Block>>> {
+    let Some((size, starts)) = lifted_as(image, addr) else {
+        return None;
+    };
+    if starts.is_empty() {
+        lift_shared(image, addr, size, summaries).ok()
+    } else {
+        crate::lift::lift_shared_with_targets(image, addr, size, &starts, summaries).ok()
+    }
+}
+
+/// The size and the extra block starts `body` lifts the function at `addr`
+/// with.
+fn lifted_as(image: &Image, addr: u64) -> Option<(u64, HashSet<u64>)> {
     let Some(function) = image.functions.get(&addr) else {
         return None;
     };
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let extent = addr..addr.saturating_add(size);
     let landing_pads = super::landing_pads(image, extent.clone());
-    let starts = super::exception_starts(&landing_pads, extent);
-    if starts.is_empty() {
-        lift_shared(image, addr, size, summaries).ok()
-    } else {
-        crate::lift::lift_shared_with_targets(image, addr, size, &starts, summaries).ok()
-    }
+    Some((size, super::exception_starts(&landing_pads, extent)))
 }
 
 /// The calls of every function reachable from `root` and not yet
@@ -510,6 +518,13 @@ fn settle_parts(
         let cyclic = part.len() > 1 || recursive.contains(&part[0]);
         for (addr, summary) in settle(image, part, cyclic, edges, &outside) {
             settled[&addr].set(summary).expect("settled once");
+        }
+        // The summaries are what is kept of a settled part: a body lifted
+        // with them is needed again only to decompile the function itself.
+        for &addr in part {
+            if let Some((size, starts)) = lifted_as(image, addr) {
+                image.lifts.forget_summarized(addr, size, &starts);
+            }
         }
     };
     let pool = if parts.len() <= 1 {
@@ -1191,7 +1206,7 @@ mod tests {
         let mut image = image(&[
             0x94000010, 0xf90003ff, 0x14000002, 0xd503201f, 0xf94003e0, 0xd65f03c0,
         ]);
-        image.landing_pads.insert(12, vec![(0, 4)]);
+        image.set_landing_pad(12, vec![(0, 4)]);
         let summaries = |_| Summary::default();
         let blocks = super::body(&image, 0, &summaries).expect("summary body");
         for start in [4, 12, 16] {
@@ -1226,7 +1241,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             signature.stack
         );
-        image.landing_pads.insert(12, vec![(0, 8)]);
+        image.set_landing_pad(12, vec![(0, 8)]);
         let changed = super::body(&image, 0, &summaries).expect("different exception boundaries");
         assert!(!Arc::ptr_eq(&blocks, &changed));
         assert!(changed.iter().any(|block| block.start == 8));
@@ -1241,11 +1256,44 @@ mod tests {
         assert!(Arc::ptr_eq(&first, &second));
     }
     #[test]
+    fn landing_pads_of_an_extent_are_those_a_scan_of_all_finds() {
+        let mut image = image(&[0xd65f03c0]);
+        let pads: [(u64, &[(u64, u64)]); 6] = [
+            (0x10, &[(0, 4), (40, 44)]),
+            (0x18, &[(8, 8)]),
+            (0x30, &[(0, 100)]),
+            (0x50, &[(20, 24), (24, 28)]),
+            (0x90, &[(60, 64)]),
+            (0x200, &[(30, 20)]),
+        ];
+        for (pad, sites) in pads {
+            image.set_landing_pad(pad, sites.to_vec());
+        }
+        for start in (0..0x220).step_by(4) {
+            for length in [0, 4, 8, 40, 0x100] {
+                let extent = start..start + length;
+                let scanned: Vec<_> = image
+                    .landing_pads
+                    .iter()
+                    .filter(|(pad, sites)| {
+                        extent.contains(*pad)
+                            || sites.iter().any(|(from, to)| {
+                                from < to && extent.start < *to && *from < extent.end
+                            })
+                    })
+                    .map(|(&pad, sites)| (pad, sites.clone()))
+                    .collect();
+                assert_eq!(image.landing_pads_of(extent.clone()), scanned, "{extent:?}");
+            }
+        }
+    }
+
+    #[test]
     fn main_and_summary_keep_metadata_for_an_outside_landing_pad() {
         let mut image = image(&[
             0x94000010, 0xf90003ff, 0x14000002, 0xd503201f, 0xf94003e0, 0xd65f03c0,
         ]);
-        image.landing_pads.insert(0x100, vec![(0, 4)]);
+        image.set_landing_pad(0x100, vec![(0, 4)]);
         let pads = super::super::landing_pads(&image, 0..24);
         assert_eq!(pads, vec![(0x100, vec![(0, 4)])]);
         assert_eq!(
@@ -1273,12 +1321,12 @@ mod tests {
             0x94000020, 0xf90003ff, 0x14000001, 0x9400001d, 0x14000003, 0xd503201f, 0x14000001,
             0xf94003e0, 0xd65f03c0,
         ]);
-        image.landing_pads.insert(20, vec![(12, 16)]);
+        image.set_landing_pad(20, vec![(12, 16)]);
         let summaries = |_| Summary::default();
         let (_, before) = super::compute(&image, 0, &summaries, None, false);
         let before = before.expect("late-call range");
         assert!(before.signature.stack.is_empty());
-        image.landing_pads.insert(20, vec![(0, 16)]);
+        image.set_landing_pad(20, vec![(0, 16)]);
         let (_, after) = super::compute(&image, 0, &summaries, Some(&before), false);
         let after = after.expect("expanded protected range");
         assert!(Arc::ptr_eq(&before.blocks, &after.blocks));

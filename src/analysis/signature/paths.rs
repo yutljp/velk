@@ -1,6 +1,8 @@
 //! Definite writes on paths distinguished by constant boolean registers.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
+
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 use crate::ir::{Block, Expr, Stmt};
 
@@ -14,7 +16,7 @@ pub(super) fn definite_writes(
     blocks: &[Block],
     writes: &[Vec<rustc_hash::FxHashSet<u16>>],
 ) -> Option<Writes> {
-    let mut guards = HashSet::new();
+    let mut guards = HashSet::default();
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Assign {
             dest,
@@ -34,7 +36,7 @@ pub(super) fn definite_writes(
         .map(|(index, block)| (block.start, index))
         .collect();
     let mut entering: Vec<Entries> = vec![BTreeMap::new(); blocks.len()];
-    entering[0].insert(Vec::new(), HashSet::new());
+    entering[0].insert(Vec::new(), HashSet::default());
     let mut pending = VecDeque::from([(0, Vec::new())]);
     let mut result: Writes = blocks
         .iter()

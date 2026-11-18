@@ -1,6 +1,6 @@
 //! Heuristic calling-convention and parameter recovery from lifted IR.
 
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 use crate::analysis::prototypes::{Prototype, preferred};
 use crate::ir::{Access, Block, CType, Convention, Expr, Operation, Param, Stmt};
@@ -207,7 +207,7 @@ fn needed_assignments(
     let successors: Vec<_> = (0..blocks.len())
         .map(|index| crate::ir::cfg::block_successors(blocks, index))
         .collect();
-    let mut incoming = vec![HashSet::new(); blocks.len()];
+    let mut incoming = vec![HashSet::default(); blocks.len()];
     loop {
         let mut changed = false;
         for index in (0..blocks.len()).rev() {
@@ -374,7 +374,7 @@ pub fn recover_with(
                 _ => stmt.operands(),
             };
             operands.into_iter().all(|value| {
-                let mut read = HashSet::new();
+                let mut read = HashSet::default();
                 reads(value, &mut read);
                 !read.contains(&register)
             })
@@ -480,7 +480,7 @@ fn parameter_types(
     params: &mut [Param],
 ) -> HashSet<u16> {
     if params.is_empty() {
-        return HashSet::new();
+        return HashSet::default();
     }
     // Which argument each register is derived from through copies and
     // base-preserving arithmetic, so loads through it type that argument.
@@ -488,14 +488,14 @@ fn parameter_types(
     // unoptimized code keeps each argument in its slot. A register written
     // once has one origin everywhere; one written more often, only from its
     // write to the end of the block.
-    let mut definitions: HashMap<u16, usize> = HashMap::new();
+    let mut definitions: HashMap<u16, usize> = HashMap::default();
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
             Stmt::Call { .. } | Stmt::Machine { .. } => {
-                for register in crate::ir::visit::statement_writes(stmt) {
+                crate::ir::visit::for_each_write(stmt, |register| {
                     *definitions.entry(register).or_default() += 2;
-                }
+                });
             }
             _ => {}
         }
@@ -512,7 +512,7 @@ fn parameter_types(
                 .filter(|(register, _)| !definitions.contains_key(register))
                 .map(|(register, param)| (*register, *param))
                 .collect(),
-            slots: HashMap::new(),
+            slots: HashMap::default(),
             definitions: definitions.clone(),
             sp: crate::arch::stack_pointer(isa),
             exact,
@@ -531,7 +531,7 @@ fn parameter_types(
 
     // What a vector register holds, from the operations that read it: the
     // floats of a float operation, or the lanes of an integer one.
-    let mut vector_reads: HashMap<u16, Option<u8>> = HashMap::new();
+    let mut vector_reads: HashMap<u16, Option<u8>> = HashMap::default();
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         for value in stmt.operands() {
             vector_operands(value, &mut vector_reads);
@@ -541,7 +541,7 @@ fn parameter_types(
     // access through it, or else the first vector one whose value an
     // operation reads as floats or lanes. The high half of a vector says
     // nothing about the element.
-    let mut pointer_elements: HashMap<u16, (bool, CType)> = HashMap::new();
+    let mut pointer_elements: HashMap<u16, (bool, CType)> = HashMap::default();
     let note = |addr: &Expr,
                 width: u8,
                 register: Option<u16>,
@@ -581,7 +581,7 @@ fn parameter_types(
                 note(addr, width, None, None, origin, elements);
             }
         };
-    let mut code_pointers: HashSet<u16> = HashSet::new();
+    let mut code_pointers: HashSet<u16> = HashSet::default();
     origins.walk(blocks, &mut |stmt, origin| match stmt {
         Stmt::Assign { dest, value, .. } => {
             if let Some((addr, width)) = load_of(value) {
@@ -683,9 +683,9 @@ fn parameter_types(
 }
 
 fn signed_parameters(blocks: &[Block], origins: &Origins) -> HashSet<u16> {
-    let mut signed_args: HashSet<u16> = HashSet::new();
+    let mut signed_args: HashSet<u16> = HashSet::default();
     origins.walk(blocks, &mut |stmt, origin| {
-        let mut signed: HashSet<u16> = HashSet::new();
+        let mut signed: HashSet<u16> = HashSet::default();
         match stmt {
             Stmt::Brif { cond, lhs, rhs, .. } => {
                 note_signed_cond(*cond, &[lhs, rhs], &mut signed);
@@ -752,7 +752,7 @@ fn parameter_accesses(blocks: &[Block], params: &[Param]) -> Vec<Access> {
                 let Some(param) = copies.get(&dest.index) else {
                     return None;
                 };
-                let mut read = HashSet::new();
+                let mut read = HashSet::default();
                 reads(value, &mut read);
                 read.iter()
                     .any(|register| copies.get(register) == Some(param))
@@ -761,7 +761,7 @@ fn parameter_accesses(blocks: &[Block], params: &[Param]) -> Vec<Access> {
             _ => None,
         })
         .collect();
-    let mut offsets: HashMap<u16, std::collections::BTreeMap<u64, u8>> = HashMap::new();
+    let mut offsets: HashMap<u16, std::collections::BTreeMap<u64, u8>> = HashMap::default();
     for block in blocks {
         for stmt in &block.stmts {
             let (addr, width) = match stmt {
@@ -883,7 +883,7 @@ fn register_inputs(
         .collect();
     let mut entry: Vec<HashSet<u16>> = vec![universe; blocks.len()];
     if !entry.is_empty() {
-        entry[0] = HashSet::new();
+        entry[0] = HashSet::default();
     }
     loop {
         let mut changed = false;
@@ -926,10 +926,10 @@ fn register_inputs(
                 }
             )
     });
-    let mut inputs: HashSet<u16> = HashSet::new();
+    let mut inputs: HashSet<u16> = HashSet::default();
     let mut incoming = crate::ir::Registers::default();
     // Inputs some read takes more than the low 32 bits of.
-    let mut wide_inputs: HashSet<u16> = HashSet::new();
+    let mut wide_inputs: HashSet<u16> = HashSet::default();
     // Go runtime entry points can use registers beyond the source ABI.
     let known_inputs = !go && inputs_known(blocks, landing_pads);
     let registers: Vec<Vec<_>> = if known_inputs {
@@ -990,7 +990,7 @@ fn register_inputs(
                     }
                 }
             }
-            let mut used = HashSet::new();
+            let mut used = HashSet::default();
             match stmt {
                 Stmt::Machine { inputs, .. } => {
                     for input in inputs {
@@ -1145,7 +1145,7 @@ fn prototype_types(
     origins: &Origins,
     callees: CalleePrototypeLookup<'_>,
 ) -> HashMap<u16, CType> {
-    let mut offered: HashMap<u16, CType> = HashMap::new();
+    let mut offered: HashMap<u16, CType> = HashMap::default();
     origins.walk(blocks, &mut |stmt, origin| {
         // A declared call's parameters are typed by its declaration, not
         // by their position.
@@ -1231,7 +1231,7 @@ fn split_address(expr: &Expr) -> Option<(u16, u64)> {
 }
 
 /// The origins of registers written once, and of stack slots by address.
-type FoundOrigins = (HashMap<u16, u16>, HashMap<String, Option<u16>>);
+type FoundOrigins = (HashMap<u16, u16>, HashMap<Expr, Option<u16>>);
 
 /// The arguments registers and stack slots hold, as `recover` follows them.
 struct Origins {
@@ -1241,7 +1241,7 @@ struct Origins {
     /// Registers written at most once, with the argument they hold.
     global: HashMap<u16, u16>,
     /// Stack slots, by address, that every store fills from one argument.
-    slots: HashMap<String, Option<u16>>,
+    slots: HashMap<Expr, Option<u16>>,
     /// How often each register is written; a call counts twice.
     definitions: HashMap<u16, usize>,
     /// Only copies of an argument hold it, not values offset from it.
@@ -1259,7 +1259,7 @@ impl Origins {
     ) -> FoundOrigins {
         let mut entry: Vec<Option<HashMap<u16, u16>>> = vec![None; blocks.len()];
         if blocks.is_empty() {
-            return (self.global.clone(), HashMap::new());
+            return (self.global.clone(), HashMap::default());
         }
         let mut start = self.global.clone();
         start.extend(
@@ -1289,7 +1289,7 @@ impl Origins {
                 }
             }
         }
-        let mut found = (self.global.clone(), HashMap::new());
+        let mut found = (self.global.clone(), HashMap::default());
         for (index, block) in blocks.iter().enumerate() {
             let Some(mut origin) = entry[index].clone() else {
                 continue;
@@ -1312,7 +1312,7 @@ impl Origins {
                 || blocks
                     .iter()
                     .flat_map(|block| &block.stmts)
-                    .any(|stmt| crate::ir::visit::statement_writes(stmt).contains(&self.sp))
+                    .any(|stmt| crate::ir::visit::statement_writes_register(stmt, self.sp))
             {
                 found.1.clear();
             } else {
@@ -1323,7 +1323,7 @@ impl Origins {
                         Stmt::Store { addr, .. }
                             if crate::passes::memory::private_address(addr, 8, self.sp) =>
                         {
-                            Some(format!("{addr:?}"))
+                            Some(addr)
                         }
                         _ => None,
                     })
@@ -1349,7 +1349,7 @@ impl Origins {
                         Expr::Reg { index, .. } => origin.get(index).copied(),
                         _ => None,
                     };
-                    let slot = slots.entry(format!("{addr:?}")).or_insert(from);
+                    let slot = slots.entry(addr.clone()).or_insert(from);
                     if *slot != from {
                         *slot = None;
                     }
@@ -1358,7 +1358,7 @@ impl Origins {
             Stmt::Assign { dest, value, .. } => {
                 let source = match value {
                     Expr::Load { addr, width: 8, .. } => {
-                        self.slots.get(&format!("{addr:?}")).copied().flatten()
+                        self.slots.get(addr.as_ref()).copied().flatten()
                     }
                     _ if self.exact => copy_origin(value, origin),
                     _ => base_origin(value, origin),
@@ -1394,9 +1394,9 @@ impl Origins {
                         origin.get(&source).map(|source| (dest.index, *source))
                     })
                     .collect();
-                for register in crate::ir::visit::statement_writes(stmt) {
+                crate::ir::visit::for_each_write(stmt, |register| {
                     origin.remove(&register);
-                }
+                });
                 origin.extend(preserved);
             }
             _ => {}

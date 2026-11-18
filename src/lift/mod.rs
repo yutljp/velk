@@ -131,6 +131,24 @@ struct CachedLift {
     blocks: Result<Arc<Vec<Block>>, LiftError>,
 }
 
+impl Lifts {
+    /// Drops the lifts of one function made with callee summaries. What
+    /// asks for one again lifts again.
+    pub(crate) fn forget_summarized(&self, addr: u64, size: u64, targets: &HashSet<u64>) {
+        let mut targets: Vec<_> = targets.iter().copied().collect();
+        targets.sort_unstable();
+        let mut lifts = self.0.lock().expect("lifts lock");
+        if let Some(kept) = lifts.get_mut(&(addr, size, targets)) {
+            kept.retain(|lift| lift.without_summaries);
+        }
+    }
+
+    /// Drops every lift.
+    pub(crate) fn clear(&self) {
+        self.0.lock().expect("lifts lock").clear();
+    }
+}
+
 /// Retain a lift without callee summaries alongside recent summarized lifts.
 const KEPT_LIFTS: usize = 3;
 
@@ -2876,6 +2894,30 @@ mod tests {
         let again = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
             .expect("retained previous version");
         assert!(std::sync::Arc::ptr_eq(&first, &again));
+    }
+
+    #[test]
+    fn forgetting_summarized_lifts_keeps_the_one_without_summaries() {
+        let code = vec![0xe8, 0x1b, 0, 0, 0, 0xc3];
+        let size = code.len() as u64;
+        let image = Image::from_code(Isa::X86_64, 0, code);
+        let unknown = |_| crate::loader::Summary::default();
+        let summaries = |_| crate::loader::Summary {
+            arity: Some(2),
+            ..Default::default()
+        };
+        let plain = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        let summarized = super::lift_shared(&image, 0, size, &summaries).unwrap();
+        image.lifts.forget_summarized(0, size, &HashSet::new());
+        let plain_again = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        assert!(std::sync::Arc::ptr_eq(&plain, &plain_again));
+        let summarized_again = super::lift_shared(&image, 0, size, &summaries).unwrap();
+        assert!(!std::sync::Arc::ptr_eq(&summarized, &summarized_again));
+        assert_eq!(format!("{summarized:?}"), format!("{summarized_again:?}"));
+        image.lifts.clear();
+        let plain_anew = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        assert!(!std::sync::Arc::ptr_eq(&plain, &plain_anew));
+        assert_eq!(format!("{plain:?}"), format!("{plain_anew:?}"));
     }
 
     #[test]

@@ -269,6 +269,9 @@ impl Index {
                 Err(error) => return Err(error),
             }
         }
+        // Every function was lifted for this; what is decompiled later
+        // lifts again.
+        image.lifts.clear();
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
