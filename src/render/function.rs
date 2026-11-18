@@ -1094,6 +1094,7 @@ fn render_with(
         read_once: Default::default(),
         transfer_values: super::transfers::single_use_loads(ir),
         taken: Default::default(),
+        memo: Default::default(),
     };
     super::go_values::bind_stack(&go_groups, &mut ctx);
     for index in [crate::ir::EXCEPTION, crate::ir::SELECTOR] {
@@ -1604,13 +1605,19 @@ fn render_body(
         nodes.pop();
     }
     ctx.read_once = calls::read_once(nodes);
-    render_nodes(nodes, 1, &mut body, ctx);
+    {
+        let _kept = ctx.memo.keep();
+        render_nodes(nodes, 1, &mut body, ctx);
+    }
     let mut folded = nodes.clone();
     if super::locals::fold_values(ir, &mut folded, ctx) {
         let original_functions = ctx.inline_functions.take();
         let mut candidate = String::new();
         ctx.read_once = calls::read_once(&folded);
-        render_nodes(&folded, 1, &mut candidate, ctx);
+        {
+            let _kept = ctx.memo.keep();
+            render_nodes(&folded, 1, &mut candidate, ctx);
+        }
         if super::cost::casts(&candidate) <= super::cost::casts(&body)
             && candidate.lines().count() <= body.lines().count()
             && candidate.matches("goto ").count() <= body.matches("goto ").count()

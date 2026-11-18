@@ -245,7 +245,10 @@ pub(super) fn stack_locals_with_roles(
         read_once: Default::default(),
         transfer_values: Default::default(),
         taken: Default::default(),
+        memo: Default::default(),
     };
+    // `base` never changes, so what it prints can be kept throughout.
+    let _kept = base.memo.keep();
     let (accesses, elements) = frame_accesses(ir, sp, frames);
     let mut reserved = super::naming::roles::reserved(ir, symbols);
     reserved.extend((0..accesses.len()).map(|index| format!("local_{index}")));

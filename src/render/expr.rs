@@ -1,4 +1,5 @@
 mod condition;
+mod memo;
 mod memory;
 mod operation;
 
@@ -6,6 +7,7 @@ use crate::render::globals::View;
 use crate::render::naming::global_pointer;
 use condition::logic;
 pub(crate) use condition::{condition, switch_index};
+pub(crate) use memo::Memo;
 pub(super) use memory::byte_pointer;
 pub(super) use memory::copy_address;
 pub(super) use memory::local_offset_integer;
@@ -138,6 +140,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) transfer_values: std::collections::HashSet<(u16, Expr)>,
     /// The functions whose address the body takes, to declare ahead of it.
     pub(super) taken: std::cell::RefCell<std::collections::BTreeSet<String>>,
+    pub(super) memo: Memo,
 }
 
 impl Ctx<'_> {
@@ -501,6 +504,15 @@ enum ConstantUse {
 }
 
 fn print_in(expr: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Printed {
+    if !matches!(expr, Expr::Load { .. } | Expr::Bin { .. }) {
+        return print_anew(expr, ctx, bits, usage);
+    }
+    ctx.memo.printed(expr, bits, usage as u8, || {
+        print_anew(expr, ctx, bits, usage)
+    })
+}
+
+fn print_anew(expr: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Printed {
     if let Some((_, text)) = ctx
         .frame_addresses
         .iter()

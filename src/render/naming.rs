@@ -339,6 +339,7 @@ pub(crate) struct Layout {
     pub(crate) size: u64,
 }
 
+#[derive(Clone)]
 pub(crate) struct Place {
     pub(crate) text: String,
     pub(crate) ty: CType,
@@ -435,6 +436,11 @@ pub(super) fn object_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+    ctx.memo
+        .place(addr, width, || member_access_anew(addr, width, ctx))
+}
+
+fn member_access_anew(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
     if let Expr::Const(address) = addr
         && let Some((text, ty)) = ctx.globals.header_object(*address, width)
     {
@@ -604,6 +610,10 @@ fn pointee_of(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 }
 
 pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
+    ctx.memo.target(expr, || pointer_target_anew(expr, ctx))
+}
+
+fn pointer_target_anew(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
     match expr {
         Expr::Const(address) => {
             let Some((base, _)) = ctx.globals.containing(*address) else {
