@@ -5,6 +5,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-18
+
 ### Added
 
 #### Execution
@@ -60,9 +62,36 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `velk --serve` for newline-delimited JSON requests, keeping one script context per process.
 - `velk --api-docs` prints the embedded API topics.
 
+#### Verification
+
+- An optional check of every rewrite the passes apply to the fixtures, with Z3
+  (`cargo test --release --features validate --test validate`).
+
 ### Changed
 
 - Test and fixture scripts moved from `tests/` and `tools/` to `tests/scripts/`.
+- Whole-binary work uses all cores and maps input files.
+- Decompiling a single function skips analyses and library signatures it cannot use.
+
+### Fixed
+
+- A stored value is no longer forwarded past a call that may change it.
+- Go on AArch64: assembly functions take the stack convention and Go functions their own
+  register convention, the goroutine and frame pointer registers are kept across calls of
+  assembly functions, and argument counts are capped by the function table's argument bytes.
+- Realigned stacks are settled from what the entry stack pointer is known to be.
+- i386 jump tables of 4-byte addresses are recovered, and cases behind at-or-above bounds
+  checks are counted.
+- Stores to stack memory the caller owns are kept.
+- Omitted call arguments are recovered, parameters are no longer invented or dropped, and
+  indirect call targets are typed.
+- 64-bit stack parameters and results on 32-bit targets are joined from caller evidence.
+- Go function tables whose offsets wrap or leave the image, and cyclic Mach-O export tries,
+  are rejected instead of stopping the load.
+- C++ programs built for macOS: strings, streams and locale calls are modelled, and the
+  `LC_MAIN` entry is named `main`.
+- API hash and string recovery are bounded by work instead of wall time, so results do not
+  depend on machine load.
 
 ## [0.1.0] - 2026-10-26
 
