@@ -772,10 +772,13 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
             known.insert(limit);
         }
         for child in children_mut(&mut nodes[index]) {
-            let mut written = std::collections::HashSet::new();
+            let mut written = rustc_hash::FxHashSet::default();
             writes_in(child, &mut written);
-            let inner: std::collections::HashSet<u16> =
-                known.difference(&written).copied().collect();
+            let inner: std::collections::HashSet<u16> = known
+                .iter()
+                .copied()
+                .filter(|register| !written.contains(register))
+                .collect();
             invert_loops(child, &inner);
         }
         if let Node::Stmt(stmt) = &nodes[index] {
@@ -811,7 +814,7 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
             (Some(a), Some(b)) if b == counter => a,
             _ => u16::MAX,
         };
-        let mut written = std::collections::HashSet::new();
+        let mut written = rustc_hash::FxHashSet::default();
         writes_in(rest, &mut written);
         if !steps
             || limit == u16::MAX
@@ -875,7 +878,7 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
 }
 
 /// The registers the nodes write, at any depth.
-fn writes_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
+fn writes_in(nodes: &[Node], out: &mut rustc_hash::FxHashSet<u16>) {
     for node in nodes {
         if let Node::Stmt(stmt) = node {
             crate::ir::visit::for_each_write(stmt, |register| {

@@ -310,7 +310,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                     }
                 }
                 Node::If { then, els, .. } => {
-                    let mut written = std::collections::HashSet::new();
+                    let mut written = rustc_hash::FxHashSet::default();
                     writes_in(then, &mut written);
                     writes_in(els, &mut written);
                     walk(then, &mut known.clone());
@@ -320,7 +320,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                 // A loop's body may run after its own later writes; a
                 // label may be entered from anywhere.
                 other => {
-                    let mut written = std::collections::HashSet::new();
+                    let mut written = rustc_hash::FxHashSet::default();
                     writes_in(std::slice::from_ref(other), &mut written);
                     for child in children_mut(other) {
                         walk(child, &mut Known::new());
