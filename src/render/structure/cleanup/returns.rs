@@ -295,9 +295,9 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                     }
                 }
                 Node::Stmt(stmt) => {
-                    for written in crate::ir::visit::statement_registers(stmt).0 {
+                    crate::ir::visit::for_each_write(stmt, |written| {
                         known.remove(&written);
-                    }
+                    });
                     if let Stmt::Assign {
                         dest,
                         value: Expr::Const(c),

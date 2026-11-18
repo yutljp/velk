@@ -779,9 +779,9 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
             invert_loops(child, &inner);
         }
         if let Node::Stmt(stmt) = &nodes[index] {
-            for written in crate::ir::visit::statement_registers(stmt).0 {
+            crate::ir::visit::for_each_write(stmt, |written| {
                 known.remove(&written);
-            }
+            });
         }
         let Node::DoWhile {
             cond: Cond::Ne,
@@ -878,7 +878,9 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
 fn writes_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
     for node in nodes {
         if let Node::Stmt(stmt) = node {
-            out.extend(crate::ir::visit::statement_registers(stmt).0);
+            crate::ir::visit::for_each_write(stmt, |register| {
+                out.insert(register);
+            });
         }
         for child in children(node) {
             writes_in(child, out);

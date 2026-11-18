@@ -243,28 +243,49 @@ pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
 
 pub(crate) fn statement_writes(stmt: &Stmt) -> FxHashSet<u16> {
     let mut writes = FxHashSet::default();
+    for_each_write(stmt, |register| {
+        writes.insert(register);
+    });
+    writes
+}
+
+/// Calls `write` with each register `stmt` writes; one it writes in two
+/// ways comes twice.
+pub(crate) fn for_each_write(stmt: &Stmt, mut write: impl FnMut(u16)) {
     match stmt {
-        Stmt::Machine { outputs, .. } => writes.extend(outputs.iter().map(|dest| dest.index)),
-        Stmt::Assign { dest, .. } => {
-            writes.insert(dest.index);
-        }
-        Stmt::Call { outputs, .. } => {
-            writes.extend(outputs.iter().map(|output| output.dest.index));
-            writes.extend(
-                stmt.call_clobbers()
-                    .into_iter()
-                    .filter(|register| !outputs.iter().any(|output| output.register == *register)),
-            );
+        Stmt::Machine { outputs, .. } => outputs.iter().for_each(|dest| write(dest.index)),
+        Stmt::Assign { dest, .. } => write(dest.index),
+        Stmt::Call {
+            outputs,
+            convention,
+            clobbers,
+            ..
+        } => {
+            for output in outputs {
+                write(output.dest.index);
+            }
+            let mut clobber = |register: u16| {
+                if !outputs.iter().any(|output| output.register == register) {
+                    write(register);
+                }
+            };
+            match clobbers {
+                Some(known) => known.iter().for_each(&mut clobber),
+                None => convention
+                    .clobbered()
+                    .iter()
+                    .copied()
+                    .for_each(&mut clobber),
+            }
         }
         // An unmodeled instruction may leave changed the registers it names,
         // or any machine register when they are not known.
         Stmt::Unsupported { writes: named, .. } => match named {
-            Some(named) => writes.extend(named),
-            None => writes.extend(crate::arch::machine_registers()),
+            Some(named) => named.iter().copied().for_each(write),
+            None => crate::arch::machine_registers().for_each(write),
         },
         _ => {}
     }
-    writes
 }
 
 /// Whether `stmt` writes `register`: what [`statement_writes`] holds, asked
