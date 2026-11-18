@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 
 use crate::loader::{ArmMode, Function, Image, OpenOptions, Summary};
 
-const FORMAT: u32 = 3;
+const FORMAT: u32 = 4;
 const MAX_SIZE: u64 = 256 << 20;
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
@@ -58,6 +58,7 @@ pub(crate) struct Saved {
     branches_to: Option<BTreeMap<u64, Vec<u64>>>,
     addressed: Option<BTreeSet<u64>>,
     go_abi0: Option<BTreeSet<u64>>,
+    go_argument_sizes: Option<BTreeMap<u64, u32>>,
 }
 
 impl Saved {
@@ -107,6 +108,10 @@ impl Saved {
                 .get()
                 .map(|set| set.iter().copied().collect()),
             go_abi0: image.go_abi0.get().map(|set| set.iter().copied().collect()),
+            go_argument_sizes: image
+                .go_argument_sizes
+                .get()
+                .map(|sizes| sizes.iter().map(|(key, value)| (*key, *value)).collect()),
         }
     }
 
@@ -139,6 +144,11 @@ impl Saved {
         }
         if let Some(abi0) = self.go_abi0 {
             let _ = image.go_abi0.set(abi0.into_iter().collect());
+        }
+        // Loading reads these from Go's function table while it finds the
+        // functions, which a restored image does not do again.
+        if let Some(sizes) = self.go_argument_sizes {
+            let _ = image.go_argument_sizes.set(sizes.into_iter().collect());
         }
     }
 }

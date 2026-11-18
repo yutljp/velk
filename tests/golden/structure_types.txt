@@ -158,7 +158,7 @@ flattened_x86_64_O0.o: 0
 flattened_x86_64_O2.o: 0
 frame_bounds_a64.o: 0
 frame_bounds_x64.o: 0
-go_probe: 860
+go_probe: 859
 go_probe_arm64: 836
 go_stripped: 859
 go_stripped_arm64: 836

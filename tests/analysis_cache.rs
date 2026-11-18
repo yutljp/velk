@@ -134,6 +134,54 @@ int main(void) {{
     }
 }
 
+/// What loading reads from Go's function table must survive a saved
+/// analysis: every function prints the same from a cache as without one.
+#[test]
+fn go_functions_print_the_same_from_a_saved_analysis() {
+    let directory = cache_test_directory("go");
+    for fixture in ["go_probe", "go_probe_arm64"] {
+        let path = common::fixtures_dir().join(fixture);
+        let cache = directory.join(format!("{fixture}.json"));
+        let _ = fs::remove_file(&cache);
+        let mut uncached = Binary::open_input(
+            &path,
+            None,
+            &OpenOptions {
+                cache: Some(CacheLocation::Enabled(false)),
+                ..OpenOptions::default()
+            },
+        )
+        .unwrap();
+        let addresses: Vec<u64> = uncached
+            .functions()
+            .iter()
+            .map(|function| function.addr)
+            .collect();
+        let print = |binary: &mut Binary| -> Vec<String> {
+            binary
+                .decompile_many(&addresses, None, None)
+                .unwrap()
+                .into_iter()
+                .map(|result| result.unwrap_or_else(|error| error.to_string()))
+                .collect()
+        };
+        let expected = print(&mut uncached);
+        // Opening saves the functions before anything is analysed, so the
+        // opens after it analyse from what the cache alone restores.
+        drop(Binary::open_input(&path, None, &options(&cache)).unwrap());
+        for round in ["read before any analysis", "read after it"] {
+            let mut binary = Binary::open_input(&path, None, &options(&cache)).unwrap();
+            let printed = print(&mut binary);
+            for ((address, expected), printed) in addresses.iter().zip(&expected).zip(&printed) {
+                assert_eq!(
+                    printed, expected,
+                    "{fixture}: 0x{address:x} with the cache {round}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn cli_handles_damage_parallel_writers_and_disabled_cache() {
     let directory = cache_test_directory("cli");
