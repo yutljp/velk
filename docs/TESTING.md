@@ -29,6 +29,8 @@ BIN=target/release/velk bash tests/scripts/ladder.sh
 - `tests/scripts/smoke.sh` runs the command line and the MCP server end to end.
 - `tests/scripts/ladder.sh` checks expected results on functions of increasing difficulty. Entries marked `known_*` are
   known gaps.
+- The tests and these scripts run with the analysis cache off (`VELK_CACHE=off`, from `.cargo/config.toml` and the
+  scripts), so no run reads a cache an earlier one left beside a fixture. The cache tests name their own location.
 
 ## What the tests check
 

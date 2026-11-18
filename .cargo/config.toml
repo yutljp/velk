@@ -1,0 +1,5 @@
+# Tests and local runs keep no analysis cache beside the fixtures: a cache
+# left by one run would decide what the next one prints. The tests of the
+# cache name their own location.
+[env]
+VELK_CACHE = "off"

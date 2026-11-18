@@ -2,6 +2,8 @@
 # Smoke test: check the output contract of functions, card, ir and decompile
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# A cache left beside a fixture by one run would decide what the next prints.
+export VELK_CACHE="${VELK_CACHE:-off}"
 FIX=tests/fixtures
 mkdir -p tests/out
 SIGS=tests/out/sigs.json

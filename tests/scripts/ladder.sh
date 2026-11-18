@@ -9,6 +9,8 @@
 # promote it to has/nothas (a passing known_* row is reported so it is not forgotten).
 set -uo pipefail
 cd "$(dirname "$0")/../.."
+# A cache left beside a fixture by one run would decide what the next prints.
+export VELK_CACHE="${VELK_CACHE:-off}"
 FIXTURES_DIR=tests/fixtures
 
 BIN=${BIN:-}

@@ -28,6 +28,7 @@ BIN=target/release/velk bash tests/scripts/ladder.sh
 
 - `tests/scripts/smoke.sh` はコマンドラインと MCP サーバーを端から端まで動かして確認します。
 - `tests/scripts/ladder.sh` は難しさの異なる関数で期待する結果を確認します。`known_*` の行はまだ達成できていない目標です。
+- テストと上のスクリプトは解析キャッシュを無効にして実行します（`.cargo/config.toml` とスクリプトが `VELK_CACHE=off` を設定します）。前の実行がフィクスチャの隣に残したキャッシュを読まないためです。キャッシュのテストは保存先を自分で指定します。
 
 ## テストが確認すること
 

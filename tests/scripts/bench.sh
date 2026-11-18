@@ -2,6 +2,8 @@
 # Performance regression: time the main commands and fail if an average exceeds its limit
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# A cache left beside a fixture by one run would decide what the next prints.
+export VELK_CACHE="${VELK_CACHE:-off}"
 FIX=tests/fixtures
 BIG=tests/out/arm64_big.o
 
