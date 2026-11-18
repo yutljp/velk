@@ -212,9 +212,8 @@ fn step(stmt: &Stmt, state: &mut HashMap<u16, i64>) {
         };
         return;
     }
-    for register in crate::ir::visit::statement_writes(stmt) {
-        state.remove(&register);
-    }
+    // The state holds a few registers and a call writes many.
+    state.retain(|register, _| !crate::ir::visit::statement_writes_register(stmt, *register));
 }
 
 /// The offset from the entry stack pointer `value` computes, when it is

@@ -267,6 +267,33 @@ pub(crate) fn statement_writes(stmt: &Stmt) -> FxHashSet<u16> {
     writes
 }
 
+/// Whether `stmt` writes `register`: what [`statement_writes`] holds, asked
+/// of one register without building the set.
+pub(crate) fn statement_writes_register(stmt: &Stmt, register: u16) -> bool {
+    match stmt {
+        Stmt::Machine { outputs, .. } => outputs.iter().any(|dest| dest.index == register),
+        Stmt::Assign { dest, .. } => dest.index == register,
+        Stmt::Call {
+            outputs,
+            convention,
+            clobbers,
+            ..
+        } => {
+            outputs.iter().any(|output| output.dest.index == register)
+                || (!outputs.iter().any(|output| output.register == register)
+                    && match clobbers {
+                        Some(known) => known.contains(register),
+                        None => convention.clobbered().contains(&register),
+                    })
+        }
+        Stmt::Unsupported { writes: named, .. } => match named {
+            Some(named) => named.contains(&register),
+            None => crate::arch::machine_registers().contains(&register),
+        },
+        _ => false,
+    }
+}
+
 pub(crate) fn statement_registers(stmt: &Stmt) -> (FxHashSet<u16>, FxHashSet<u16>) {
     let writes = statement_writes(stmt);
     let mut reads = FxHashSet::default();
@@ -369,6 +396,102 @@ mod tests {
     use super::*;
     use crate::ir::{BinOp, Cond, Operation, Precision};
     use std::collections::HashSet;
+
+    #[test]
+    fn asking_about_one_register_agrees_with_the_set_of_writes() {
+        let call = |convention: crate::ir::Convention, clobbers| Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention,
+            args: Some(Vec::new()),
+            floats_named: false,
+            abi: None,
+            outputs: crate::ir::fallback_call_outputs(convention, None),
+            clobbers,
+            via: None,
+            at: None,
+        };
+        let mut few = crate::ir::Registers::default();
+        for index in [0, 3, 19, 127] {
+            few.insert(index);
+        }
+        let renamed = {
+            let mut stmt = call(crate::ir::Convention::Aapcs64, None);
+            if let Stmt::Call { outputs, .. } = &mut stmt {
+                for output in outputs {
+                    output.dest.index = crate::ir::VALUE_BASE + output.register;
+                }
+            }
+            stmt
+        };
+        let statements = [
+            call(crate::ir::Convention::Aapcs64, None),
+            call(crate::ir::Convention::SysV, None),
+            call(crate::ir::Convention::Aapcs64, Some(few)),
+            call(
+                crate::ir::Convention::GoAmd64,
+                Some(crate::ir::Registers::default()),
+            ),
+            renamed,
+            Stmt::Assign {
+                at: None,
+                dest: crate::ir::RegRef {
+                    index: 7,
+                    width: 32,
+                },
+                value: Expr::Const(1),
+            },
+            Stmt::Machine {
+                at: None,
+                instruction: crate::ir::MachineInstruction::ArmBarrier { kind: 0, option: 0 },
+                inputs: vec![Expr::reg(1, 64)],
+                outputs: vec![
+                    crate::ir::RegRef {
+                        index: 2,
+                        width: 64,
+                    },
+                    crate::ir::RegRef {
+                        index: crate::ir::TEMP_BASE,
+                        width: 64,
+                    },
+                ],
+            },
+            Stmt::Store {
+                at: None,
+                addr: Expr::reg(1, 64),
+                value: Expr::reg(2, 64),
+                width: 8,
+            },
+            Stmt::Unsupported {
+                at: None,
+                text: String::new(),
+                writes: None,
+            },
+            Stmt::Unsupported {
+                at: None,
+                text: String::new(),
+                writes: Some(vec![5, 200]),
+            },
+            Stmt::Trap { at: None },
+        ];
+        let registers = (0..600).chain([
+            crate::ir::TEMP_BASE,
+            crate::ir::VARIABLE_BASE,
+            crate::ir::VALUE_BASE,
+            crate::ir::VALUE_BASE + 1,
+            u16::MAX,
+        ]);
+        for register in registers {
+            for stmt in &statements {
+                assert_eq!(
+                    statement_writes_register(stmt, register),
+                    statement_writes(stmt).contains(&register),
+                    "{stmt:?}: register {register}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn statement_sets_preserve_temporary_and_ssa_indices() {
