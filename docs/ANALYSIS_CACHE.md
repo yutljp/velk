@@ -48,6 +48,14 @@ Queries can add summaries and a navigation index to the saved results when the
 binary handle is released. Explicit signature identification through a handle
 stops further cache writes for that handle, since it changes its analysis options.
 
+Opening a binary again in the same process, as a script or MCP session does for
+each request, reuses the binary it holds without reading the input again when
+the size and modification time of the input, of an external debug file and of
+the selected signature databases are unchanged. A file modified less than three
+seconds before it was read is not judged by its time and is digested again. A
+file replaced by another of the same size whose modification time is then set
+back to the earlier one is not noticed until the process restarts.
+
 To measure opening and the first C and cross-reference queries in two separate
 processes, run `uv run tools/measure_analysis_cache.py --library LIBRARY` after
 `cargo build --release`. The script prints elapsed times and cache sizes. It uses

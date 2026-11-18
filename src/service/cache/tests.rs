@@ -343,3 +343,102 @@ fn cached_default_signature_decision_matches_initial_load() {
         }
     }
 }
+
+/// A file of `length` bytes last modified `age` seconds before `now`.
+fn aged(path: &Path, length: usize, now: std::time::SystemTime, age: u64) {
+    fs::write(path, vec![0; length]).unwrap();
+    fs::File::options()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_times(fs::FileTimes::new().set_modified(now - std::time::Duration::from_secs(age)))
+        .unwrap();
+}
+
+#[test]
+fn a_stamp_holds_only_for_settled_files_that_look_the_same() {
+    let directory = directory("stamp");
+    let binary = directory.join("input");
+    let debug = directory.join("input.debug");
+    let extra = directory.join("extra.json");
+    let signatures = SignatureOptions {
+        files: vec![extra.clone()],
+        ..SignatureOptions::default()
+    };
+    let now = std::time::SystemTime::now();
+    let fresh = |binary_age, debug_age, extra_age| {
+        aged(&binary, 8, now, binary_age);
+        aged(&debug, 8, now, debug_age);
+        aged(&extra, 8, now, extra_age);
+        Stamp::take(now, &binary, Some(&debug), &signatures)
+    };
+
+    assert!(fresh(60, 60, 60).holds());
+    // A file changed just before it was read may change again within the
+    // same tick of the file clock.
+    assert!(!fresh(1, 60, 60).holds());
+    assert!(!fresh(60, 1, 60).holds());
+    assert!(!fresh(60, 60, 1).holds());
+
+    // Another size or another time on any of the files.
+    for changed in [&binary, &debug, &extra] {
+        let stamp = fresh(60, 60, 60);
+        aged(changed, 9, now, 60);
+        assert!(!stamp.holds(), "{}", changed.display());
+        let stamp = fresh(60, 60, 60);
+        aged(changed, 8, now, 61);
+        assert!(!stamp.holds(), "{}", changed.display());
+    }
+
+    // A file that goes away, and one that appears.
+    let stamp = fresh(60, 60, 60);
+    fs::remove_file(&debug).unwrap();
+    assert!(!stamp.holds());
+    let stamp = Stamp::take(now, &binary, Some(&debug), &signatures);
+    assert!(stamp.holds());
+    aged(&debug, 8, now, 60);
+    assert!(!stamp.holds());
+}
+
+#[test]
+fn sessions_open_a_settled_input_again_without_reading_it() {
+    let directory = directory("reopen");
+    let binary = directory.join("input.o");
+    fs::copy(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tail_calls.o"),
+        &binary,
+    )
+    .unwrap();
+    let options = OpenOptions {
+        cache: Some(Location::Enabled(false)),
+        ..OpenOptions::default()
+    };
+    let mut session = Session::default();
+    let settled = std::time::SystemTime::now() - std::time::Duration::from_secs(60);
+    fs::File::options()
+        .write(true)
+        .open(&binary)
+        .unwrap()
+        .set_times(fs::FileTimes::new().set_modified(settled))
+        .unwrap();
+    let opened = session.open_input(&binary, None, &options).unwrap();
+    assert!(opened.stamp.lock().unwrap().holds());
+    let first = opened.source_digest.clone();
+    // A change of size is seen whatever the time says.
+    let modified = fs::metadata(&binary).unwrap().modified().unwrap();
+    let mut bytes = fs::read(&binary).unwrap();
+    bytes.push(0);
+    fs::write(&binary, bytes).unwrap();
+    fs::File::options()
+        .write(true)
+        .open(&binary)
+        .unwrap()
+        .set_times(fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    let second = session
+        .open_input(&binary, None, &options)
+        .unwrap()
+        .source_digest
+        .clone();
+    assert_ne!(first, second);
+}

@@ -424,6 +424,59 @@ impl Cache {
     }
 }
 
+/// The size and modification time of every file the source digest reads,
+/// for telling that none changed without reading them again.
+pub(super) struct Stamp {
+    /// When the files were looked at, before any of them was read.
+    taken: std::time::SystemTime,
+    files: Vec<(PathBuf, Option<(std::time::SystemTime, u64)>)>,
+}
+
+impl Stamp {
+    /// A file changed twice within one tick of a coarse file clock keeps
+    /// its time, so a time this close to when it was looked at is not
+    /// trusted.
+    const SETTLED: std::time::Duration = std::time::Duration::from_secs(3);
+
+    /// Looks at the files. `taken` is when their contents were, or are
+    /// about to be, read for the digest.
+    pub(super) fn take(
+        taken: std::time::SystemTime,
+        binary: &Path,
+        debug: Option<&Path>,
+        signatures: &super::SignatureOptions,
+    ) -> Self {
+        let files = std::iter::once(binary)
+            .chain(debug)
+            .chain(signatures.files.iter().map(PathBuf::as_path))
+            .map(|path| (path.to_owned(), Self::look(path)))
+            .collect();
+        Self { taken, files }
+    }
+
+    fn look(path: &Path) -> Option<(std::time::SystemTime, u64)> {
+        let Ok(metadata) = fs::metadata(path) else {
+            return None;
+        };
+        let Ok(modified) = metadata.modified() else {
+            return None;
+        };
+        metadata.is_file().then_some((modified, metadata.len()))
+    }
+
+    /// Whether every file is as it was looked at, and had settled by then.
+    pub(super) fn holds(&self) -> bool {
+        self.files.iter().all(|(path, seen)| {
+            Self::look(path) == *seen
+                && seen.is_none_or(|(modified, _)| {
+                    modified
+                        .checked_add(Self::SETTLED)
+                        .is_some_and(|settled| settled <= self.taken)
+                })
+        })
+    }
+}
+
 pub(super) fn source_digest(binary: &Path, signatures: &super::SignatureOptions) -> Option<String> {
     let Ok(bytes) = fs::read(binary) else {
         return None;

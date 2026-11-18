@@ -151,10 +151,9 @@ impl Session {
         {
             Entry::Occupied(entry)
                 if entry.get().source_digest.is_some()
-                    && entry.get().source_digest
-                        == cache::source_digest(&entry.key().0, signatures)
                     && entry.get().modified == modified
-                    && project.is_none_or(|project| entry.get().project_path == project) =>
+                    && project.is_none_or(|project| entry.get().project_path == project)
+                    && entry.get().unchanged(signatures) =>
             {
                 let binary = entry.into_mut();
                 match binary.refresh_project() {
@@ -200,6 +199,8 @@ impl Session {
 pub struct Binary {
     cache: Option<cache::Cache>,
     source_digest: Option<String>,
+    /// What the files behind `source_digest` looked like when it was made.
+    stamp: std::sync::Mutex<cache::Stamp>,
     string_decoding: bool,
     instruction_addresses: bool,
     decoded_strings: HashMap<u64, Vec<crate::string_decoding::DecodedString>>,
@@ -368,6 +369,7 @@ impl Binary {
             }
             options.raw = Some(raw.clone());
         }
+        let read_at = SystemTime::now();
         let mut source_digest = None;
         let mut cache = None;
         let mut reused = false;
@@ -437,6 +439,12 @@ impl Binary {
         let mut binary = Self {
             cache: None,
             source_digest,
+            stamp: std::sync::Mutex::new(cache::Stamp::take(
+                read_at,
+                &path,
+                image.debug_path.as_deref(),
+                signatures,
+            )),
             navigation: None,
             similarity: None,
             path: path.to_owned(),
@@ -479,6 +487,27 @@ impl Binary {
         }
         binary.cache = cache;
         Ok(binary)
+    }
+
+    /// Whether the input and the files analysed with it are what the
+    /// analysis was made from. Their sizes and times say so without reading
+    /// them; where those cannot be trusted the contents are digested again.
+    fn unchanged(&self, signatures: &SignatureOptions) -> bool {
+        let mut stamp = self.stamp.lock().expect("stamp lock");
+        if stamp.holds() {
+            return true;
+        }
+        let read_at = SystemTime::now();
+        if self.source_digest != cache::source_digest(&self.path, signatures) {
+            return false;
+        }
+        *stamp = cache::Stamp::take(
+            read_at,
+            &self.path,
+            self.image.debug_path.as_deref(),
+            signatures,
+        );
+        true
     }
 
     pub(crate) fn refresh_project(&mut self) -> Result<()> {
