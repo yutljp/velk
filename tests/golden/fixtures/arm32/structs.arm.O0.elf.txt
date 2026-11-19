@@ -239,17 +239,15 @@ int32_t flags_level(int32_t a0) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v2;
     *(uint32_t *)(sp - 0x4) = v3;
-    sp = sp - 0x8;
-    v2 = sp;
-    sp = sp - 0x8;
-    *(uint32_t *)(sp + 0x4) = a0;
-    int32_t v1 = *(uint8_t *)(sp + 0x4) & 0x1;
+    v2 = sp - 8;
+    *(uint32_t *)(sp - 0xc) = a0;
+    int32_t v1 = *(uint8_t *)(sp - 0xc) & 0x1;
     if (v1 != 0) {
-        *(uint32_t *)(sp) = *(uint8_t *)(sp + 0x4) >> 4;
-        return *(uint32_t *)(sp);
+        *(uint32_t *)(sp - 0x10) = *(uint8_t *)(sp - 0xc) >> 4;
+        return *(uint32_t *)(sp - 0x10);
     }
-    *(uint32_t *)(sp) = *(uint8_t *)(sp + 0x4) >> 1 & 0x7;
-    return *(uint32_t *)(sp);
+    *(uint32_t *)(sp - 0x10) = *(uint8_t *)(sp - 0xc) >> 1 & 0x7;
+    return *(uint32_t *)(sp - 0x10);
 }
 -- signature
 int32_t (int32_t a0)
@@ -261,21 +259,19 @@ fn flags_level @ 0x202f0 (size 84)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    sp = (sp + #0xfffffffffffffff8)
-    r11 = sp
-    sp = (sp - #0x8)
-    store32(r0, (sp + #0x4))
-    v1 = (load8((sp + #0x4)) & #0x1)
+    r11 = (sp + #0xfffffffffffffff8)
+    store32(r0, (sp + #0xfffffffffffffff4))
+    v1 = (load8((sp + #0xfffffffffffffff4)) & #0x1)
     brif ne v1, #0x0 -> 0x20314
   blk1 @ 0x20311:
     br 0x20328
   blk2 @ 0x20314:
-    store32((((load8((sp + #0x4)) & #0xffffffff) >> #0x4) & #0xff), sp)
+    store32(((load8((sp + #0xfffffffffffffff4)) >> #0x4) & #0xff), (sp + #0xfffffffffffffff0))
     br 0x20338
   blk3 @ 0x20328:
-    store32((((load8((sp + #0x4)) & #0xffffffff) >> #0x1) & #0x7), sp)
+    store32(((load8((sp + #0xfffffffffffffff4)) >> #0x1) & #0x7), (sp + #0xfffffffffffffff0))
   blk4 @ 0x20338:
-    ret load32(sp)
+    ret load32((sp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x202f0","approxTokens":222,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":1}
 

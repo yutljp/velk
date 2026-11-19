@@ -35,31 +35,15 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t call_values[2];
-    uint64_t v30;
-    uint32_t v2;
-    uint32_t v17;
-    uint32_t v18;
-    uint32_t v21;
-    uint32_t v22;
-    uint32_t v25;
-    uint32_t v26;
-    uint32_t v27;
+    uint64_t v18;
     uintptr_t v3;
     uint32_t v5;
     int32_t v6;
     int32_t v7;
-    uintptr_t v8;
-    uintptr_t v28;
+    uintptr_t v9;
+    uintptr_t v29;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x24) = v2;
-    *(uint32_t *)(sp - 0x20) = v17;
-    *(uint32_t *)(sp - 0x1c) = v18;
-    *(uint32_t *)(sp - 0x18) = v21;
-    *(uint32_t *)(sp - 0x14) = v22;
-    *(uint32_t *)(sp - 0x10) = v25;
-    *(uint32_t *)(sp - 0xc) = v26;
-    *(uint32_t *)(sp - 0x8) = v27;
     int32_t v1 = a1;
     if (a1 >= 1) {
         v3 = a0;
@@ -69,30 +53,30 @@ double average(int32_t a0, int32_t a1) {
             v6 = 0;
             v7 = 0;
         } else {
-            v27 = v1 & 0x7ffffffc;
-            v8 = (uint32_t)v3 - 32;
+            int32_t v8 = v1 & 0x7ffffffc;
+            v9 = (uint32_t)v3 - 32;
             v5 = 0;
             v6 = 0;
             v7 = 0;
             *(uint32_t *)(sp - 0x28) = v3;
             for (;;) {
-                int32_t v9 = *(uint32_t *)((uint32_t)v8 + 32);
-                v8 = (uint32_t)v8 + 32;
-                struct S1 *v10 = (struct S1 *)((uint32_t)v8 + 4);
-                int32_t v11 = v10->f_0;
-                int32_t v12 = v10->f_4;
-                int32_t v13 = v10->f_8;
-                int32_t v14 = v10->f_c;
-                int32_t v15 = (uint32_t)(sub_20156((uint32_t)v6, (uint32_t)v7, (uint32_t)v9, (uint32_t)v11));
-                int32_t v16 = (uint32_t)(v30); /* also returned by the call */
-                int32_t v19 = (uint32_t)(sub_2015e((uint32_t)v15, (uint32_t)v16, (uint32_t)v12, (uint32_t)v13));
-                int32_t v20 = (uint32_t)(v30); /* also returned by the call */
-                int32_t v23 = (uint32_t)(sub_20168((uint32_t)v19, (uint32_t)v20, (uint32_t)v14, *(uint32_t *)((uint32_t)v8 + 20)));
-                int32_t v24 = (uint32_t)(v30); /* also returned by the call */
-                v6 = (uint32_t)(sub_20170((uint32_t)v23, (uint32_t)v24, *(uint32_t *)((uint32_t)v8 + 24), *(uint32_t *)((uint64_t)((uint32_t)v8 + 24) + 0x4)));
-                v7 = (uint32_t)(v30); /* also returned by the call */
+                int32_t v10 = *(uint32_t *)((uint32_t)v9 + 32);
+                v9 = (uint32_t)v9 + 32;
+                struct S1 *v11 = (struct S1 *)((uint32_t)v9 + 4);
+                int32_t v12 = v11->f_0;
+                int32_t v13 = v11->f_4;
+                int32_t v14 = v11->f_8;
+                int32_t v15 = v11->f_c;
+                int32_t v16 = (uint32_t)(sub_20156((uint32_t)v6, (uint32_t)v7, (uint32_t)v10, (uint32_t)v12));
+                int32_t v17 = (uint32_t)(v18); /* also returned by the call */
+                int32_t v20 = (uint32_t)(sub_2015e((uint32_t)v16, (uint32_t)v17, (uint32_t)v13, (uint32_t)v14));
+                int32_t v21 = (uint32_t)(v18); /* also returned by the call */
+                int32_t v24 = (uint32_t)(sub_20168((uint32_t)v20, (uint32_t)v21, (uint32_t)v15, *(uint32_t *)((uint32_t)v9 + 20)));
+                int32_t v25 = (uint32_t)(v18); /* also returned by the call */
+                v6 = (uint32_t)(sub_20170((uint32_t)v24, (uint32_t)v25, *(uint32_t *)((uint32_t)v9 + 24), *(uint32_t *)((uint64_t)((uint32_t)v9 + 24) + 0x4)));
+                v7 = (uint32_t)(v18); /* also returned by the call */
                 v5 += 4;
-                if (v27 == v5) {
+                if (v8 == v5) {
                     break;
                 }
             }
@@ -101,24 +85,24 @@ double average(int32_t a0, int32_t a1) {
                 goto L_201ac;
             }
         }
-        v28 = v3 + (v5 << 3);
+        v29 = v3 + (v5 << 3);
         {
-            call_values[0] = sub_20190((uint32_t)v6, (uint32_t)v7, *(uint32_t *)(v3 + (v5 << 3)), *(uint32_t *)((uint32_t)v28 + 4));
-            call_values[1] = v30; /* also returned by the call */
+            call_values[0] = sub_20190((uint32_t)v6, (uint32_t)v7, *(uint32_t *)(v3 + (v5 << 3)), *(uint32_t *)((uint32_t)v29 + 4));
+            call_values[1] = v18; /* also returned by the call */
             v6 = (uint32_t)(call_values[0]);
             v7 = (uint32_t)(call_values[1]);
         }
         if (v4 != 1) {
             {
-                call_values[0] = sub_2019e((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v28 + 8), *(uint32_t *)((uint64_t)((uint32_t)v28 + 8) + 0x4));
-                call_values[1] = v30; /* also returned by the call */
+                call_values[0] = sub_2019e((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v29 + 8), *(uint32_t *)((uint64_t)((uint32_t)v29 + 8) + 0x4));
+                call_values[1] = v18; /* also returned by the call */
                 v6 = (uint32_t)(call_values[0]);
                 v7 = (uint32_t)(call_values[1]);
             }
             if (v4 != 2) {
                 {
-                    call_values[0] = sub_201ac((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v28 + 16), *(uint32_t *)((uint64_t)((uint32_t)v28 + 16) + 0x4));
-                    call_values[1] = v30; /* also returned by the call */
+                    call_values[0] = sub_201ac((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v29 + 16), *(uint32_t *)((uint64_t)((uint32_t)v29 + 16) + 0x4));
+                    call_values[1] = v18; /* also returned by the call */
                     v6 = (uint32_t)(call_values[0]);
                     v7 = (uint32_t)(call_values[1]);
                 }
@@ -129,18 +113,18 @@ double average(int32_t a0, int32_t a1) {
         v7 = 0;
     }
 L_201ac:;
-    int32_t v38 = (uint32_t)(sub_201b6((uint32_t)v1));
-    int32_t v39 = (uint32_t)(v30); /* also returned by the call */
-    double v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v6, (uint32_t)v7, (uint32_t)v38, (uint32_t)v39)) }).value;
-    int32_t v45 = v1;
-    int32_t v46 = 0;
+    int32_t v39 = (uint32_t)(sub_201b6((uint32_t)v1));
+    int32_t v40 = (uint32_t)(v18); /* also returned by the call */
+    double v45 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v6, (uint32_t)v7, (uint32_t)v39, (uint32_t)v40)) }).value;
+    int32_t v46 = v1;
+    int32_t v47 = 0;
     if (v1 <= 0) {
-        v44 = 0.0;
+        v45 = 0.0;
     }
-    if (v45 > v46) {
-        return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v44 }).bits }).value;
+    if (v46 > v47) {
+        return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v45 }).bits }).value;
     }
-    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v44 }).bits }).value;
+    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v45 }).bits }).value;
 }
 -- signature
 double (int32_t a0, int32_t a1)
@@ -150,14 +134,6 @@ double (int32_t a0, int32_t a1)
 fn average @ 0x20104 (size 206)
   blk0 @ 0x20104:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    store32(r4, (sp + #0xffffffffffffffdc))
-    store32(r5, (sp + #0xffffffffffffffe0))
-    store32(r6, (sp + #0xffffffffffffffe4))
-    store32(r7, (sp + #0xffffffffffffffe8))
-    store32(r8, (sp + #0xffffffffffffffec))
-    store32(r9, (sp + #0xfffffffffffffff0))
-    store32(r10, (sp + #0xfffffffffffffff4))
-    store32(r11, (sp + #0xfffffffffffffff8))
     v1 = r1
     v2 = #0x0
     brif ge r1, #0x1 -> 0x20114
@@ -179,26 +155,26 @@ fn average @ 0x20104 (size 206)
     v7 = #0x0
     br 0x201ac
   blk6 @ 0x2012e:
-    r11 = (v1 & #0x7ffffffc)
-    v8 = ((v3 - #0x20) & #0xffffffff)
+    v8 = (v1 & #0x7ffffffc)
+    v9 = ((v3 - #0x20) & #0xffffffff)
     v5 = #0x0
     v6 = #0x0
     v7 = #0x0
     store32(v3, (sp + #0xffffffffffffffd8))
   blk7 @ 0x20148:
-    v9 = load32(((v8 + #0x20) & #0xffffffff))
-    v8 = ((v8 + #0x20) & #0xffffffff)
-    v10 = ((v8 + #0x4) & #0xffffffff)
-    v11 = load32(v10)
-    v12 = load32((v10 + #0x4))
-    v13 = load32((v10 + #0x8))
-    v14 = load32((v10 + #0xc))
-    v15:r0, v16:r1 = call 0x20156(v6, v7, v9, v11)
-    v19:r0, v20:r1 = call 0x2015e(v15, v16, v12, v13)
-    v23:r0, v24:r1 = call 0x20168(v19, v20, v14, load32(((v8 + #0x14) & #0xffffffff)))
-    v6:r0, v7:r1 = call 0x20170(v23, v24, load32(((v8 + #0x18) & #0xffffffff)), load32((((v8 + #0x18) & #0xffffffff) + #0x4)))
+    v10 = load32(((v9 + #0x20) & #0xffffffff))
+    v9 = ((v9 + #0x20) & #0xffffffff)
+    v11 = ((v9 + #0x4) & #0xffffffff)
+    v12 = load32(v11)
+    v13 = load32((v11 + #0x4))
+    v14 = load32((v11 + #0x8))
+    v15 = load32((v11 + #0xc))
+    v16:r0, v17:r1 = call 0x20156(v6, v7, v10, v12)
+    v20:r0, v21:r1 = call 0x2015e(v16, v17, v13, v14)
+    v24:r0, v25:r1 = call 0x20168(v20, v21, v15, load32(((v9 + #0x14) & #0xffffffff)))
+    v6:r0, v7:r1 = call 0x20170(v24, v25, load32(((v9 + #0x18) & #0xffffffff)), load32((((v9 + #0x18) & #0xffffffff) + #0x4)))
     v5 = ((v5 + #0x4) & #0xffffffff)
-    brif eq r11, v5 -> 0x20176
+    brif eq v8, v5 -> 0x20176
   blk8 @ 0x20175:
     br 0x20148
   blk9 @ 0x20176:
@@ -207,31 +183,31 @@ fn average @ 0x20104 (size 206)
   blk10 @ 0x20181:
     br 0x201ac
   blk11 @ 0x20182:
-    v28 = ((v3 + (v5 << #0x3)) & #0xffffffff)
-    v6:r0, v7:r1 = call 0x20190(v6, v7, load32(((v3 + (v5 << #0x3)) & #0xffffffff)), load32(((v28 + #0x4) & #0xffffffff)))
+    v29 = ((v3 + (v5 << #0x3)) & #0xffffffff)
+    v6:r0, v7:r1 = call 0x20190(v6, v7, load32(((v3 + (v5 << #0x3)) & #0xffffffff)), load32(((v29 + #0x4) & #0xffffffff)))
     brif ne v4, #0x1 -> 0x20196
   blk12 @ 0x20195:
     br 0x201ac
   blk13 @ 0x20196:
-    v6:r0, v7:r1 = call 0x2019e(v6, v7, load32(((v28 + #0x8) & #0xffffffff)), load32((((v28 + #0x8) & #0xffffffff) + #0x4)))
+    v6:r0, v7:r1 = call 0x2019e(v6, v7, load32(((v29 + #0x8) & #0xffffffff)), load32((((v29 + #0x8) & #0xffffffff) + #0x4)))
     brif ne v4, #0x2 -> 0x201a4
   blk14 @ 0x201a3:
     br 0x201ac
   blk15 @ 0x201a4:
-    v6:r0, v7:r1 = call 0x201ac(v6, v7, load32(((v28 + #0x10) & #0xffffffff)), load32((((v28 + #0x10) & #0xffffffff) + #0x4)))
+    v6:r0, v7:r1 = call 0x201ac(v6, v7, load32(((v29 + #0x10) & #0xffffffff)), load32((((v29 + #0x10) & #0xffffffff) + #0x4)))
   blk16 @ 0x201ac:
-    v38:r0, v39:r1 = call 0x201b6(v1)
-    v44:r0, r1 = call 0x201c2(v6, v7, v38, v39)
-    v45 = v1
-    v46 = #0x0
+    v39:r0, v40:r1 = call 0x201b6(v1)
+    v45:r0, r1 = call 0x201c2(v6, v7, v39, v40)
+    v46 = v1
+    v47 = #0x0
     brif gt v1, #0x0 -> 0x201ca
   blk17 @ 0x201c9:
-    v44 = #0x0
+    v45 = #0x0
   blk18 @ 0x201ca:
-    brif gt v45, v46 -> 0x201cc
+    brif gt v46, v47 -> 0x201cc
   blk19 @ 0x201cb:
   blk20 @ 0x201cc:
-    ret v44
+    ret v45
 -- card
 {"addr":"0x20104","approxTokens":240,"blocks":21,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":206,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };"],"unsupported":1}
 

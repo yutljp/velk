@@ -11,7 +11,6 @@
 
 uint64_t sub_20218();
 uint64_t sub_2026c();
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x20114 matrix_trace
@@ -125,26 +124,23 @@ fn cleanup_on_error @ 0x201cc (size 104)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x20234 */
 int fallthrough(int x) {
-    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v2;
-    uint64_t v7;
     uint32_t v5;
     uint32_t v6;
+    uint32_t v7;
     uint32_t v8;
     int32_t v4;
-    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint32_t f_4; uint8_t gap_8[0x4]; uint32_t f_c; uint32_t f_10; } local_0; /* [sp-14] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; uint32_t f_10; } local_0; /* [sp-14] */
 
     local_0.f_c = v7;
     local_0.f_10 = v8;
-    sp = sp - 0x8;
-    v7 = sp;
-    sp = sp - 0xc;
-    *(uint32_t *)(v7 - 0x4) = x;
+    v7 = (uintptr_t)(&local_0.f_c);
+    local_0.f_8 = x;
     local_0.f_4 = 0;
-    uint32_t v1 = *(uint32_t *)(v7 - 0x4);
-    *(uint32_t *)(sp) = v1;
+    uint32_t v1 = local_0.f_8;
+    local_0.f_0 = v1;
     if (v1 <= 3) {
-        int32_t v3 = *(uint32_t *)(0x2026c + (*(uint32_t *)(sp) << 2));
+        int32_t v3 = *(uint32_t *)(0x2026c + (local_0.f_0 << 2));
         /* unsupported: ARM add pc, r0, r1 at 0x20268 */
         {
             uint64_t call_values[2];
@@ -167,26 +163,24 @@ fn fallthrough @ 0x20234 (size 144)
   blk0 @ 0x20234:
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    sp = (sp + #0xfffffffffffffff8)
-    r11 = sp
-    sp = (sp - #0xc)
-    store32(r0, (r11 - #0x4))
-    store32(#0x0, (sp + #0x4))
-    v1 = load32((r11 - #0x4))
-    store32(v1, sp)
+    r11 = (sp + #0xfffffffffffffff8)
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    v1 = load32((sp + #0xfffffffffffffff4))
+    store32(v1, (sp + #0xffffffffffffffec))
     brif ls v1, #0x3 -> 0x2025c
   blk1 @ 0x20259:
     br 0x202b0
   blk2 @ 0x2025c:
     v2 = #0x2026c
-    v3 = load32(((#0x2026c + (load32(sp) << #0x2)) & #0xffffffff))
+    v3 = load32(((#0x2026c + (load32((sp + #0xffffffffffffffec)) << #0x2)) & #0xffffffff))
     unsupported: ARM add pc, r0, r1 at 0x20268
     v4:r0, r1 = call 0x2026c(r0, r1, r2, r3)
     ret v4
   blk3 @ 0x202b0:
-    store32(#0xffffffff, (sp + #0x4))
+    store32(#0xffffffff, (sp + #0xfffffffffffffff0))
   blk4 @ 0x202b8:
-    ret load32((sp + #0x4))
+    ret load32((sp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x20234","approxTokens":240,"blocks":5,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":144,"unsupported":1}
 

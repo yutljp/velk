@@ -6,7 +6,6 @@
 extern uint32_t g; /* address: 0x304a8 */
 
 uint64_t sub_20134();
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x20104 d7
@@ -14,24 +13,21 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* velk pseudo-C: d7 @ 0x20104 */
 /* ref: 0x304a8 .bss */
 int d7(int x) {
-    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v1;
-    uint64_t v6;
     uint32_t v2;
     uint32_t v5;
+    uint32_t v6;
     uint32_t v7;
     int32_t v4;
-    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x2c]; uint32_t f_30; uint32_t f_34; } local_0; /* [sp-38] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x28]; uint32_t f_2c; uint32_t f_30; uint32_t f_34; } local_0; /* [sp-38] */
 
     local_0.f_30 = v6;
     local_0.f_34 = v7;
-    sp = sp - 0x8;
-    v6 = sp;
-    sp = sp - 0x30;
-    *(uint32_t *)(v6 - 0x4) = x;
-    *(uint32_t *)(sp) = x;
+    v6 = (uintptr_t)(&local_0.f_30);
+    local_0.f_2c = x;
+    local_0.f_0 = x;
     if ((uint32_t)x <= 9) {
-        int32_t v3 = *(uint32_t *)(0x20134 + (*(uint32_t *)(sp) << 2));
+        int32_t v3 = *(uint32_t *)(0x20134 + (local_0.f_0 << 2));
         /* unsupported: ARM add pc, r0, r1 at 0x20130 */
         {
             uint64_t call_values[2];
@@ -54,18 +50,16 @@ fn d7 @ 0x20104 (size 932)
   blk0 @ 0x20104:
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    sp = (sp + #0xfffffffffffffff8)
-    r11 = sp
-    sp = (sp - #0x30)
-    store32(r0, (r11 - #0x4))
+    r11 = (sp + #0xfffffffffffffff8)
+    store32(r0, (sp + #0xfffffffffffffff4))
     v1 = r0
-    store32(v1, sp)
+    store32(v1, (sp + #0xffffffffffffffc8))
     brif ls v1, #0x9 -> 0x20124
   blk1 @ 0x20121:
     br 0x2042c
   blk2 @ 0x20124:
     v2 = #0x20134
-    v3 = load32(((#0x20134 + (load32(sp) << #0x2)) & #0xffffffff))
+    v3 = load32(((#0x20134 + (load32((sp + #0xffffffffffffffc8)) << #0x2)) & #0xffffffff))
     unsupported: ARM add pc, r0, r1 at 0x20130
     v4:r0, r1 = call 0x20134(r0, r1, r2, r3)
     ret v4

@@ -221,28 +221,26 @@ int32_t compare_doubles(void) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v5;
     *(uint32_t *)(sp - 0x4) = v6;
-    sp = sp - 0x8;
-    v5 = sp;
-    sp = sp - 0x18;
-    *(uint64_t *)(v5 - 0x8) = v7;
-    *(uint64_t *)(sp + 0x8) = v8;
-    struct velk_vector vector = { .low.f64 = *(double *)(v5 - 0x8), .high.f64 = ((union { uint64_t bits; double value; }){ .bits = v8 }).value };
+    v5 = sp - 8;
+    *(uint64_t *)(sp - 0x10) = v7;
+    *(uint64_t *)(sp - 0x18) = v8;
+    struct velk_vector vector = { .low.f64 = *(double *)(sp - 0x10), .high.f64 = ((union { uint64_t bits; double value; }){ .bits = v8 }).value };
     double t77 = vector.low.f64;
     double t78 = vector.high.f64;
     if (t77 < t78) {
-        *(uint32_t *)(sp + 0x4) = 0xffffffff;
-        return *(uint32_t *)(sp + 0x4);
+        *(uint32_t *)(sp - 0x1c) = 0xffffffff;
+        return *(uint32_t *)(sp - 0x1c);
     }
     int32_t v3 = 0;
-    if (*(double *)(sp + 0x8) < *(double *)(v5 - 0x8)) {
+    if (*(double *)(sp - 0x18) < *(double *)(v5 - 0x8)) {
         v3 = 1;
     }
     int32_t v4 = 1;
     if (v3 == 0) {
         v4 = 0;
     }
-    *(uint32_t *)(sp + 0x4) = v4;
-    return *(uint32_t *)(sp + 0x4);
+    *(uint32_t *)(sp - 0x1c) = v4;
+    return *(uint32_t *)(sp - 0x1c);
 }
 -- signature
 int32_t ()
@@ -254,12 +252,10 @@ fn compare_doubles @ 0x20234 (size 104)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    sp = (sp + #0xfffffffffffffff8)
-    r11 = sp
-    sp = (sp - #0x18)
-    store64(d0, (r11 + #0xfffffffffffffff8))
-    store64(d1, (sp + #0x8))
-    v1 = load64((r11 + #0xfffffffffffffff8))
+    r11 = (sp + #0xfffffffffffffff8)
+    store64(d0, (sp + #0xfffffffffffffff0))
+    store64(d1, (sp + #0xffffffffffffffe8))
+    v1 = load64((sp + #0xfffffffffffffff0))
     v2 = d1
     t77 = v1
     t78 = v2
@@ -267,11 +263,11 @@ fn compare_doubles @ 0x20234 (size 104)
   blk1 @ 0x20259:
     br 0x20268
   blk2 @ 0x2025c:
-    store32(#0xffffffff, (sp + #0x4))
+    store32(#0xffffffff, (sp + #0xffffffffffffffe4))
     br 0x20290
   blk3 @ 0x20268:
     v3 = #0x0
-    brif eq flt.d(load64((sp + #0x8)), load64((r11 + #0xfffffffffffffff8))), #0x0 -> 0x20280
+    brif eq flt.d(load64((sp + #0xffffffffffffffe8)), load64((r11 + #0xfffffffffffffff8))), #0x0 -> 0x20280
   blk4 @ 0x2027d:
     v3 = #0x1
   blk5 @ 0x20280:
@@ -280,8 +276,8 @@ fn compare_doubles @ 0x20234 (size 104)
   blk6 @ 0x20289:
     v4 = #0x0
   blk7 @ 0x2028c:
-    store32(v4, (sp + #0x4))
+    store32(v4, (sp + #0xffffffffffffffe4))
   blk8 @ 0x20290:
-    ret load32((sp + #0x4))
+    ret load32((sp + #0xffffffffffffffe4))
 -- card
 {"addr":"0x20234","approxTokens":240,"blocks":9,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":1}

@@ -224,7 +224,10 @@ fn needed_assignments(
                 }
                 if let Stmt::Assign { dest, value, .. } = stmt
                     && !live.contains(&dest.index)
-                    && !crate::passes::frame::reads_outside_frame(value)
+                    && !crate::passes::frame::reads_outside_frame(
+                        value,
+                        crate::arch::stack_pointer(isa),
+                    )
                     && !writes
                         .iter()
                         .chain(reads)

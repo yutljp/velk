@@ -782,8 +782,8 @@ fn short_circuit @ 0x2031c (size 44)
 /* velk pseudo-C: skip_negatives @ 0x20348 */
 int skip_negatives(int *p, int n) {
     uintptr_t v7;
-    uintptr_t v23;
-    int32_t v26;
+    uintptr_t v19;
+    int32_t v22;
 
     int32_t v2 = 1;
     if (n < 1) {
@@ -796,42 +796,42 @@ int skip_negatives(int *p, int n) {
         if ((((uint32_t)n >> 2 == 0 ? 0x40 : 0x0) | (uint32_t)n >> 1 & 0x1 ^ 0x1) >> 6 == 0) {
             v7 = (uint32_t)(uintptr_t)p - 16;
             int32_t v8 = -(v5 << 2);
-            v26 = 0;
+            v22 = 0;
             while (true) {
                 int32_t v10 = *(uint32_t *)((uint32_t)v7 + 16);
                 v7 = (uint32_t)v7 + 16;
                 v6 -= 4;
-                v26 += (v10 & (v10 >> 31 ^ 0xffffffff));
+                v22 += (v10 & (v10 >> 31 ^ 0xffffffff));
                 struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
-                int32_t v27 = v12->f_0;
+                int32_t v23 = v12->f_0;
                 int32_t v14 = v12->f_4;
                 int32_t v15 = v12->f_8;
-                v26 += (v27 & (v27 >> 31 ^ 0xffffffff));
-                v26 += (v14 & (v14 >> 31 ^ 0xffffffff));
-                v26 += (v15 & (v15 >> 31 ^ 0xffffffff));
+                v22 += (v23 & (v23 >> 31 ^ 0xffffffff));
+                v22 += (v14 & (v14 >> 31 ^ 0xffffffff));
+                v22 += (v15 & (v15 >> 31 ^ 0xffffffff));
                 if (v8 == v6) break;
             }
             if (v3 == 0) {
-                return v26;
+                return v22;
             }
             v6 = -v6;
         } else {
-            v26 = 0;
+            v22 = 0;
         }
-        int32_t v22 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v6 << 2));
-        v26 += (v22 & (v22 >> 31 ^ 0xffffffff));
+        int32_t v18 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v6 << 2));
+        v22 += (v18 & (v18 >> 31 ^ 0xffffffff));
         if (v3 != 1) {
-            v23 = (uint32_t)(uintptr_t)p + (v6 << 2);
-            int32_t v28 = *(uint32_t *)((uint32_t)v23 + 4);
-            v26 += (v28 & (v28 >> 31 ^ 0xffffffff));
+            v19 = (uint32_t)(uintptr_t)p + (v6 << 2);
+            int32_t v24 = *(uint32_t *)((uint32_t)v19 + 4);
+            v22 += (v24 & (v24 >> 31 ^ 0xffffffff));
             if (v3 != 2) {
-                int32_t v25 = *(uint32_t *)((uint32_t)v23 + 8);
-                v26 += (v25 & (v25 >> 31 ^ 0xffffffff));
-                return v26;
+                int32_t v21 = *(uint32_t *)((uint32_t)v19 + 8);
+                v22 += (v21 & (v21 >> 31 ^ 0xffffffff));
+                return v22;
             }
-            return v26;
+            return v22;
         }
-        return v26;
+        return v22;
     }
     return (uint32_t)(uintptr_t)p;
 }
@@ -887,21 +887,21 @@ fn skip_negatives @ 0x20348 (size 136)
   blk12 @ 0x203a0:
     v5 = #0x0
   blk13 @ 0x203a2:
-    v22 = load32(((r0 + (v6 << #0x2)) & #0xffffffff))
-    v5 = ((v5 + (v22 & (((sext32(v22) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v18 = load32(((r0 + (v6 << #0x2)) & #0xffffffff))
+    v5 = ((v5 + (v18 & (((sext32(v18) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
     brif ne v3, #0x1 -> 0x203b2
   blk14 @ 0x203b1:
     br 0x203cc
   blk15 @ 0x203b2:
-    v23 = ((r0 + (v6 << #0x2)) & #0xffffffff)
-    v22 = load32(((v23 + #0x4) & #0xffffffff))
-    v5 = ((v5 + (v22 & (((sext32(v22) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v19 = ((r0 + (v6 << #0x2)) & #0xffffffff)
+    v18 = load32(((v19 + #0x4) & #0xffffffff))
+    v5 = ((v5 + (v18 & (((sext32(v18) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
     brif ne v3, #0x2 -> 0x203c4
   blk16 @ 0x203c3:
     br 0x203cc
   blk17 @ 0x203c4:
-    v25 = load32(((v23 + #0x8) & #0xffffffff))
-    v5 = ((v5 + (v25 & (((sext32(v25) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v21 = load32(((v19 + #0x8) & #0xffffffff))
+    v5 = ((v5 + (v21 & (((sext32(v21) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
   blk18 @ 0x203cc:
     ret v5
 -- card

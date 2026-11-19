@@ -67,15 +67,15 @@ fn mixed_sign @ 0x2017c (size 48)
 -- decompile
 /* velk pseudo-C: in_range @ 0x201ac */
 _Bool in_range(int x, int lo, int hi) {
-    uint8_t v2 = 0;
+    uint8_t v1 = 0;
     if (x >= lo) {
-        uint8_t v4 = 0;
+        uint8_t v3 = 0;
         if (x <= hi) {
-            v4 = 1;
+            v3 = 1;
         }
-        return v4;
+        return v3;
     }
-    return v2;
+    return v1;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -84,18 +84,18 @@ _Bool (int x, int lo, int hi)
 -- ir
 fn in_range @ 0x201ac (size 88)
   blk0 @ 0x201ac:
-    v2 = #0x0
+    v1 = #0x0
     brif ge r0, r1 -> 0x201dc
   blk1 @ 0x201d9:
     br 0x201f4
   blk2 @ 0x201dc:
-    v2 = #0x0
+    v1 = #0x0
     brif gt r0, r2 -> 0x201f0
   blk3 @ 0x201ed:
-    v2 = #0x1
+    v1 = #0x1
   blk4 @ 0x201f0:
   blk5 @ 0x201f4:
-    ret v2
+    ret v1
 -- card
 {"addr":"0x201ac","approxTokens":228,"blocks":6,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":88,"unsupported":0}
 
@@ -103,9 +103,7 @@ fn in_range @ 0x201ac (size 88)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x20204 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    uint8_t v1 = k & 0x1f;
-    uint8_t v2 = 32 - k & 0x1f;
-    return (v1 >= 32 ? 0 : x << v1) | (v2 >= 32 ? 0 : x >> v2);
+    return ((k & 0x1f) >= 32 ? 0 : x << (k & 0x1f)) | ((32 - k & 0x1f) >= 32 ? 0 : x >> (32 - k & 0x1f));
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -114,9 +112,7 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x20204 (size 72)
   blk0 @ 0x20204:
-    v1 = (r1 & #0x1f)
-    v2 = ((#0x20 - r1) & #0x1f)
-    ret ((select cs (v1 & #0xff), #0x20 ? #0x0, (r0 << (v1 & #0xff)) & #0xffffffff) | select cs (v2 & #0xff), #0x20 ? #0x0, (r0 >> (v2 & #0xff)))
+    ret ((select cs ((r1 & #0x1f) & #0xff), #0x20 ? #0x0, (r0 << (r1 & #0x1f)) & #0xffffffff) | select cs (((#0x20 - r1) & #0x1f) & #0xff), #0x20 ? #0x0, (r0 >> ((#0x20 - r1) & #0x1f)))
 -- card
 {"addr":"0x20204","approxTokens":204,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}
 

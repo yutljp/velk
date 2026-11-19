@@ -162,14 +162,14 @@ int find_first(int *p, int n, int v) {
 
     v1 = (uint32_t)(uintptr_t)p;
     if (n >= 1) {
-        uint32_t v3 = 0;
-        while (*(uint32_t *)(v1 + (v3 << 2)) != v) {
-            ++v3;
-            if (n == v3) {
+        uint32_t v2 = 0;
+        while (*(uint32_t *)(v1 + (v2 << 2)) != v) {
+            ++v2;
+            if (n == v2) {
                 return -1;
             }
         }
-        return v3;
+        return v2;
     }
     return -1;
 }
@@ -185,19 +185,19 @@ fn find_first @ 0x201cc (size 68)
   blk1 @ 0x201d9:
     ret #0xffffffff
   blk2 @ 0x201dc:
-    v3 = #0x0
+    v2 = #0x0
   blk3 @ 0x201e4:
-    brif ne load32(((v1 + (v3 << #0x2)) & #0xffffffff)), r2 -> 0x201f0
+    brif ne load32(((v1 + (v2 << #0x2)) & #0xffffffff)), r2 -> 0x201f0
   blk4 @ 0x201ed:
     br 0x20204
   blk5 @ 0x201f0:
-    v3 = ((v3 + #0x1) & #0xffffffff)
-    brif eq r1, v3 -> 0x201fc
+    v2 = ((v2 + #0x1) & #0xffffffff)
+    brif eq r1, v2 -> 0x201fc
   blk6 @ 0x201f9:
     br 0x201e4
   blk7 @ 0x201fc:
     ret #0xffffffff
   blk8 @ 0x20204:
-    ret v3
+    ret v2
 -- card
 {"addr":"0x201cc","approxTokens":198,"blocks":9,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}

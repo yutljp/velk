@@ -297,11 +297,12 @@ pub(crate) fn integer_expression_candidate(ir: &FunctionIr) -> Option<FunctionIr
     if folded.debug_locals.is_empty() && fold_stack_locals(&mut folded) {
         super::read_once::fold_values_read_once(&mut folded);
     }
+    let sp = crate::arch::stack_pointer(ir.isa);
     copy_propagate_with(&mut folded, Duplication::Avoid, &|index, value| {
         index >= VARIABLE_BASE
             && matches!(types.get(&index), Some(crate::ir::CType::Int { .. }))
             && matches!(value, Expr::Bin { .. } | Expr::SignExtend { .. })
-            && !reads_outside_frame(value)
+            && !reads_outside_frame(value, sp)
             && !super::read_once::faults(value)
     });
     let remaining: usize = folded.blocks.iter().map(|block| block.stmts.len()).sum();
@@ -441,7 +442,7 @@ fn copy_propagate_block(
                     Expr::SignExtend { .. } => true,
                     // A read outside the frame may be volatile, and a large
                     // expression hurts readability once inlined.
-                    _ => !reads_outside_frame(value) && expr_size(value) <= 8,
+                    _ => !reads_outside_frame(value, sp) && expr_size(value) <= 8,
                 };
                 foldable.then(|| (dest.index, fold_width, truncated(value, dest.width)))
             }

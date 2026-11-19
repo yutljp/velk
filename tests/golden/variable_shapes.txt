@@ -3411,7 +3411,7 @@ go_probe_arm64 0x54630:
 go_probe_arm64 0x54de0: 4if ( 4else
 go_probe_arm64 0x54ed0:
 go_probe_arm64 0x54f40: 4if ( 4if ( 4else 8if ( 4while ( 8if ( 12continue; 8if ( 12if ( 16goto 8if ( 8else 12if ( 16if ( 16else 16else if ( 16else 20switch ( 20case 20case 24break; 20default: 24break; 12else 8if ( 12continue; 8switch ( 8case 12break; 8case 12if ( 12break; 8default: 12break;
-go_probe_arm64 0x55160: 4if ( 8if ( 12goto 4if ( 8if ( 4if ( 8do { 8while ( 4else
+go_probe_arm64 0x55160: 4if ( 8if ( 12goto 8if ( 12goto 4if ( 8if ( 4if ( 8do { 8while ( 4else
 go_probe_arm64 0x55290: 4if ( 4for ( 8if ( 8if ( 12break; 4if ( 4if ( 8if ( 8else 4else 4if ( 4else 4if ( 4if (
 go_probe_arm64 0x553a0: 4if ( 4if ( 8if ( 12if ( 12else 12if ( 16if ( 4switch ( 4case 8if ( 12break; 4case 8if ( 12if ( 16if ( 8if ( 4default: 8break; 4if ( 4if (
 go_probe_arm64 0x55590: 4if ( 8if ( 8else 8else if ( 8else 8if ( 12while ( 16if ( 16if ( 20continue; 16break; 12if (
@@ -5967,7 +5967,7 @@ go_stripped_arm64 0x54630:
 go_stripped_arm64 0x54de0: 4if ( 4else
 go_stripped_arm64 0x54ed0:
 go_stripped_arm64 0x54f40: 4if ( 4if ( 4else 8if ( 4while ( 8if ( 12continue; 8if ( 12if ( 16goto 8if ( 8else 12if ( 16if ( 16else 16else if ( 16else 20switch ( 20case 20case 24break; 20default: 24break; 12else 8if ( 12continue; 8switch ( 8case 12break; 8case 12if ( 12break; 8default: 12break;
-go_stripped_arm64 0x55160: 4if ( 8if ( 12goto 4if ( 8if ( 4if ( 8do { 8while ( 4else
+go_stripped_arm64 0x55160: 4if ( 8if ( 12goto 8if ( 12goto 4if ( 8if ( 4if ( 8do { 8while ( 4else
 go_stripped_arm64 0x55290: 4if ( 4for ( 8if ( 8if ( 12break; 4if ( 4if ( 8if ( 8else 4else 4if ( 4else 4if ( 4if (
 go_stripped_arm64 0x553a0: 4if ( 4if ( 8if ( 12if ( 12else 12if ( 16if ( 4switch ( 4case 8if ( 12break; 4case 8if ( 12if ( 16if ( 8if ( 4default: 8break; 4if ( 4if (
 go_stripped_arm64 0x55590: 4if ( 8if ( 8else 8else if ( 8else 8if ( 12while ( 16if ( 16if ( 20continue; 16break; 12if (

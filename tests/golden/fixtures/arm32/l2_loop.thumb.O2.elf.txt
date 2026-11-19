@@ -153,9 +153,7 @@ fn sum_while @ 0x2011c (size 110)
 /* velk pseudo-C: count_down @ 0x2018c */
 /* ref: 0x302e8 .bss */
 int count_down(int n) {
-    uint64_t v2;
     uint32_t v4;
-    uint32_t local_0; /* [sp-4] */
 
     int32_t v1 = n;
     if (n <= 1) {
@@ -165,7 +163,6 @@ int count_down(int n) {
     if (v1 < 4) {
         v4 = 0;
     } else {
-        local_0 = v2;
         int32_t v5 = n & 0x7ffffffc;
         v4 = 0;
         while (true) {
@@ -183,16 +180,16 @@ int count_down(int n) {
     }
     sink = v4 + 1;
     if (v3 != 1) {
-        int32_t v11 = v4 + 2;
-        sink = v11;
-        int32_t v10 = 2;
+        int32_t v10 = v4 + 2;
+        sink = v10;
+        int32_t v9 = 2;
         if (v3 != 2) {
-            v11 = v4 + 3;
+            v10 = v4 + 3;
         }
-        if (v3 == v10) {
+        if (v3 == v9) {
             return n;
         }
-        sink = v11;
+        sink = v10;
         return n;
     }
     return n;
@@ -217,7 +214,6 @@ fn count_down @ 0x2018c (size 102)
     v4 = #0x0
     br 0x201d8
   blk5 @ 0x201a8:
-    store32(lr, (sp + #0xfffffffffffffffc))
     v5 = (r0 & #0x7ffffffc)
     v4 = #0x0
   blk6 @ 0x201b8:
@@ -242,12 +238,12 @@ fn count_down @ 0x2018c (size 102)
   blk12 @ 0x201e2:
     v6 = ((v4 + #0x2) & #0xffffffff)
     store32(v6, #0x302e8)
-    v10 = #0x2
+    v9 = #0x2
     brif eq v3, #0x2 -> 0x201ee
   blk13 @ 0x201ed:
     v6 = ((v4 + #0x3) & #0xffffffff)
   blk14 @ 0x201ee:
-    brif eq v3, v10 -> 0x201f0
+    brif eq v3, v9 -> 0x201f0
   blk15 @ 0x201ef:
     store32(v6, #0x302e8)
   blk16 @ 0x201f0:

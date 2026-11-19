@@ -11,6 +11,7 @@ pub fn dce_flow(ir: &mut FunctionIr) {
 
 fn dce_flow_unchecked(ir: &mut FunctionIr) {
     let live_in = live_in(ir);
+    let sp = crate::arch::stack_pointer(ir.isa);
     for index in 0..ir.blocks.len() {
         if opaque(&ir.blocks[index]) {
             continue;
@@ -21,7 +22,7 @@ fn dce_flow_unchecked(ir: &mut FunctionIr) {
         for (position, stmt) in reversed_statements {
             let (writes, reads) = statement_registers(stmt);
             let pure = match stmt {
-                Stmt::Assign { value, .. } => !reads_outside_frame(value),
+                Stmt::Assign { value, .. } => !reads_outside_frame(value, sp),
                 _ => true,
             };
             if let Stmt::Assign { dest, value, .. } = stmt {
@@ -86,6 +87,7 @@ fn dce_unchecked(ir: &mut FunctionIr) {
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
         .collect();
+    let sp = crate::arch::stack_pointer(ir.isa);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
@@ -104,7 +106,7 @@ fn dce_unchecked(ir: &mut FunctionIr) {
         // nothing changes.
         loop {
             let before = block.stmts.len();
-            drop_dead_assignments(block, &outer);
+            drop_dead_assignments(block, &outer, sp);
             if block.stmts.len() == before {
                 break;
             }
@@ -115,6 +117,7 @@ fn dce_unchecked(ir: &mut FunctionIr) {
 fn drop_dead_assignments(
     block: &mut crate::ir::Block,
     outer_reads: &std::collections::HashSet<u16>,
+    sp: u16,
 ) {
     let mut keep: Vec<bool> = vec![true; block.stmts.len()];
     for (index, stmt) in block.stmts.iter().enumerate() {
@@ -123,7 +126,7 @@ fn drop_dead_assignments(
         };
         // A read of memory outside the frame may be volatile, so it stays;
         // dead arithmetic, even a division, is removed.
-        if reads_outside_frame(value) {
+        if reads_outside_frame(value, sp) {
             continue;
         }
         if outer_reads.contains(&dest.index) {

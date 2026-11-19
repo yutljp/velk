@@ -23,7 +23,6 @@
 extern uint32_t g_sink; /* address: 0x30628 */
 
 uint64_t sub_201c0();
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x2018c dense
@@ -31,34 +30,31 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* velk pseudo-C: dense @ 0x2018c */
 /* ref: 0x30628 .bss */
 int dense(int x) {
-    uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v1;
-    uint32_t v3;
+    uint64_t v2;
+    uint32_t v5;
     uint32_t v6;
     uint32_t v7;
     uint32_t v8;
-    int32_t v5;
+    int32_t v4;
     _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; } local_0; /* [sp-10] */
 
-    *(uint32_t *)(sp - 0x8) = v7;
+    local_0.f_8 = v7;
     local_0.f_c = v8;
-    sp = sp - 0x8;
-    v7 = sp;
-    sp = sp - 0x8;
+    v7 = (uintptr_t)(&local_0.f_8);
     local_0.f_4 = x;
-    uint32_t v2 = (uint32_t)x - 10;
-    *(uint32_t *)(sp) = v2;
-    if (v2 <= 15) {
-        int32_t v4 = *(uint32_t *)(0x201c0 + (*(uint32_t *)(sp) << 2));
+    uint32_t v1 = (uint32_t)x - 10;
+    local_0.f_0 = v1;
+    if (v1 <= 15) {
+        int32_t v3 = *(uint32_t *)(0x201c0 + (local_0.f_0 << 2));
         /* unsupported: ARM add pc, r0, r1 at 0x201bc */
         {
             uint64_t call_values[2];
-            call_values[0] = sub_201c0((uint32_t)x, v1, v3, v6);
-            call_values[1] = v1; /* also returned by the call */
-            v5 = (uint32_t)(call_values[0]);
-            v1 = (uint32_t)(call_values[1]);
+            call_values[0] = sub_201c0((uint32_t)x, v2, v5, v6);
+            call_values[1] = v2; /* also returned by the call */
+            v4 = (uint32_t)(call_values[0]);
+            v2 = (uint32_t)(call_values[1]);
         }
-        return v5;
+        return v4;
     }
     g_sink = 0;
     return g_sink;
@@ -72,22 +68,19 @@ fn dense @ 0x2018c (size 288)
   blk0 @ 0x2018c:
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    sp = (sp + #0xfffffffffffffff8)
-    r11 = sp
-    sp = (sp - #0x8)
-    store32(r0, (sp + #0x4))
-    v1 = r0
-    v2 = ((v1 - #0xa) & #0xffffffff)
-    store32(v2, sp)
-    brif ls v2, #0xf -> 0x201b0
+    r11 = (sp + #0xfffffffffffffff8)
+    store32(r0, (sp + #0xfffffffffffffff4))
+    v1 = ((r0 - #0xa) & #0xffffffff)
+    store32(v1, (sp + #0xfffffffffffffff0))
+    brif ls v1, #0xf -> 0x201b0
   blk1 @ 0x201ad:
     br 0x20280
   blk2 @ 0x201b0:
-    v3 = #0x201c0
-    v4 = load32(((#0x201c0 + (load32(sp) << #0x2)) & #0xffffffff))
+    v2 = #0x201c0
+    v3 = load32(((#0x201c0 + (load32((sp + #0xfffffffffffffff0)) << #0x2)) & #0xffffffff))
     unsupported: ARM add pc, r0, r1 at 0x201bc
-    v5:r0, r1 = call 0x201c0(r0, r1, r2, r3)
-    ret v5
+    v4:r0, r1 = call 0x201c0(r0, r1, r2, r3)
+    ret v4
   blk3 @ 0x20280:
     store32(#0x0, #0x30628)
   blk4 @ 0x20290:

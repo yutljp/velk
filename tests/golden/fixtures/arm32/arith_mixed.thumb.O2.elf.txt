@@ -90,8 +90,8 @@ fn pair_sum @ 0x2013c (size 6)
 /* velk pseudo-C: sum_arr @ 0x20144 */
 int sum_arr(int *p, int n) {
     uintptr_t v7;
-    uintptr_t v17;
-    int32_t v21;
+    uintptr_t v15;
+    int32_t v19;
 
     int32_t v1 = n;
     int32_t v2 = 1;
@@ -99,46 +99,46 @@ int sum_arr(int *p, int n) {
         p = 0x0;
     }
     if (v1 >= v2) {
-        int32_t v20 = n & 0x3;
+        int32_t v18 = n & 0x3;
         uint32_t v5 = (uint32_t)n >> 2;
         uint32_t v6 = 0;
         if ((((uint32_t)n >> 2 == 0 ? 0x40 : 0x0) | (uint32_t)n >> 1 & 0x1 ^ 0x1) >> 6 == 0) {
             v7 = (uint32_t)(uintptr_t)p - 16;
             int32_t v8 = -(v5 << 2);
-            v21 = 0;
+            v19 = 0;
             while (true) {
                 uint32_t v10 = *(uint32_t *)((uint32_t)v7 + 16);
                 v7 = (uint32_t)v7 + 16;
                 v6 -= 4;
-                v21 += v10;
+                v19 += v10;
                 struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
-                v21 += v12->f_0;
-                v21 += v12->f_4;
-                v21 += v12->f_8;
+                v19 += v12->f_0;
+                v19 += v12->f_4;
+                v19 += v12->f_8;
                 if (v8 == v6) break;
             }
-            if (v20 == 0) {
-                return v21;
+            if (v18 == 0) {
+                return v19;
             }
             v6 = -v6;
         } else {
-            v21 = 0;
+            v19 = 0;
         }
-        v21 += *(uint32_t *)((uint32_t)(uintptr_t)p + (v6 << 2));
-        if (v20 != 1) {
-            v17 = (uint32_t)(uintptr_t)p + (v6 << 2);
-            v21 += *(uint32_t *)((uint32_t)v17 + 4);
-            int32_t v22 = 2;
-            if (v20 != 2) {
-                v17 = *(uint32_t *)((uint32_t)v17 + 8);
+        v19 += *(uint32_t *)((uint32_t)(uintptr_t)p + (v6 << 2));
+        if (v18 != 1) {
+            v15 = (uint32_t)(uintptr_t)p + (v6 << 2);
+            v19 += *(uint32_t *)((uint32_t)v15 + 4);
+            int32_t v20 = 2;
+            if (v18 != 2) {
+                v15 = *(uint32_t *)((uint32_t)v15 + 8);
             }
-            if (v20 == v22) {
-                return v21;
+            if (v18 == v20) {
+                return v19;
             }
-            v21 = (uint32_t)v21 + v17;
-            return v21;
+            v19 = (uint32_t)v19 + v15;
+            return v19;
         }
-        return v21;
+        return v19;
     }
     return (uint32_t)(uintptr_t)p;
 }
@@ -196,16 +196,16 @@ fn sum_arr @ 0x20144 (size 108)
   blk14 @ 0x20199:
     br 0x201ac
   blk15 @ 0x2019a:
-    v17 = ((r0 + (v6 << #0x2)) & #0xffffffff)
-    v5 = ((v5 + load32(((v17 + #0x4) & #0xffffffff))) & #0xffffffff)
+    v15 = ((r0 + (v6 << #0x2)) & #0xffffffff)
+    v5 = ((v5 + load32(((v15 + #0x4) & #0xffffffff))) & #0xffffffff)
     v2 = #0x2
     brif eq v1, #0x2 -> 0x201aa
   blk16 @ 0x201a9:
-    v17 = load32(((v17 + #0x8) & #0xffffffff))
+    v15 = load32(((v15 + #0x8) & #0xffffffff))
   blk17 @ 0x201aa:
     brif eq v1, v2 -> 0x201ac
   blk18 @ 0x201ab:
-    v5 = ((v5 + v17) & #0xffffffff)
+    v5 = ((v5 + v15) & #0xffffffff)
   blk19 @ 0x201ac:
     ret v5
 -- card

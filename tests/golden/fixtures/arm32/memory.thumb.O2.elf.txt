@@ -23,12 +23,9 @@ uint64_t sub_201ba();
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x2013c */
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
-    uint64_t v3;
     uintptr_t v9;
-    uint32_t local_0; /* [sp-4] */
 
     if (n != 0) {
-        local_0 = v3;
         int32_t v1 = n & 0x3;
         uint32_t v2 = n >> 2;
         int32_t v4 = 0;
@@ -42,9 +39,9 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
                 uint8_t v10 = *(uint8_t *)((uint32_t)v9 + 3);
                 struct S1 *v11 = (struct S1 *)((uint32_t)v6 + v8);
                 v11->f_3 = v10;
-                uint8_t v21 = *(uint8_t *)((uint32_t)v9 + 4);
+                uint8_t v20 = *(uint8_t *)((uint32_t)v9 + 4);
                 v8 = (uint32_t)v8 + 4;
-                v11->f_4 = v21;
+                v11->f_4 = v20;
                 v11->f_5 = *(uint8_t *)((uint32_t)v9 + 5);
                 v11->f_6 = *(uint8_t *)((uint32_t)v9 + 6);
                 if (v2 + v8 + 4 == 0) break;
@@ -79,7 +76,6 @@ fn copy_bytes @ 0x2013c (size 108)
   blk1 @ 0x20141:
     ret #0x0
   blk2 @ 0x20142:
-    store32(lr, (sp + #0xfffffffffffffffc))
     v1 = (r2 & #0x3)
     v2 = (r2 >> #0x2)
     v4 = #0x0

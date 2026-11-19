@@ -1,4 +1,4 @@
-use crate::arch::{aarch64, stack_pointer, x86};
+use crate::arch::{stack_pointer, x86};
 use std::collections::HashMap;
 
 use crate::ir::visit::statement_registers;
@@ -794,11 +794,13 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     Some(len - 2..len)
 }
 
-/// True when the expression loads through a non-stack address, which may be
-/// volatile; stack accesses are ordinary locals.
-pub(crate) fn reads_outside_frame(expr: &Expr) -> bool {
+/// True when the expression loads through an address that does not use the
+/// stack pointer `sp`, which may be volatile; stack accesses are ordinary
+/// locals.
+pub(crate) fn reads_outside_frame(expr: &Expr, sp: u16) -> bool {
+    let reads_outside_frame = |expr| reads_outside_frame(expr, sp);
     match expr {
-        Expr::Load { addr, .. } => !address_uses_stack(addr) || reads_outside_frame(addr),
+        Expr::Load { addr, .. } => !address_uses_stack(addr, sp) || reads_outside_frame(addr),
         Expr::Bin { lhs, rhs, .. } => reads_outside_frame(lhs) || reads_outside_frame(rhs),
         Expr::SignExtend { value, .. } => reads_outside_frame(value),
         Expr::Select {
@@ -818,11 +820,11 @@ pub(crate) fn reads_outside_frame(expr: &Expr) -> bool {
     }
 }
 
-fn address_uses_stack(expr: &Expr) -> bool {
+fn address_uses_stack(expr: &Expr, sp: u16) -> bool {
     match expr {
-        Expr::Reg { index, .. } => *index == x86::RSP || *index == aarch64::SP,
-        Expr::Bin { lhs, rhs, .. } => address_uses_stack(lhs) || address_uses_stack(rhs),
-        Expr::SignExtend { value, .. } => address_uses_stack(value),
+        Expr::Reg { index, .. } => *index == sp,
+        Expr::Bin { lhs, rhs, .. } => address_uses_stack(lhs, sp) || address_uses_stack(rhs, sp),
+        Expr::SignExtend { value, .. } => address_uses_stack(value, sp),
         _ => false,
     }
 }

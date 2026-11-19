@@ -140,7 +140,7 @@ fn apply_pointer @ 0x2017c (size 12)
 -- decompile
 /* velk pseudo-C: factorial @ 0x20188 */
 int factorial(int n) {
-    int32_t v16;
+    int32_t v15;
 
     int32_t v1 = n;
     int32_t v2 = 2;
@@ -149,40 +149,40 @@ int factorial(int n) {
     }
     if (v1 >= v2) {
         int32_t v3 = (uint32_t)n - 1;
-        int32_t v15 = v3 & 0x3;
+        int32_t v14 = v3 & 0x3;
         if ((uint32_t)n - 2 < 3) {
-            v16 = 1;
+            v15 = 1;
         } else {
             uint32_t v6 = v3 & 0xfffffffc;
-            v16 = 1;
+            v15 = 1;
             while (true) {
-                v16 = (uint32_t)n * v16;
+                v15 = (uint32_t)n * v15;
                 uint32_t v8 = (uint32_t)n - 2;
-                v16 = ((uint32_t)n - 1) * v16;
+                v15 = ((uint32_t)n - 1) * v15;
                 uint32_t v10 = (uint32_t)n - 3;
                 n = (uint32_t)n - 4;
                 v6 -= 4;
-                v16 = v10 * (v8 * v16);
+                v15 = v10 * (v8 * v15);
                 if (v6 == 0) break;
             }
-            if (v15 == 0) {
-                return v16;
+            if (v14 == 0) {
+                return v15;
             }
         }
-        v16 = (uint32_t)n * v16;
-        if (v15 != 1) {
-            v16 = ((uint32_t)n - 1) * v16;
-            int32_t v17 = 2;
-            if (v15 != 2) {
+        v15 = (uint32_t)n * v15;
+        if (v14 != 1) {
+            v15 = ((uint32_t)n - 1) * v15;
+            int32_t v16 = 2;
+            if (v14 != 2) {
                 n = (uint32_t)n - 2;
             }
-            if (v15 == v17) {
-                return v16;
+            if (v14 == v16) {
+                return v15;
             }
-            v16 = (uint32_t)n * v16;
-            return v16;
+            v15 = (uint32_t)n * v15;
+            return v15;
         }
-        return v16;
+        return v15;
     }
     return n;
 }
