@@ -235,7 +235,11 @@ impl Binary {
             None => HashMap::new(),
         };
         if crate::parallel::threads() > 1
-            && let Err(error) = analysis::summary::prepare(&self.image, deadline)
+            && let Err(error) = analysis::summary::prepare(
+                &self.image,
+                deadline,
+                analysis::summary::Bodies::Dropped,
+            )
         {
             return Err(error);
         }

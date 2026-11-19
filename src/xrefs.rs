@@ -251,7 +251,11 @@ impl Index {
 
     pub(crate) fn build(image: &Image, deadline: Option<Instant>) -> Result<Self> {
         if crate::parallel::threads() > 1
-            && let Err(error) = crate::analysis::summary::prepare(image, deadline)
+            && let Err(error) = crate::analysis::summary::prepare(
+                image,
+                deadline,
+                crate::analysis::summary::Bodies::Kept,
+            )
         {
             return Err(error);
         }

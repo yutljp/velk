@@ -143,6 +143,16 @@ impl Lifts {
         }
     }
 
+    /// Drops every lift of one function.
+    pub(crate) fn forget(&self, addr: u64, size: u64, targets: &HashSet<u64>) {
+        let mut targets: Vec<_> = targets.iter().copied().collect();
+        targets.sort_unstable();
+        self.0
+            .lock()
+            .expect("lifts lock")
+            .remove(&(addr, size, targets));
+    }
+
     /// Drops every lift.
     pub(crate) fn clear(&self) {
         self.0.lock().expect("lifts lock").clear();
@@ -2918,6 +2928,22 @@ mod tests {
         let plain_anew = super::lift_shared(&image, 0, size, &unknown).unwrap();
         assert!(!std::sync::Arc::ptr_eq(&plain, &plain_anew));
         assert_eq!(format!("{plain:?}"), format!("{plain_anew:?}"));
+    }
+
+    #[test]
+    fn forgetting_a_function_drops_the_lift_without_summaries_too() {
+        let code = vec![0xe8, 0x1b, 0, 0, 0, 0xc3];
+        let size = code.len() as u64;
+        let image = Image::from_code(Isa::X86_64, 0, code);
+        let unknown = |_| crate::loader::Summary::default();
+        let plain = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        image.lifts.forget(0, size + 1, &HashSet::new());
+        let kept = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        assert!(std::sync::Arc::ptr_eq(&plain, &kept));
+        image.lifts.forget(0, size, &HashSet::new());
+        let anew = super::lift_shared(&image, 0, size, &unknown).unwrap();
+        assert!(!std::sync::Arc::ptr_eq(&plain, &anew));
+        assert_eq!(format!("{plain:?}"), format!("{anew:?}"));
     }
 
     #[test]

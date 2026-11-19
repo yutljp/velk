@@ -121,18 +121,18 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
         cache.insert(addr, entered);
         return entered;
     }
-    summarize(image, &[addr], &mut cache);
+    summarize(image, &[addr], &mut cache, Bodies::Kept);
     cache.get(&addr).copied().unwrap_or_default()
 }
 
 /// Summarizes `roots`, which have no summary yet, and every function they
 /// reach that has none.
-fn summarize(image: &Image, roots: &[u64], cache: &mut HashMap<u64, Summary>) {
+fn summarize(image: &Image, roots: &[u64], cache: &mut HashMap<u64, Summary>, bodies: Bodies) {
     let known_runtime = image.go && image.isa == crate::loader::Isa::X86_64;
     let mut runtime = HashMap::new();
     let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime);
     let parts = strongly_connected_components(roots, &edges);
-    let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime);
+    let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime, bodies);
     cache.extend(runtime);
     cache.extend(settled);
 }
@@ -246,11 +246,21 @@ pub(crate) fn needs_parameter_analysis(image: &Image, addr: u64) -> bool {
             if declaration.signature.params.iter().any(|(_, ty)| crate::render::promoted_parameter(ty)))
 }
 
+/// What `prepare` does with the bodies it lifted without callee summaries.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Bodies {
+    /// Kept for a caller that reads every body next.
+    Kept,
+    /// Dropped as the summaries settle; what needs one lifts again.
+    Dropped,
+}
+
 /// Settles summaries before independent callers share the worker pool. Workers
 /// must not wait for this cache's write lock while its owner joins nested work.
 pub(crate) fn prepare(
     image: &Image,
     deadline: Option<std::time::Instant>,
+    bodies: Bodies,
 ) -> crate::error::Result<()> {
     // Functions that do not reach each other settle on different threads
     // only when they are summarized together.
@@ -274,7 +284,7 @@ pub(crate) fn prepare(
             }
         }
         if !roots.is_empty() {
-            summarize(image, &roots, &mut cache);
+            summarize(image, &roots, &mut cache, bodies);
         }
     }
     crate::deadline::passed(deadline)
@@ -495,6 +505,7 @@ fn settle_parts(
     edges: &HashMap<u64, Vec<u64>>,
     known: &HashMap<u64, Summary>,
     runtime: &HashMap<u64, Summary>,
+    bodies: Bodies,
 ) -> HashMap<u64, Summary> {
     crate::timing::scope!("summary::settle_parts");
     let part_of: HashMap<u64, usize> = parts
@@ -540,7 +551,10 @@ fn settle_parts(
         // with them is needed again only to decompile the function itself.
         for &addr in part {
             if let Some((size, starts)) = lifted_as(image, addr) {
-                image.lifts.forget_summarized(addr, size, &starts);
+                match bodies {
+                    Bodies::Kept => image.lifts.forget_summarized(addr, size, &starts),
+                    Bodies::Dropped => image.lifts.forget(addr, size, &starts),
+                }
             }
         }
     };
@@ -1278,8 +1292,6 @@ mod tests {
             let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures")
                 .join(fixture);
-            let together = crate::service::Binary::open(&path).expect("fixture");
-            super::prepare(together.image(), None).expect("no deadline");
             let one_by_one = crate::service::Binary::open(&path).expect("fixture");
             for &addr in one_by_one.image().functions.keys() {
                 super::summary(one_by_one.image(), addr);
@@ -1291,8 +1303,12 @@ mod tests {
                     .map(|(addr, summary)| (*addr, *summary))
                     .collect::<std::collections::BTreeMap<_, _>>()
             };
-            assert!(!summaries(&together).is_empty(), "{fixture}");
-            assert_eq!(summaries(&together), summaries(&one_by_one), "{fixture}");
+            for bodies in [super::Bodies::Kept, super::Bodies::Dropped] {
+                let together = crate::service::Binary::open(&path).expect("fixture");
+                super::prepare(together.image(), None, bodies).expect("no deadline");
+                assert!(!summaries(&together).is_empty(), "{fixture}");
+                assert_eq!(summaries(&together), summaries(&one_by_one), "{fixture}");
+            }
         }
     }
 
