@@ -13,6 +13,15 @@ use crate::sigs::Database;
 
 type Analyses = HashMap<u64, Arc<Result<Analysis, LiftError>>>;
 
+/// The most functions of one request whose analyses are kept for later
+/// requests. Those of a larger request, such as every function of a
+/// binary, would stay in memory for as long as the binary is open.
+const KEPT_ANALYSES: usize = 256;
+
+/// How many functions are rendered between drops of the lifts made for
+/// them, which nothing reads again once a function is analysed.
+const LIFTS_DROPPED_EVERY: usize = 512;
+
 pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
     let addr = analysis.ir.addr;
     let ir = &analysis.ir;
@@ -235,7 +244,13 @@ impl Binary {
             .map(|(addr, analysis)| (addr, Arc::new(analysis)))
             .collect();
         let originals = Mutex::new(originals);
+        let finished = std::sync::atomic::AtomicUsize::new(0);
         let results = crate::parallel::map(addresses, |&addr| {
+            if finished.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % LIFTS_DROPPED_EVERY
+                == LIFTS_DROPPED_EVERY - 1
+            {
+                self.image.lifts.clear();
+            }
             let addr = self.image.code_address(addr);
             let decoded_strings = if self.string_decoding {
                 match self.decoded_strings.get(&addr) {
@@ -321,11 +336,17 @@ impl Binary {
                 &decoded_strings,
                 deadline,
             ) {
-                Ok(rendered) => Ok((rendered.code, Some(analysis))),
+                Ok(rendered) => Ok((
+                    rendered.code,
+                    (addresses.len() <= KEPT_ANALYSES).then_some(analysis),
+                )),
                 Err(error) => Err(error),
             }
         });
-        let originals = originals.into_inner().expect("analysis cache lock");
+        let mut originals = originals.into_inner().expect("analysis cache lock");
+        if addresses.len() > KEPT_ANALYSES {
+            originals.clear();
+        }
         for (addr, analysis) in originals {
             let analysis = match Arc::try_unwrap(analysis) {
                 Ok(analysis) => analysis,
