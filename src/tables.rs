@@ -86,7 +86,7 @@ pub(crate) struct DataMatch {
 }
 
 pub(crate) fn data(image: &Image, deadline: Option<Instant>) -> Result<Vec<DataMatch>> {
-    let mut result = Vec::new();
+    let mut searches = Vec::new();
     for section in &image.sections {
         // Instruction encodings are searched as decoded immediates instead.
         if section.executable {
@@ -96,39 +96,47 @@ pub(crate) fn data(image: &Image, deadline: Option<Instant>) -> Result<Vec<DataM
             continue;
         };
         for pattern in patterns() {
+            if bytes.len() >= pattern.bytes.len() {
+                searches.push((section, bytes, pattern));
+            }
+        }
+    }
+    let found = crate::parallel::map(&searches, |&(section, bytes, pattern)| {
+        let mut matches = Vec::new();
+        let finder = Finder::new(&pattern.bytes);
+        let mut start = 0usize;
+        while start < bytes.len() {
             if let Err(error) = passed(deadline) {
                 return Err(error);
             }
-            if bytes.len() < pattern.bytes.len() {
+            let Some(found) = finder.find(&bytes[start..]) else {
+                break;
+            };
+            let Some(offset) = start.checked_add(found) else {
+                break;
+            };
+            start = match offset.checked_add(1) {
+                Some(start) => start,
+                None => break,
+            };
+            let Some(address) = section.vaddr.checked_add(offset as u64) else {
                 continue;
-            }
-            let finder = Finder::new(&pattern.bytes);
-            let mut start = 0usize;
-            while start < bytes.len() {
-                if let Err(error) = passed(deadline) {
-                    return Err(error);
-                }
-                let Some(found) = finder.find(&bytes[start..]) else {
-                    break;
-                };
-                let Some(offset) = start.checked_add(found) else {
-                    break;
-                };
-                start = match offset.checked_add(1) {
-                    Some(start) => start,
-                    None => break,
-                };
-                let Some(address) = section.vaddr.checked_add(offset as u64) else {
-                    continue;
-                };
-                result.push(DataMatch {
-                    name: &pattern.name,
-                    address,
-                    size: pattern.bytes.len() as u64,
-                    section: section.name.clone(),
-                    order: pattern.order,
-                });
-            }
+            };
+            matches.push(DataMatch {
+                name: &pattern.name,
+                address,
+                size: pattern.bytes.len() as u64,
+                section: section.name.clone(),
+                order: pattern.order,
+            });
+        }
+        Ok(matches)
+    });
+    let mut result = Vec::new();
+    for matches in found {
+        match matches {
+            Ok(matches) => result.extend(matches),
+            Err(error) => return Err(error),
         }
     }
     // A longer exact match supplies the unambiguous name for shared prefixes.

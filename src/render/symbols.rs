@@ -215,7 +215,21 @@ impl Symbols {
     }
 
     pub(crate) fn reserve_name(&mut self, name: &str) {
-        let short = super::short_name(name);
+        // An identifier is its own short and sanitized form.
+        if name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        {
+            if !self.reserved_names.contains(name) {
+                self.reserved_names.insert(name.to_owned());
+            }
+            return;
+        }
+        self.reserve_shortened(name, super::short_name(name));
+    }
+
+    /// Reserves `name` with `short`, the short name already made from it.
+    pub(crate) fn reserve_shortened(&mut self, name: &str, short: String) {
         self.reserved_names.extend([
             name.to_owned(),
             super::sanitize(name),
@@ -228,6 +242,27 @@ impl Symbols {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reserving_a_name_reserves_its_short_and_sanitized_forms() {
+        let mut symbols = Symbols::default();
+        symbols.reserve_name("plain_name");
+        assert_eq!(
+            symbols.reserved_names,
+            HashSet::from(["plain_name".to_owned()])
+        );
+        let mut symbols = Symbols::default();
+        symbols.reserve_name("<a::Kind as b::Show>::fmt");
+        assert_eq!(
+            symbols.reserved_names,
+            HashSet::from([
+                "<a::Kind as b::Show>::fmt".to_owned(),
+                "_a__Kind_as_b__Show___fmt".to_owned(),
+                "Kind::fmt".to_owned(),
+                "Kind__fmt".to_owned(),
+            ])
+        );
+    }
 
     #[test]
     fn macho_names_strip_one_prefix_only_when_safe() {

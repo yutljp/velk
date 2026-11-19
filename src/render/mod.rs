@@ -132,8 +132,8 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             image.format,
             crate::loader::Format::Pe | crate::loader::Format::Coff
         );
-    let base_name = |function: &crate::loader::Function, name: &str| {
-        let base = sanitize(&short_name(name));
+    let base_name = |function: &crate::loader::Function, name: &str, short: &str| {
+        let base = sanitize(short);
         if import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
             format!("{base}_plt")
         } else if !function.sources.contains(&crate::loader::NameSource::Plt)
@@ -147,18 +147,24 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             base
         }
     };
-    let named: Vec<(u64, &crate::loader::Function, String)> = image
+    let with_names: Vec<(u64, &crate::loader::Function, &str)> = image
         .functions
         .iter()
         .filter_map(|(&address, function)| {
-            let Some(name) = function.name.as_deref() else {
-                return None;
-            };
-            Some((address, function, base_name(function, name)))
+            function
+                .name
+                .as_deref()
+                .map(|name| (address, function, name))
         })
         .collect();
+    let named: Vec<(u64, &crate::loader::Function, String, String)> =
+        crate::parallel::map(&with_names, |&(address, function, name)| {
+            let short = short_name(name);
+            let base = base_name(function, name, &short);
+            (address, function, base, short)
+        });
     let mut bases: HashMap<&str, usize> = HashMap::new();
-    for (_, function, base) in &named {
+    for (_, function, base, _) in &named {
         if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
             continue;
         }
@@ -167,7 +173,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
     let mut used = std::collections::HashSet::new();
     let functions: HashMap<u64, String> = named
         .iter()
-        .map(|(address, function, base)| {
+        .map(|(address, function, base, _)| {
             if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
                 return (*address, base.clone());
             }
@@ -343,10 +349,15 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
     for variable in symbols.library_variables.values() {
         symbols.reserved_names.insert(variable.name.clone());
     }
+    for (_, function, _, short) in named {
+        if let Some(name) = &function.name {
+            symbols.reserve_shortened(name, short);
+        }
+    }
     for name in image
         .functions
         .values()
-        .flat_map(|function| function.name.iter().chain(&function.aliases))
+        .flat_map(|function| &function.aliases)
         .chain(image.imports.values())
         .chain(image.data_symbols.values())
     {
