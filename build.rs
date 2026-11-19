@@ -26,5 +26,10 @@ fn main() {
     for path in ["src", "signatures", "Cargo.toml", "Cargo.lock", "build.rs"] {
         hash_build_inputs(Path::new(path), &mut hash);
     }
-    println!("cargo::rustc-env=VELK_ANALYSIS_BUILD={:x}", hash.finalize());
+    let digest: String = hash
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    println!("cargo::rustc-env=VELK_ANALYSIS_BUILD={digest}");
 }

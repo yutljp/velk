@@ -93,7 +93,7 @@ fn generate(inventory: &str, read: impl Fn(&str) -> String) -> Metadata {
             (source, spans)
         });
         let range = rewrite_range(source, spans, fields[5]);
-        let digest = format!("{:x}", sha2::Sha256::digest(source[range].as_bytes()));
+        let digest = crate::loader::hex(&sha2::Sha256::digest(source[range].as_bytes()));
         let offset = source.find(fields[5]).expect("anchor was found uniquely");
         let location = source[..offset]
             .bytes()
@@ -176,7 +176,7 @@ fn inventory_matches_the_reviewed_sources() {
 #[test]
 fn merged_rows_are_canonicalized_without_approving_changes() {
     let source = "fn rewrite() {}\n";
-    let digest = format!("{:x}", sha2::Sha256::digest(b"fn rewrite() {}"));
+    let digest = crate::loader::hex(&sha2::Sha256::digest(b"fn rewrite() {}"));
     let header = "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n";
     let row = format!("src/example.rs:1\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n");
     let old = row.replace(&digest, "old").replace(":1\t", ":9\t");
@@ -219,7 +219,7 @@ fn merged_rows_are_canonicalized_without_approving_changes() {
 #[test]
 fn regeneration_preserves_review_and_detects_source_changes() {
     let source = "fn rewrite() {}\n";
-    let digest = format!("{:x}", sha2::Sha256::digest(b"fn rewrite() {}"));
+    let digest = crate::loader::hex(&sha2::Sha256::digest(b"fn rewrite() {}"));
     let inventory = format!(
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
          src/example.rs:99\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"
@@ -247,10 +247,7 @@ fn regeneration_preserves_review_and_detects_source_changes() {
 #[test]
 fn unrelated_edits_and_moves_preserve_review() {
     let source = "fn other() { before(); }\nfn rewrite() { original(); }\n";
-    let digest = format!(
-        "{:x}",
-        sha2::Sha256::digest(b"fn rewrite() { original(); }")
-    );
+    let digest = crate::loader::hex(&sha2::Sha256::digest(b"fn rewrite() { original(); }"));
     let inventory = format!(
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
          src/example.rs:2\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"
@@ -314,7 +311,7 @@ fn unrelated() {}
 fn match_arm_review_covers_pattern_guard_and_body() {
     let arm = "First if guard() => original(),";
     let source = format!("fn lower() {{ match value {{ {arm} Other => other(), }} }}");
-    let digest = format!("{:x}", sha2::Sha256::digest(arm.as_bytes()));
+    let digest = crate::loader::hex(&sha2::Sha256::digest(arm.as_bytes()));
     let inventory = format!(
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
          src/example.rs:1\tExample\tNone\t64\topen\toriginal()\t{digest}\n"
@@ -368,7 +365,7 @@ impl Example for Value {
 #[test]
 fn function_review_includes_attributes_signature_and_comments() {
     let source = "#[inline]\nfn rewrite(value: u64) { /* original */ consume(value); }";
-    let digest = format!("{:x}", sha2::Sha256::digest(source.as_bytes()));
+    let digest = crate::loader::hex(&sha2::Sha256::digest(source.as_bytes()));
     let inventory = format!(
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
          src/example.rs:2\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"

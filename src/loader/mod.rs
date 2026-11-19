@@ -1,5 +1,6 @@
 pub(crate) mod arm_linkage;
 mod bytes;
+pub(crate) use bytes::hex;
 pub mod classes;
 mod codeview;
 mod discover;

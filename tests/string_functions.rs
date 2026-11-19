@@ -16,7 +16,7 @@ fn declared_binary(path: &std::path::Path, label: &str, name: &str, signature: &
     let address = binary.find_address(name).expect("fixture function exists");
     let project = json!({
         "version": 1,
-        "binary_sha256": format!("{:x}", sha2::Sha256::digest(fs::read(path).expect("read compiler fixture"))),
+        "binary_sha256": sha2::Sha256::digest(fs::read(path).expect("read compiler fixture")).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "annotations": [{"target": {"kind":"signature", "function":format!("0x{address:x}")}, "text":signature}]
     });
     let directory = common::root().join("target/string-function-projects");

@@ -170,7 +170,7 @@ pub(super) struct Cache {
 }
 
 fn digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    crate::loader::hex(&Sha256::digest(bytes))
 }
 
 fn hash_file(hash: &mut Sha256, path: &Path) -> bool {
@@ -251,7 +251,7 @@ impl Cache {
         hash.update(source_digest.as_bytes());
         Some(Self {
             path,
-            key: format!("{:x}", hash.finalize()),
+            key: crate::loader::hex(&hash.finalize()),
             warned: false,
             navigation: None,
             navigation_offset: 0,
@@ -521,7 +521,7 @@ fn dependency_digest(
         }
         hash.update(content.finalize());
     }
-    Some(format!("{:x}", hash.finalize()))
+    Some(crate::loader::hex(&hash.finalize()))
 }
 
 fn resolved(path: &Path) -> PathBuf {

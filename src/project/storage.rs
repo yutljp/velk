@@ -25,7 +25,7 @@ fn hash(binary: &Path) -> Result<String> {
         Ok(bytes) => bytes,
         Err(cause) => return Err(io(binary, cause)),
     };
-    Ok(format!("{:x}", Sha256::digest(&bytes)))
+    Ok(crate::loader::hex(&Sha256::digest(&bytes)))
 }
 
 fn initialize_digest(binary: &Path, digest: &mut Option<String>) -> Result<()> {

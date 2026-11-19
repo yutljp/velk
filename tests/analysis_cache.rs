@@ -444,7 +444,10 @@ fn project_changes_rebuild_function_lists_and_reference_names() {
     let address = binary.find("tail_one").unwrap().addr;
     binary.navigation(None).unwrap();
     drop(binary);
-    let hash = format!("{:x}", Sha256::digest(fs::read(&path).unwrap()));
+    let hash = Sha256::digest(fs::read(&path).unwrap())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     for annotation in [
         json!({"target":{"kind":"function","address":format!("0x{address:x}")},"name":"renamed_function"}),
         json!({"target":{"kind":"classification","address":format!("0x{address:x}")},"text":"data"}),

@@ -151,6 +151,15 @@ fn snapshot(path: &Path) -> std::io::Result<Mmap> {
     unsafe { memmap2::MmapOptions::new().map(&snapshot) }
 }
 
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write;
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        write!(text, "{byte:02x}").expect("writing to a string");
+    }
+    text
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
