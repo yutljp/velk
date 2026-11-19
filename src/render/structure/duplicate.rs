@@ -45,8 +45,18 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         };
         let predecessors = incoming.get_or_insert_with(|| {
             let mut incoming = vec![Vec::new(); ir.blocks.len()];
+            // The first block at each start, as a search from the front finds.
+            let mut positions = rustc_hash::FxHashMap::default();
+            for (position, block) in ir.blocks.iter().enumerate() {
+                positions.entry(block.start).or_insert(position);
+            }
             for from in 0..ir.blocks.len() {
-                let mut next = crate::render::structure::compare_chain::successors(&ir, from);
+                let mut next = crate::ir::cfg::normal_successors(
+                    ir.blocks[from].stmts.last(),
+                    (from + 1 < ir.blocks.len()).then_some(from + 1),
+                    |address| positions.get(&address).copied(),
+                    crate::ir::cfg::UnknownBranch::Fallthrough,
+                );
                 next.sort_unstable();
                 next.dedup();
                 for to in next {
