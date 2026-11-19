@@ -300,7 +300,7 @@ pub(super) struct Cli {
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp", "serve"]
+        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp", "serve", "iocs"]
     )]
     limit: Option<usize>,
     #[arg(

@@ -333,6 +333,7 @@ mod tests {
             assert!(Cli::try_parse_from(["velk", flag, "binary", "--json"]).is_err());
             assert!(Cli::try_parse_from(["velk", flag, "binary", "--limit", "2"]).is_err());
         }
+        assert!(Cli::try_parse_from(["velk", "--iocs", "binary", "--limit", "2"]).is_err());
         assert!(Cli::try_parse_from(["velk", "--annotations", "binary"]).is_ok());
         assert!(Cli::try_parse_from(["velk", "--export-project", "binary"]).is_ok());
         assert!(Cli::try_parse_from(["velk", "project", "binary", "list"]).is_err());
