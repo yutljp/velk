@@ -340,12 +340,13 @@ fn drop_empty_paths(ir: &mut FunctionIr, locations: &mut [(usize, usize)]) {
             pending.push(block);
         }
     }
+    let successors = crate::ir::cfg::all_successors(ir);
     while let Some(block) = pending.pop() {
         if kept[block] {
             continue;
         }
         kept[block] = true;
-        pending.extend(crate::ir::cfg::successors(ir, block));
+        pending.extend(successors[block].iter().copied());
     }
     let mut positions = vec![0; kept.len()];
     let mut next = 0;

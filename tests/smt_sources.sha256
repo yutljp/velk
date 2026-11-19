@@ -59,7 +59,7 @@ a38be22a2da48455b12f51caa3d1dc7b0a9f6a27a00c5d575abd2c9e06aeeba1  src/lift/x86_6
 c1a6fc91bbb8b2b3397193259d0d4f6ec0209a01faf51994c59ef9bf022cceb8  src/lift/x86_64/string.rs	fn save_flags(
 f924f54ba3f12b136fa987407717f0e76d0639f884fb966243593a2cb855542f  src/loader/packed/filter.rs	pub(super) fn decode(
 90b5593bea9579d4ad66234b1a800e5b8706eac8b52007409217fea31cfcb9bd  src/passes/copies.rs	fn copy_propagate_block(
-573ce19ed659ec1cc32eaee352e72e90d9d8e979a63b010b0bf307d4fb231c9d  src/passes/copies.rs	fn inline_local_copies_unchecked(
+bf96c7b1cebd52cf355e2ae6fd2f5419f3c4c7d05dc58244f9ad1356a22756a2  src/passes/copies.rs	fn inline_local_copies_unchecked(
 dfb8f512c6b6517fdfb4db495e878c954d8baad061290a50e7a2cd8326eecff9  src/passes/copies.rs	pub(crate) fn comparison_preserved(
 90b7743163cdf4392ece0568909b107a63ed935fc8d257c2bba6a40d9a066a9e  src/passes/copies.rs	pub(crate) fn substitute_register_in_expression(
 c48d01d154be4351cfc5f749b6e6697a1bb7199f9cc51b611fc63037d9fe9105  src/passes/copies.rs	pub(crate) fn truncated(
@@ -144,7 +144,7 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 efd49598d2f2a58dbde8597563ca3459d92dc41221597e7c853928187e640d99  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 384408574e799baa7becbf1adbc451411a8a91216564a79138825b6770c32c0c  src/render/locals/returns.rs	fn replace_returns(
 b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/locals/values.rs	pub(in crate::render) fn fold(
-dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/params.rs	fn drop_unused_parameter_outputs(
+f9e7d043201a52f00a838e7fcd85b84fcccf5c9c5597f08b820ecc28a83fd6f7  src/render/params.rs	fn drop_unused_parameter_outputs(
 9799d726329fe02e2799764a899a6883547131980c21e0268de1521baaa82d7e  src/render/params.rs	fn fold_parameter_copies(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
 66ce10303f8f57ececb8e64aef1e5b35e5ab6f2fcdb8dd4703fc68dc6614e649  src/render/prelude/calls.rs	pub(super) fn conform(code: &str) -> String

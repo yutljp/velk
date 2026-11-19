@@ -1,4 +1,4 @@
-use crate::ir::cfg::{cyclic_blocks, live_in, live_out, opaque};
+use crate::ir::cfg::{cyclic_blocks, live_in, live_out, live_outs, opaque};
 use crate::ir::visit::statement_registers;
 use crate::ir::{FunctionIr, Stmt};
 use crate::passes::frame::reads_outside_frame;
@@ -84,9 +84,7 @@ fn dce_unchecked(ir: &mut FunctionIr) {
     // A register live on leaving the block, such as one a tail call through
     // an indirect jump reads, is kept too.
     let live_in = live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| live_out(ir, &live_in, index))
-        .collect();
+    let live_out = live_outs(ir, &live_in);
     let sp = crate::arch::stack_pointer(ir.isa);
     // How many blocks read each register.
     let mut readers: rustc_hash::FxHashMap<u16, usize> = Default::default();

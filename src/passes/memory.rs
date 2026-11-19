@@ -471,9 +471,7 @@ pub fn fuse_load_op_store(ir: &mut FunctionIr) {
 
 fn fuse_load_op_store_unchecked(ir: &mut FunctionIr) {
     let live_in = crate::ir::cfg::live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
-        .collect();
+    let live_out = crate::ir::cfg::live_outs(ir, &live_in);
     let sp = stack_pointer(ir.isa);
     let private_frame = fixed_private_frame(ir, sp);
     for (block, live_out) in ir.blocks.iter_mut().zip(&live_out) {

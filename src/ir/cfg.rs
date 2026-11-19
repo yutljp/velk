@@ -6,14 +6,35 @@ use crate::ir::{Block, Expr, FunctionIr, Stmt};
 /// Normal successors and the landing pads of protected calls in the block.
 /// Unwinding can leave before the block's later statements execute.
 pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
-    let edges = block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
-    let mut out = edges.normal;
-    for next in edges.exceptional {
-        if !out.contains(&next) {
-            out.push(next);
-        }
+    block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads).merged()
+}
+
+/// `successors` of every block, finding each branch target in one table.
+pub(crate) fn all_successors(ir: &FunctionIr) -> Vec<Vec<usize>> {
+    all_edges(&ir.blocks, &ir.landing_pads)
+        .into_iter()
+        .map(BlockSuccessors::merged)
+        .collect()
+}
+
+/// `block_successors_with_exceptions` of every block, finding each branch
+/// target in one table.
+pub(crate) fn all_edges(
+    blocks: &[Block],
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+) -> Vec<BlockSuccessors> {
+    // The first block at each start, as a search from the front finds.
+    let mut positions: rustc_hash::FxHashMap<u64, usize> = Default::default();
+    for (position, block) in blocks.iter().enumerate() {
+        positions.entry(block.start).or_insert(position);
     }
-    out
+    (0..blocks.len())
+        .map(|index| {
+            edges(blocks, index, landing_pads, |address| {
+                positions.get(&address).copied()
+            })
+        })
+        .collect()
 }
 
 pub(crate) struct BlockSuccessors {
@@ -23,10 +44,34 @@ pub(crate) struct BlockSuccessors {
     pub unknown_exceptional: bool,
 }
 
+impl BlockSuccessors {
+    /// The normal edges, then the exceptional ones not already among them.
+    fn merged(self) -> Vec<usize> {
+        let mut out = self.normal;
+        for next in self.exceptional {
+            if !out.contains(&next) {
+                out.push(next);
+            }
+        }
+        out
+    }
+}
+
 pub(crate) fn block_successors_with_exceptions(
     blocks: &[Block],
     index: usize,
     landing_pads: &[(u64, Vec<(u64, u64)>)],
+) -> BlockSuccessors {
+    edges(blocks, index, landing_pads, |address| {
+        blocks.iter().position(|block| block.start == address)
+    })
+}
+
+fn edges(
+    blocks: &[Block],
+    index: usize,
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+    find: impl Fn(u64) -> Option<usize>,
 ) -> BlockSuccessors {
     let block = &blocks[index];
     let unknown_normal = matches!(
@@ -37,7 +82,12 @@ pub(crate) fn block_successors_with_exceptions(
         normal: if unknown_normal {
             Vec::new()
         } else {
-            block_successors(blocks, index)
+            normal_successors(
+                block.stmts.last(),
+                (index + 1 < blocks.len()).then_some(index + 1),
+                &find,
+                UnknownBranch::Fallthrough,
+            )
         },
         exceptional: Vec::new(),
         unknown_normal,
@@ -59,7 +109,7 @@ pub(crate) fn block_successors_with_exceptions(
         {
             continue;
         }
-        match blocks.iter().position(|block| block.start == *pad) {
+        match find(*pad) {
             Some(next) if !edges.exceptional.contains(&next) => edges.exceptional.push(next),
             Some(_) => {}
             None => edges.unknown_exceptional = true,
@@ -156,15 +206,18 @@ pub(crate) fn cyclic_blocks(ir: &FunctionIr) -> std::collections::HashSet<usize>
         })
         .collect();
     let mut cyclic = std::collections::HashSet::new();
+    // The walk that last visited each block, one walk per start.
+    let mut seen = vec![usize::MAX; ir.blocks.len()];
+    let mut stack = Vec::new();
     for start in 0..ir.blocks.len() {
-        let mut seen = std::collections::HashSet::new();
-        let mut stack = successors[start].clone();
+        stack.clear();
+        stack.extend(successors[start].iter().copied());
         while let Some(next) = stack.pop() {
             if next == start {
                 cyclic.insert(start);
                 break;
             }
-            if seen.insert(next) {
+            if std::mem::replace(&mut seen[next], start) != start {
                 stack.extend(successors[next].iter().copied());
             }
         }
@@ -222,7 +275,7 @@ pub(crate) fn live_in(ir: &FunctionIr) -> Vec<HashSet<u16>> {
             uses[index].fill(u64::MAX);
         }
     }
-    let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
+    let successors = all_successors(ir);
     let mut live = vec![vec![0u64; words]; count];
     // The sets only grow, so this reaches a fixpoint.
     loop {
@@ -261,6 +314,26 @@ pub(crate) fn live_out(ir: &FunctionIr, live_in: &[HashSet<u16>], index: usize) 
         return registers_used_or_machine(ir).into_iter().collect();
     }
     live_out_of(live_in, &successors(ir, index))
+}
+
+/// `live_out` of every block.
+pub(crate) fn live_outs(ir: &FunctionIr, live_in: &[HashSet<u16>]) -> Vec<HashSet<u16>> {
+    let successors = all_successors(ir);
+    let mut every = None;
+    (0..ir.blocks.len())
+        .map(|index| {
+            if opaque(&ir.blocks[index]) {
+                return every
+                    .get_or_insert_with(|| {
+                        registers_used_or_machine(ir)
+                            .into_iter()
+                            .collect::<HashSet<u16>>()
+                    })
+                    .clone();
+            }
+            live_out_of(live_in, &successors[index])
+        })
+        .collect()
 }
 
 /// Every register the function's statements name, and the machine registers

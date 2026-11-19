@@ -338,6 +338,7 @@ pub(super) fn transfer(stmt: &Stmt, state: &mut Origins) {
 pub(super) fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Origins>>> {
     let mut entries = vec![None; ir.blocks.len()];
     entries[0] = Some(entry.clone());
+    let successors = crate::ir::cfg::all_successors(ir);
     let mut pending = VecDeque::from([0]);
     while let Some(block) = pending.pop_front() {
         let Some(mut state) = entries[block].clone() else {
@@ -346,7 +347,7 @@ pub(super) fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Ori
         for stmt in &ir.blocks[block].stmts {
             transfer(stmt, &mut state);
         }
-        for next in crate::ir::cfg::successors(ir, block) {
+        for &next in &successors[block] {
             let changed = match &mut entries[next] {
                 None => {
                     entries[next] = Some(state.clone());

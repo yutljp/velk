@@ -137,8 +137,8 @@ impl Outputs {
             outputs.dynamic_target = super::vacant_name("velk_dynamic_call_target", reserved);
         }
         let incoming = crate::ir::cfg::live_in(ir);
-        for (index, block) in ir.blocks.iter().enumerate() {
-            let mut live = crate::ir::cfg::live_out(ir, &incoming, index);
+        let live_outs = crate::ir::cfg::live_outs(ir, &incoming);
+        for (block, mut live) in ir.blocks.iter().zip(live_outs) {
             for stmt in block.stmts.iter().rev() {
                 if matches!(stmt, Stmt::Call { .. }) {
                     let used = outputs.live.entry(key(stmt)).or_default();

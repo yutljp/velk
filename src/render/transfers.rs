@@ -34,11 +34,10 @@ pub(super) fn single_use_loads(ir: &crate::ir::FunctionIr) -> HashSet<(u16, Expr
     }
     let live_in = crate::ir::cfg::live_in(ir);
     let mut eligible = HashMap::new();
-    for (index, block) in ir.blocks.iter().enumerate() {
-        let mut counts: HashMap<_, usize> = crate::ir::cfg::live_out(ir, &live_in, index)
-            .into_iter()
-            .map(|register| (register, 2))
-            .collect();
+    let live_outs = crate::ir::cfg::live_outs(ir, &live_in);
+    for (block, live_out) in ir.blocks.iter().zip(live_outs) {
+        let mut counts: HashMap<_, usize> =
+            live_out.into_iter().map(|register| (register, 2)).collect();
         for stmt in block.stmts.iter().rev() {
             if let Stmt::Assign {
                 dest,

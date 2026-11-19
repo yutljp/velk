@@ -25,6 +25,43 @@ pub(super) fn comparable_statement(stmt: &Stmt) -> Option<Statement> {
     }
 }
 
+/// Whether both statements are comparable and compare equal.
+pub(super) fn same_statement(left: &Stmt, right: &Stmt) -> bool {
+    match (left, right) {
+        (
+            Stmt::Assign { dest, value, .. },
+            Stmt::Assign {
+                dest: other_dest,
+                value: other_value,
+                ..
+            },
+        ) => dest == other_dest && value == other_value,
+        (
+            Stmt::Store {
+                addr, value, width, ..
+            },
+            Stmt::Store {
+                addr: other_addr,
+                value: other_value,
+                width: other_width,
+                ..
+            },
+        ) => width == other_width && addr == other_addr && value == other_value,
+        (Stmt::Ret { value, .. }, Stmt::Ret { value: other, .. }) => value == other,
+        (
+            Stmt::Br {
+                target: Some(target),
+                ..
+            },
+            Stmt::Br {
+                target: Some(other),
+                ..
+            },
+        ) => target == other,
+        _ => false,
+    }
+}
+
 /// Share exact suffixes, including their explicit successor. Calls and
 /// exception regions stay at their original addresses.
 pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {

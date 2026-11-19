@@ -117,9 +117,7 @@ fn drop_unused_parameter_outputs(ir: &mut FunctionIr) {
         return;
     }
     let live_in = crate::ir::cfg::live_in(ir);
-    let exits: Vec<_> = (0..ir.blocks.len())
-        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
-        .collect();
+    let exits = crate::ir::cfg::live_outs(ir, &live_in);
     for (block, mut live) in ir.blocks.iter_mut().zip(exits) {
         for stmt in block.stmts.iter_mut().rev() {
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);

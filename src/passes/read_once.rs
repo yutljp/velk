@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::ir::cfg::{live_in, live_out, opaque, successors};
+use crate::ir::cfg::{live_in, live_outs, opaque, successors};
 
 use crate::ir::visit::{
     children, children_mut, collect_reads, count_register, expr_width, statement_registers,
@@ -79,9 +79,7 @@ fn fold(ir: &mut FunctionIr, frame_loads: FrameLoads) {
     let types = crate::render::variable_types(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let live_in = live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| live_out(ir, &live_in, index))
-        .collect();
+    let live_out = live_outs(ir, &live_in);
     let chained = chained(ir);
     let predecessors = crate::render::structure::compare_chain::predecessor_counts(ir);
     let mut uses = std::collections::HashMap::<u16, usize>::new();

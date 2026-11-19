@@ -23,7 +23,7 @@ pub mod sccp;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::cfg::{live_in, successors};
+use crate::ir::cfg::live_in;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt, VALUE_BASE};
 
@@ -147,7 +147,7 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
         }
     }
     let count = ir.blocks.len();
-    let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
+    let successors = crate::ir::cfg::all_successors(ir);
     let mut predecessors = dom::predecessors(&successors);
     if count > 0 {
         predecessors[0].insert(0, ENTRY);

@@ -34,6 +34,9 @@ pub(super) struct Graph<'a> {
     /// Where each loop's own tests, at its header and latches, leave it to.
     loop_test_exits: HashMap<usize, Vec<usize>>,
     index: HashMap<u64, usize>,
+    /// The blocks that leave each loop from their parent, by header, in
+    /// block order.
+    leaving: HashMap<usize, Vec<usize>>,
     /// Loop exits whose code sits where the loop leaves to them, ahead of a
     /// `break`, rather than after the loop.
     absorbed: std::collections::HashSet<usize>,
@@ -194,7 +197,7 @@ impl<'a> Graph<'a> {
                 }
             }
         }
-        Graph {
+        let mut graph = Graph {
             blocks,
             successors,
             order,
@@ -206,10 +209,21 @@ impl<'a> Graph<'a> {
             enclosing,
             loop_test_exits,
             index,
+            leaving: HashMap::new(),
             absorbed: std::collections::HashSet::new(),
             absorb: Absorb::Nothing,
             switch_cases: false,
+        };
+        let mut leaving: HashMap<usize, Vec<usize>> = HashMap::new();
+        for block in 0..graph.blocks.len() {
+            let header =
+                graph.immediate_dominators[block].and_then(|parent| graph.hoisted(parent, block));
+            if let Some(header) = header {
+                leaving.entry(header).or_default().push(block);
+            }
         }
+        graph.leaving = leaving;
+        graph
     }
 
     /// The exits of each loop with several that are entered by one branch
@@ -223,12 +237,7 @@ impl<'a> Graph<'a> {
     fn absorbed_exits(&self, absorb: Absorb) -> std::collections::HashSet<usize> {
         let mut absorbed = std::collections::HashSet::new();
         for header in self.loops.keys() {
-            let exits: Vec<usize> = (0..self.blocks.len())
-                .filter(|exit| {
-                    self.immediate_dominators[*exit]
-                        .is_some_and(|parent| self.hoisted(parent, *exit) == Some(*header))
-                })
-                .collect();
+            let exits: &[usize] = self.leaving.get(header).map_or(&[], Vec::as_slice);
             if exits.len() < 2 {
                 continue;
             }
@@ -351,14 +360,15 @@ impl<'a> Graph<'a> {
         }
         // Blocks deeper in the tree that leave this loop follow it too.
         if header {
-            let mut leaving: Vec<usize> = (0..self.blocks.len())
+            let mut leaving: Vec<usize> = self
+                .leaving
+                .get(&block)
+                .into_iter()
+                .flatten()
+                .copied()
                 .filter(|other| {
-                    let Some(parent) = self.immediate_dominators[*other] else {
-                        return false;
-                    };
-                    parent != block
+                    self.immediate_dominators[*other] != Some(block)
                         && !self.absorbed.contains(other)
-                        && self.hoisted(parent, *other) == Some(block)
                 })
                 .collect();
             leaving.sort_by_key(|other| self.order[*other]);

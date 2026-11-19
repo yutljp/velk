@@ -53,9 +53,7 @@ pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
 
 pub(crate) fn predecessor_counts(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
     let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
-    for (index, _) in ir.blocks.iter().enumerate() {
-        let edges =
-            crate::ir::cfg::block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
+    for edges in crate::ir::cfg::all_edges(&ir.blocks, &ir.landing_pads) {
         for successor in edges.normal.into_iter().chain(edges.exceptional) {
             *counts.entry(ir.blocks[successor].start).or_default() += 1;
         }

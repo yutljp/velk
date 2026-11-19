@@ -1,4 +1,4 @@
-use crate::ir::cfg::{live_in, live_out, opaque};
+use crate::ir::cfg::{live_in, live_outs, opaque};
 use crate::ir::visit::assignment;
 use crate::ir::visit::children;
 use crate::ir::visit::count_register;
@@ -27,9 +27,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
 
 fn inline_local_copies_unchecked(ir: &mut FunctionIr) {
     let live_in = live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| live_out(ir, &live_in, index))
-        .collect();
+    let live_out = live_outs(ir, &live_in);
     let params = parameter_registers(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let private_frame = super::memory::fixed_private_frame(ir, sp);
@@ -346,9 +344,7 @@ fn copy_propagate_with(
     // an indirect jump reads or the block itself reads again on the next
     // pass of a loop, is kept too.
     let live_in = live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| live_out(ir, &live_in, index))
-        .collect();
+    let live_out = live_outs(ir, &live_in);
     let params = parameter_registers(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let private_frame = super::memory::fixed_private_frame(ir, sp);

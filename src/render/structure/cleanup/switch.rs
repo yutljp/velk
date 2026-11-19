@@ -255,7 +255,7 @@ fn same_call(left: &Stmt, right: &Stmt) -> bool {
 }
 
 fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
-    use crate::render::structure::merge_exits::comparable_statement;
+    use crate::render::structure::merge_exits::same_statement;
 
     left.len() == right.len()
         && left
@@ -266,12 +266,7 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                     Node::Stmt(left @ Stmt::Call { abi: None, .. }),
                     Node::Stmt(right @ Stmt::Call { abi: None, .. }),
                 ) if merge_calls => same_call(left, right),
-                (Node::Stmt(left), Node::Stmt(right)) => {
-                    let Some(left) = comparable_statement(left) else {
-                        return false;
-                    };
-                    Some(left) == comparable_statement(right)
-                }
+                (Node::Stmt(left), Node::Stmt(right)) => same_statement(left, right),
                 (Node::Break { .. }, Node::Break { .. }) => true,
                 (
                     Node::If {
@@ -328,6 +323,33 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
             })
 }
 
+/// A number equal for any two bodies `same_body` accepts.
+fn body_digest(body: &[Node]) -> u64 {
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = rustc_hash::FxHasher::default();
+    body.len().hash(&mut hasher);
+    for node in body {
+        match node {
+            Node::Stmt(Stmt::Assign { dest, value, .. }) => (0u8, dest, value).hash(&mut hasher),
+            Node::Stmt(Stmt::Store {
+                addr, value, width, ..
+            }) => (1u8, addr, value, width).hash(&mut hasher),
+            Node::Stmt(Stmt::Ret { value, .. }) => (2u8, value).hash(&mut hasher),
+            Node::Stmt(Stmt::Br {
+                target: Some(target),
+                ..
+            }) => (3u8, target).hash(&mut hasher),
+            Node::Stmt(_) => 4u8.hash(&mut hasher),
+            Node::Break { .. } => 5u8.hash(&mut hasher),
+            Node::If { .. } => 6u8.hash(&mut hasher),
+            Node::Switch { .. } => 7u8.hash(&mut hasher),
+            _ => 8u8.hash(&mut hasher),
+        }
+    }
+    hasher.finish()
+}
+
 /// Shares identical label-free case bodies, straight-line tails, and successive case prefixes.
 pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
     use crate::render::structure::merge_exits::{Statement, comparable_statement};
@@ -370,11 +392,15 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
         if arms.iter().any(|(_, body)| !ends(body, true)) {
             continue;
         }
+        let mut digests: Vec<u64> = arms.iter().map(|(_, body)| body_digest(body)).collect();
         let mut position = 0;
         while position < arms.len() {
-            let duplicate = (0..position)
-                .find(|other| same_body(&arms[*other].1, &arms[position].1, merge_calls));
+            let duplicate = (0..position).find(|other| {
+                digests[*other] == digests[position]
+                    && same_body(&arms[*other].1, &arms[position].1, merge_calls)
+            });
             if let Some(other) = duplicate {
+                digests.remove(position);
                 let (values, body) = arms.remove(position);
                 super::super::merge_origins(&mut arms[other].1, &body);
                 arms[other].0.extend(values);
