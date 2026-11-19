@@ -481,7 +481,23 @@ pub(in crate::render) fn name_parameters(ir: &mut FunctionIr, symbols: &Symbols)
     {
         return;
     }
-    let roles = infer(ir, symbols);
+    // A loop names its counter only where a statement sets it before the
+    // loop and another steps it inside, so a parameter written less than
+    // twice gets no name from the loops and they need not be found.
+    let mut writes = BTreeMap::<u16, usize>::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Assign { dest, .. } = stmt {
+            *writes.entry(dest.index).or_default() += 1;
+        }
+    }
+    let counted = ir.params.iter().enumerate().any(|(position, param)| {
+        param.name == format!("a{position}") && writes.get(&param.index).is_some_and(|n| *n >= 2)
+    });
+    let roles = if counted {
+        infer(ir, symbols)
+    } else {
+        infer_with_nodes(ir, symbols, &[])
+    };
     let mut reserved = reserved(ir, symbols);
     for (position, param) in ir.params.iter_mut().enumerate() {
         if param.name == format!("a{position}")
