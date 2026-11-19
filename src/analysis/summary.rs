@@ -121,27 +121,20 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
         cache.insert(addr, entered);
         return entered;
     }
-    summarize(
-        image,
-        addr,
-        &mut cache,
-        image.go && image.isa == crate::loader::Isa::X86_64,
-    )
+    summarize(image, &[addr], &mut cache);
+    cache.get(&addr).copied().unwrap_or_default()
 }
 
-fn summarize(
-    image: &Image,
-    addr: u64,
-    cache: &mut HashMap<u64, Summary>,
-    known_runtime: bool,
-) -> Summary {
+/// Summarizes `roots`, which have no summary yet, and every function they
+/// reach that has none.
+fn summarize(image: &Image, roots: &[u64], cache: &mut HashMap<u64, Summary>) {
+    let known_runtime = image.go && image.isa == crate::loader::Isa::X86_64;
     let mut runtime = HashMap::new();
-    let (edges, recursive) = call_graph(image, addr, cache, &mut runtime, known_runtime);
-    let parts = strongly_connected_components(addr, &edges);
+    let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime);
+    let parts = strongly_connected_components(roots, &edges);
     let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime);
     cache.extend(runtime);
     cache.extend(settled);
-    cache.get(&addr).copied().unwrap_or_default()
 }
 
 /// Known Go runtime functions need no body analysis when their effects are known.
@@ -259,11 +252,30 @@ pub(crate) fn prepare(
     image: &Image,
     deadline: Option<std::time::Instant>,
 ) -> crate::error::Result<()> {
-    for &addr in image.functions.keys() {
+    // Functions that do not reach each other settle on different threads
+    // only when they are summarized together.
+    const TOGETHER: usize = 512;
+    let functions: Vec<u64> = image.functions.keys().copied().collect();
+    for chunk in functions.chunks(TOGETHER) {
         if let Err(error) = crate::deadline::passed(deadline) {
             return Err(error);
         }
-        summary(image, addr);
+        let mut cache = image.summaries.write().expect("summaries lock");
+        let mut roots = Vec::new();
+        for &addr in chunk {
+            if cache.contains_key(&addr) {
+                continue;
+            }
+            match known_runtime_summary(image, addr) {
+                Some(known) => {
+                    cache.insert(addr, known);
+                }
+                None => roots.push(addr),
+            }
+        }
+        if !roots.is_empty() {
+            summarize(image, &roots, &mut cache);
+        }
     }
     crate::deadline::passed(deadline)
 }
@@ -351,12 +363,12 @@ fn lifted_as(image: &Image, addr: u64) -> Option<(u64, HashSet<u64>)> {
     Some((size, super::exception_starts(&landing_pads, extent)))
 }
 
-/// The calls of every function reachable from `root` and not yet
+/// The calls of every function reachable from `roots` and not yet
 /// summarized, to others of them, and those of them that call themselves.
 /// Each round lifts the functions the one before found, in parallel.
 fn call_graph(
     image: &Image,
-    root: u64,
+    roots: &[u64],
     known: &HashMap<u64, Summary>,
     runtime: &mut HashMap<u64, Summary>,
     use_runtime: bool,
@@ -364,7 +376,7 @@ fn call_graph(
     crate::timing::scope!("summary::call_graph");
     let mut edges = HashMap::new();
     let mut recursive = HashSet::new();
-    let mut round = vec![root];
+    let mut round = roots.to_vec();
     while !round.is_empty() {
         let found = crate::parallel::map(&round, |addr| callees(image, *addr));
         let mut next = Vec::new();
@@ -397,9 +409,9 @@ fn call_graph(
     (edges, recursive)
 }
 
-/// The strongly connected parts of the call graph from `root`, callees
+/// The strongly connected parts of the call graph from `roots`, callees
 /// before callers.
-fn strongly_connected_components(root: u64, edges: &HashMap<u64, Vec<u64>>) -> Vec<Vec<u64>> {
+fn strongly_connected_components(roots: &[u64], edges: &HashMap<u64, Vec<u64>>) -> Vec<Vec<u64>> {
     struct Node {
         index: usize,
         low: usize,
@@ -427,41 +439,46 @@ fn strongly_connected_components(root: u64, edges: &HashMap<u64, Vec<u64>>) -> V
         stack.push(addr);
         walk.push((addr, 0));
     };
-    enter(root, &mut nodes, &mut stack, &mut walk);
-    while let Some((addr, next)) = walk.last().copied() {
-        if let Some(callee) = edges[&addr].get(next).copied() {
-            walk.last_mut().expect("frame").1 += 1;
-            match nodes.get(&callee) {
-                None => enter(callee, &mut nodes, &mut stack, &mut walk),
-                Some(node) if node.on_stack => {
-                    let index = node.index;
-                    let low = &mut nodes.get_mut(&addr).expect("entered").low;
-                    *low = (*low).min(index);
-                }
-                Some(_) => {}
-            }
+    for &root in roots {
+        if nodes.contains_key(&root) {
             continue;
         }
-        walk.pop();
-        let (index, low) = {
-            let node = &nodes[&addr];
-            (node.index, node.low)
-        };
-        if let Some((parent, _)) = walk.last() {
-            let parent_low = &mut nodes.get_mut(parent).expect("entered").low;
-            *parent_low = (*parent_low).min(low);
-        }
-        if low == index {
-            let mut part = Vec::new();
-            while let Some(member) = stack.pop() {
-                nodes.get_mut(&member).expect("entered").on_stack = false;
-                part.push(member);
-                if member == addr {
-                    break;
+        enter(root, &mut nodes, &mut stack, &mut walk);
+        while let Some((addr, next)) = walk.last().copied() {
+            if let Some(callee) = edges[&addr].get(next).copied() {
+                walk.last_mut().expect("frame").1 += 1;
+                match nodes.get(&callee) {
+                    None => enter(callee, &mut nodes, &mut stack, &mut walk),
+                    Some(node) if node.on_stack => {
+                        let index = node.index;
+                        let low = &mut nodes.get_mut(&addr).expect("entered").low;
+                        *low = (*low).min(index);
+                    }
+                    Some(_) => {}
                 }
+                continue;
             }
-            part.sort_unstable();
-            parts.push(part);
+            walk.pop();
+            let (index, low) = {
+                let node = &nodes[&addr];
+                (node.index, node.low)
+            };
+            if let Some((parent, _)) = walk.last() {
+                let parent_low = &mut nodes.get_mut(parent).expect("entered").low;
+                *parent_low = (*parent_low).min(low);
+            }
+            if low == index {
+                let mut part = Vec::new();
+                while let Some(member) = stack.pop() {
+                    nodes.get_mut(&member).expect("entered").on_stack = false;
+                    part.push(member);
+                    if member == addr {
+                        break;
+                    }
+                }
+                part.sort_unstable();
+                parts.push(part);
+            }
         }
     }
     parts
@@ -1255,6 +1272,30 @@ mod tests {
         let second = super::body(&image, 0, &summaries).expect("second body");
         assert!(Arc::ptr_eq(&first, &second));
     }
+    #[test]
+    fn summaries_prepared_together_are_those_asked_for_one_by_one() {
+        for fixture in ["cpp_virtual_x64.elf", "calls_a64.elf", "go_probe"] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(fixture);
+            let together = crate::service::Binary::open(&path).expect("fixture");
+            super::prepare(together.image(), None).expect("no deadline");
+            let one_by_one = crate::service::Binary::open(&path).expect("fixture");
+            for &addr in one_by_one.image().functions.keys() {
+                super::summary(one_by_one.image(), addr);
+            }
+            let summaries = |binary: &crate::service::Binary| {
+                let summaries = binary.image().summaries.read().expect("summaries lock");
+                summaries
+                    .iter()
+                    .map(|(addr, summary)| (*addr, *summary))
+                    .collect::<std::collections::BTreeMap<_, _>>()
+            };
+            assert!(!summaries(&together).is_empty(), "{fixture}");
+            assert_eq!(summaries(&together), summaries(&one_by_one), "{fixture}");
+        }
+    }
+
     #[test]
     fn landing_pads_of_an_extent_are_those_a_scan_of_all_finds() {
         let mut image = image(&[0xd65f03c0]);

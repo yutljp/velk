@@ -309,7 +309,15 @@ pub(crate) fn run(
                     Err(error) => return Err(error),
                 };
             match velk::xrefs::query::run(&mut binary, query, None) {
-                Ok(value) => println!("{value:#}"),
+                Ok(value) => {
+                    use std::io::Write;
+                    // A listing has millions of lines, and standard output
+                    // writes each line on its own.
+                    let mut out = std::io::BufWriter::new(std::io::stdout().lock());
+                    writeln!(out, "{value:#}")
+                        .and_then(|()| out.flush())
+                        .expect("failed printing to stdout");
+                }
                 Err(error) => return Err(error),
             }
         }
