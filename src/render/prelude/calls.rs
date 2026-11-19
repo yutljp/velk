@@ -439,10 +439,14 @@ pub(super) fn conform(code: &str) -> String {
         }
     }
     edits.sort_by_key(|(at, _)| *at);
-    let mut output = code.to_owned();
-    for (at, insertion) in edits.into_iter().rev() {
-        output.insert_str(at, &insertion);
+    let mut output = String::with_capacity(code.len());
+    let mut copied = 0;
+    for (at, insertion) in edits {
+        output.push_str(&code[copied..at]);
+        output.push_str(&insertion);
+        copied = at;
     }
+    output.push_str(&code[copied..]);
     output
 }
 
