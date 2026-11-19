@@ -88,20 +88,24 @@ fn dce_unchecked(ir: &mut FunctionIr) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let sp = crate::arch::stack_pointer(ir.isa);
+    // How many blocks read each register.
+    let mut readers: rustc_hash::FxHashMap<u16, usize> = Default::default();
+    for register in reads.iter().flatten() {
+        *readers.entry(*register).or_default() += 1;
+    }
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
         }
-        let mut outer: std::collections::HashSet<u16> = reads
-            .iter()
-            .enumerate()
-            .filter(|(other, _)| *other != index)
-            .flat_map(|(_, set)| set.iter().copied())
-            .collect();
-        if cyclic.contains(&index) {
-            outer.extend(reads[index].iter().copied());
-        }
-        outer.extend(live_out[index].iter().copied());
+        let own = &reads[index];
+        let own_live = cyclic.contains(&index);
+        let live = &live_out[index];
+        let outer = |register: u16| {
+            let read_here = own.contains(&register);
+            (own_live && read_here)
+                || live.contains(&register)
+                || readers.get(&register).copied().unwrap_or(0) > usize::from(read_here)
+        };
         // A removed statement can strand the one feeding it, so sweep until
         // nothing changes.
         loop {
@@ -116,9 +120,10 @@ fn dce_unchecked(ir: &mut FunctionIr) {
 
 fn drop_dead_assignments(
     block: &mut crate::ir::Block,
-    outer_reads: &std::collections::HashSet<u16>,
+    outer_reads: &impl Fn(u16) -> bool,
     sp: u16,
 ) {
+    let registers: Vec<_> = block.stmts.iter().map(statement_registers).collect();
     let mut keep: Vec<bool> = vec![true; block.stmts.len()];
     for (index, stmt) in block.stmts.iter().enumerate() {
         let Stmt::Assign { dest, value, .. } = stmt else {
@@ -129,12 +134,11 @@ fn drop_dead_assignments(
         if reads_outside_frame(value, sp) {
             continue;
         }
-        if outer_reads.contains(&dest.index) {
+        if outer_reads(dest.index) {
             continue;
         }
         let mut dead = true;
-        for later in block.stmts.iter().skip(index + 1) {
-            let (writes, reads) = statement_registers(later);
+        for (writes, reads) in &registers[index + 1..] {
             if reads.contains(&dest.index) {
                 dead = false;
                 break;
