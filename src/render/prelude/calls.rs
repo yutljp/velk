@@ -1,7 +1,6 @@
 //! Conversions required when separately printed functions share typed definitions.
 
 use std::collections::HashMap;
-use std::ops::Range;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Type {
@@ -12,12 +11,17 @@ enum Type {
 
 struct Token<'code> {
     text: &'code str,
-    range: Range<usize>,
+}
+
+/// Where `token`, a token of `code`, starts in it.
+fn offset(code: &str, token: &Token<'_>) -> usize {
+    token.text.as_ptr() as usize - code.as_ptr() as usize
 }
 
 fn tokens(code: &str) -> Vec<Token<'_>> {
     let bytes = code.as_bytes();
-    let mut result = Vec::new();
+    // A token and the space after it take about six bytes of code.
+    let mut result = Vec::with_capacity(code.len() / 4);
     let mut at = 0;
     while at < bytes.len() {
         if bytes[at].is_ascii_whitespace() {
@@ -73,7 +77,6 @@ fn tokens(code: &str) -> Vec<Token<'_>> {
         }
         result.push(Token {
             text: &code[start..at],
-            range: start..at,
         });
     }
     result
@@ -363,15 +366,9 @@ pub(super) fn conform(code: &str) -> String {
                 if tokens[at].text == "[" {
                     let mut target: Vec<_> = tokens[statement..at - 1]
                         .iter()
-                        .map(|token| Token {
-                            text: token.text,
-                            range: token.range.clone(),
-                        })
+                        .map(|token| Token { text: token.text })
                         .collect();
-                    target.push(Token {
-                        text: "*",
-                        range: 0..0,
-                    });
+                    target.push(Token { text: "*" });
                     ty = Type::Pointer(pointer_type(&target));
                 }
                 variables.insert(name.to_owned(), ty);
@@ -433,8 +430,8 @@ pub(super) fn conform(code: &str) -> String {
                 let (Some(first), Some(last)) = (argument.first(), argument.last()) else {
                     continue;
                 };
-                edits.push((first.range.start, format!("({conversion})(")));
-                edits.push((last.range.end, ")".to_owned()));
+                edits.push((offset(code, first), format!("({conversion})(")));
+                edits.push((offset(code, last) + last.text.len(), ")".to_owned()));
             }
         }
     }

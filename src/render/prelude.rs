@@ -280,13 +280,20 @@ pub(crate) fn project_section(declarations: &str) -> String {
 /// Combine standalone outputs with their support definitions printed once.
 #[must_use]
 pub fn combine(code: &str) -> String {
-    let code = structures::StructureTagNames::default().resolve(code);
-    let code = super::globals::resolve(&code);
+    // Each step's text is dropped once the next is made: the output of
+    // every function of a large binary is combined in one piece.
+    let named = structures::StructureTagNames::default().resolve(code);
+    let resolved = super::globals::resolve(&named);
+    drop(named);
     let mut prelude = Prelude::default();
-    let body = prelude.extract(&code);
+    let body = prelude.extract(&resolved);
+    drop(resolved);
     prelude.bind_definitions(&body);
-    let body = calls::conform(&body);
-    format!("{}{body}", prelude.render())
+    let conformed = calls::conform(&body);
+    drop(body);
+    let mut combined = prelude.render();
+    combined.push_str(&conformed);
+    combined
 }
 
 #[cfg(test)]
