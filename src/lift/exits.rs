@@ -149,6 +149,9 @@ fn leaving(image: &Image, function: u64, target: u64, at_entry: Option<bool>) ->
         })
 }
 
+/// The offsets from the entry stack pointer that registers hold.
+type Offsets = rustc_hash::FxHashMap<u16, i64>;
+
 /// How far the stack pointer stands from where it was on entry at the end
 /// of each block, where every path there agrees. Registers that hold an
 /// offset from the entry stack pointer, as a frame pointer does, carry it
@@ -159,15 +162,15 @@ pub(crate) fn stack_heights(blocks: &[Block], isa: crate::loader::Isa) -> Vec<Op
     let successors: Vec<Vec<usize>> = (0..count)
         .map(|index| crate::ir::cfg::block_successors(blocks, index))
         .collect();
-    let mut entry: Vec<Option<HashMap<u16, i64>>> = vec![None; count];
-    let mut exit: Vec<Option<HashMap<u16, i64>>> = vec![None; count];
+    let mut entry: Vec<Option<Offsets>> = vec![None; count];
+    let mut exit: Vec<Option<Offsets>> = vec![None; count];
     if count == 0 {
         return Vec::new();
     }
-    let start = HashMap::from([(sp, 0)]);
+    let start: Offsets = [(sp, 0)].into_iter().collect();
     // Each round only removes registers or reaches a block, so it settles.
     loop {
-        let mut next: Vec<Option<HashMap<u16, i64>>> = vec![None; count];
+        let mut next: Vec<Option<Offsets>> = vec![None; count];
         next[0] = Some(start.clone());
         for (index, out) in exit.iter().enumerate() {
             let Some(out) = out else {
@@ -186,15 +189,19 @@ pub(crate) fn stack_heights(blocks: &[Block], isa: crate::loader::Isa) -> Vec<Op
         if next == entry {
             break;
         }
-        entry = next;
+        // What a block leaves follows from what it enters with alone.
         for (index, block) in blocks.iter().enumerate() {
-            exit[index] = entry[index].clone().map(|mut state| {
+            if next[index] == entry[index] {
+                continue;
+            }
+            exit[index] = next[index].clone().map(|mut state| {
                 for stmt in &block.stmts {
                     step(stmt, &mut state);
                 }
                 state
             });
         }
+        entry = next;
     }
     exit.into_iter()
         .map(|state| state.and_then(|state| state.get(&sp).copied()))
@@ -202,7 +209,7 @@ pub(crate) fn stack_heights(blocks: &[Block], isa: crate::loader::Isa) -> Vec<Op
 }
 
 /// The offsets from the entry stack pointer the registers hold after `stmt`.
-fn step(stmt: &Stmt, state: &mut HashMap<u16, i64>) {
+fn step(stmt: &Stmt, state: &mut Offsets) {
     if let Stmt::Assign { dest, value, .. } = stmt
         && dest.width == 64
     {
@@ -218,7 +225,7 @@ fn step(stmt: &Stmt, state: &mut HashMap<u16, i64>) {
 
 /// The offset from the entry stack pointer `value` computes, when it is
 /// `r`, `r + k` or `r - k` for a register holding one.
-fn offset_of(value: &Expr, state: &HashMap<u16, i64>) -> Option<i64> {
+fn offset_of(value: &Expr, state: &Offsets) -> Option<i64> {
     match value {
         Expr::Reg { index, width: 64 } => state.get(index).copied(),
         Expr::Bin { op, lhs, rhs } => {
