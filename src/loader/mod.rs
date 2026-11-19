@@ -307,6 +307,9 @@ pub struct Image {
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
+    /// What each function returns as its own analysis decides, for the
+    /// callers that return its result; filled on demand.
+    pub(crate) returned_types: std::sync::Mutex<HashMap<u64, Option<crate::ir::CType>>>,
     /// The lifts made so far, shared by everything that lifts the same.
     pub lifts: crate::lift::Lifts,
     pub(crate) word_pairs: crate::lift::pairs32::inference::Cache,
@@ -618,6 +621,7 @@ impl Image {
             exception_regions: Vec::new(),
             exception_handlers: Vec::new(),
             result_reads: Default::default(),
+            returned_types: Default::default(),
             lifts: Default::default(),
             word_pairs: Default::default(),
             relocations: BTreeMap::new(),
@@ -1521,6 +1525,7 @@ pub(crate) fn load_input_with_saved(
         stack_rows: Default::default(),
         landing_sites: Default::default(),
         result_reads: Default::default(),
+        returned_types: Default::default(),
         lifts: Default::default(),
         word_pairs: Default::default(),
         relocations,

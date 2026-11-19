@@ -579,21 +579,40 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
 fn returned_type(image: &Image, addr: u64) -> Option<crate::ir::CType> {
     thread_local! {
         static UNDER_WAY: std::cell::RefCell<HashSet<u64>> = Default::default();
+        /// How many times a function already under way was asked for.
+        static CUT: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     }
     let function = image.functions.get(&addr)?;
+    if let Some(known) = image
+        .returned_types
+        .lock()
+        .expect("returned types lock")
+        .get(&addr)
+    {
+        return known.clone();
+    }
     if !UNDER_WAY.with(|under_way| under_way.borrow_mut().insert(addr)) {
+        CUT.set(CUT.get() + 1);
         return None;
     }
+    let cut = CUT.get();
     let analysis = analyze(image, function, None);
     UNDER_WAY.with(|under_way| under_way.borrow_mut().remove(&addr));
-    let Ok(analysis) = analysis else {
-        return None;
-    };
-    match analysis.ir.ret_type {
-        crate::ir::CType::Int { bytes, .. } => Some(crate::ir::CType::int(bytes, false)),
-        crate::ir::CType::Void => Some(crate::ir::CType::Void),
+    let returned = match analysis.map(|analysis| analysis.ir.ret_type) {
+        Ok(crate::ir::CType::Int { bytes, .. }) => Some(crate::ir::CType::int(bytes, false)),
+        Ok(crate::ir::CType::Void) => Some(crate::ir::CType::Void),
         _ => None,
+    };
+    // An answer made while a function under way was left out holds only
+    // below that function, so it is not kept.
+    if CUT.get() == cut {
+        image
+            .returned_types
+            .lock()
+            .expect("returned types lock")
+            .insert(addr, returned.clone());
     }
+    returned
 }
 
 /// Gives a call whose callee's arguments are unknown, such as one through a
