@@ -157,6 +157,60 @@ fn a_register_written_in_an_earlier_block_is_not_an_argument() {
 }
 
 #[test]
+fn a_trap_does_not_reach_the_block_after_it() {
+    let blocks = vec![
+        Block {
+            start: 0,
+            stmts: vec![Stmt::Brif {
+                cond: crate::ir::Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                target: 8,
+                at: None,
+            }],
+        },
+        Block {
+            start: 4,
+            stmts: vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 1,
+                        width: 64,
+                    },
+                    value: Expr::Const(7),
+                    at: None,
+                },
+                Stmt::Br {
+                    target: Some(12),
+                    at: None,
+                },
+            ],
+        },
+        Block {
+            start: 8,
+            stmts: vec![Stmt::Trap { at: None }],
+        },
+        Block {
+            start: 12,
+            stmts: vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64)),
+                at: None,
+            }],
+        },
+    ];
+
+    let signature = recover(
+        &blocks,
+        Isa::AArch64,
+        Convention::of(Isa::AArch64, Format::Elf, false),
+        false,
+    );
+
+    let params: Vec<u16> = signature.params.iter().map(|param| param.index).collect();
+    assert_eq!(params, vec![0]);
+}
+
+#[test]
 fn an_argument_kept_in_a_stack_slot_is_typed_by_its_loads() {
     // `str x0, [sp, #8]`, then x8 holds a count before it holds the
     // argument again and a load goes through it.
