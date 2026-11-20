@@ -412,9 +412,8 @@ fn label_count(nodes: &[Node]) -> usize {
         .map(|node| match node {
             Node::Label(_) => 1,
             Node::If { then, els, .. } => label_count(then) + label_count(els),
-            Node::DoWhile { body, .. } | Node::Forever { body } | Node::While { body, .. } => {
-                label_count(body)
-            }
+            Node::DoWhile { body, .. } | Node::Forever { body } => label_count(body),
+            Node::While { prefix, body, .. } => label_count(prefix) + label_count(body),
             Node::Switch { arms, default, .. } => {
                 arms.iter()
                     .map(|(_, body)| label_count(body))
