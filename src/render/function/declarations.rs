@@ -9,7 +9,6 @@ pub(super) struct Input<'a> {
     pub(super) ir: &'a FunctionIr,
     pub(super) ctx: &'a Ctx<'a>,
     pub(super) mentions: &'a variables::Mentions<'a>,
-    pub(super) body: &'a str,
     pub(super) variadic: Option<&'a super::super::variadic::Plan>,
     pub(super) logical: Option<&'a abi::Plan>,
     pub(super) incoming: Option<&'a stack_bytes::Plan>,
@@ -35,7 +34,6 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
     let Input {
         ir,
         ctx,
-        body,
         mentions,
         variadic,
         logical,
@@ -208,7 +206,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         }
     }
     for local in decls {
-        if local.width == 0 || !body.contains(&local.name) {
+        if local.width == 0 || !mentions.contains(&local.name) {
             continue;
         }
         indent(1, &mut out);

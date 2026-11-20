@@ -27,7 +27,6 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t v2;
-    int32_t i; /* [sp-1c] */
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x14) = 0;

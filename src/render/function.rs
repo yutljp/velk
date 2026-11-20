@@ -1433,7 +1433,6 @@ fn render_with(
     } = declarations::emit(declarations::Input {
         ir,
         ctx: &ctx,
-        body: &body,
         mentions: &mentions,
         variadic,
         logical,
