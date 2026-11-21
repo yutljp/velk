@@ -726,46 +726,21 @@ fn symbol_table(image: &Image, is_64: bool) -> Result<(Vec<u8>, Vec<u8>)> {
         strings.push(0);
         let start = table.len();
         table.resize(start + entry_size, 0);
+        let mut fields = Fields::at(&mut table, start);
+        fields.u32(0, name_offset);
         if is_64 {
-            if let Err(error) = put_u32(&mut table, start, name_offset) {
-                return Err(error);
-            }
-            table[start + 4] = info;
-            if let Err(error) = put_u16(&mut table, start + 6, 0xfff1) {
-                return Err(error);
-            }
-            if let Err(error) = put_u64(&mut table, start + 8, address) {
-                return Err(error);
-            }
-            if let Err(error) = put_u64(&mut table, start + 16, size) {
-                return Err(error);
-            }
+            fields.bytes(4, &[info]);
+            fields.u16(6, 0xfff1);
+            fields.u64(8, address);
+            fields.u64(16, size);
         } else {
-            if let Err(error) = put_u32(&mut table, start, name_offset) {
-                return Err(error);
-            }
-            let value = match u32::try_from(address)
-                .map_err(|_| Error::Emulation("ELF32 symbol address exceeds 32 bits".to_owned()))
-            {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
-            if let Err(error) = put_u32(&mut table, start + 4, value) {
-                return Err(error);
-            }
-            let size_u32 = match u32::try_from(size)
-                .map_err(|_| Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned()))
-            {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
-            if let Err(error) = put_u32(&mut table, start + 8, size_u32) {
-                return Err(error);
-            }
-            table[start + 12] = info;
-            if let Err(error) = put_u16(&mut table, start + 14, 0xfff1) {
-                return Err(error);
-            }
+            fields.narrow32(4, address, "ELF32 symbol address exceeds 32 bits");
+            fields.narrow32(8, size, "ELF32 symbol size exceeds 32 bits");
+            fields.bytes(12, &[info]);
+            fields.u16(14, 0xfff1);
+        }
+        if let Err(error) = fields.result {
+            return Err(error);
         }
     }
     Ok((table, strings))
@@ -828,6 +803,68 @@ struct ProgramHeader {
     flags: u32,
 }
 
+/// Little-endian fields written at offsets from `base`. The first write that
+/// fails is kept and later ones do nothing.
+struct Fields<'a> {
+    output: &'a mut [u8],
+    base: usize,
+    result: Result<()>,
+}
+
+impl<'a> Fields<'a> {
+    fn at(output: &'a mut [u8], base: usize) -> Self {
+        Self {
+            output,
+            base,
+            result: Ok(()),
+        }
+    }
+
+    fn bytes(&mut self, offset: usize, bytes: &[u8]) {
+        if self.result.is_err() {
+            return;
+        }
+        self.result = match self.base.checked_add(offset) {
+            Some(offset) => put(self.output, offset, bytes),
+            None => Err(Error::Emulation("ELF field offset overflows".to_owned())),
+        };
+    }
+
+    fn u16(&mut self, offset: usize, value: u16) {
+        self.bytes(offset, &value.to_le_bytes());
+    }
+
+    fn u32(&mut self, offset: usize, value: u32) {
+        self.bytes(offset, &value.to_le_bytes());
+    }
+
+    fn u64(&mut self, offset: usize, value: u64) {
+        self.bytes(offset, &value.to_le_bytes());
+    }
+
+    /// Writes `value` in 16 bits, or fails with `message` when it needs more.
+    fn narrow16(&mut self, offset: usize, value: usize, message: &str) {
+        match u16::try_from(value) {
+            Ok(value) => self.u16(offset, value),
+            Err(_) => self.fail(message),
+        }
+    }
+
+    /// Writes `value` in 32 bits, or fails with `message` when it needs more.
+    fn narrow32(&mut self, offset: usize, value: u64, message: &str) {
+        match u32::try_from(value) {
+            Ok(value) => self.u32(offset, value),
+            Err(_) => self.fail(message),
+        }
+    }
+
+    fn fail(&mut self, message: &str) {
+        if self.result.is_ok() {
+            self.result = Err(Error::Emulation(message.to_owned()));
+        }
+    }
+}
+
 fn write_elf_header(output: &mut [u8], header: ElfHeader) -> Result<()> {
     let ElfHeader {
         is_64,
@@ -841,123 +878,44 @@ fn write_elf_header(output: &mut [u8], header: ElfHeader) -> Result<()> {
         section_count,
         section_names_index,
     } = header;
-    let ident = match output
-        .get_mut(..16)
-        .ok_or_else(|| Error::Emulation("ELF output header is truncated".to_owned()))
-    {
-        Ok(value) => value,
-        Err(error) => return Err(error),
+    let Some(ident) = output.get_mut(..16) else {
+        return Err(Error::Emulation(
+            "ELF output header is truncated".to_owned(),
+        ));
     };
     ident[..7].copy_from_slice(&[0x7f, b'E', b'L', b'F', if is_64 { 2 } else { 1 }, 1, 1]);
-    if let Err(error) = put_u16(output, 16, 2) {
-        return Err(error);
-    }
-    if let Err(error) = put_u16(output, 18, machine) {
-        return Err(error);
-    }
-    if let Err(error) = put_u32(output, 20, 1) {
-        return Err(error);
-    }
-    if is_64 {
-        if let Err(error) = put_u64(output, 24, entry) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, 32, 64) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, 40, section_header_offset) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, 48, 0) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 52, header_size as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 54, program_header_size as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 56, phnum as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 58, section_header_size as u16) {
-            return Err(error);
-        }
-        let value = match u16::try_from(section_count)
-            .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u16(output, 60, value) {
-            return Err(error);
-        }
-        let section_names_index_u16 = match u16::try_from(section_names_index)
-            .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u16(output, 62, section_names_index_u16) {
-            return Err(error);
-        }
+    let mut fields = Fields::at(output, 0);
+    fields.u16(16, 2);
+    fields.u16(18, machine);
+    fields.u32(20, 1);
+    // The offset of the sizes and counts that end the header.
+    let tail = if is_64 {
+        fields.u64(24, entry);
+        fields.u64(32, 64);
+        fields.u64(40, section_header_offset);
+        48
     } else {
-        let entry = match u32::try_from(entry)
-            .map_err(|_| Error::Emulation("ELF32 entry exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, 24, entry) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, 28, 52) {
-            return Err(error);
-        }
-        let section_header_offset_u32 = match u32::try_from(section_header_offset)
-            .map_err(|_| Error::Emulation("ELF32 section table exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, 32, section_header_offset_u32) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, 36, 0) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 40, header_size as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 42, program_header_size as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 44, phnum as u16) {
-            return Err(error);
-        }
-        if let Err(error) = put_u16(output, 46, section_header_size as u16) {
-            return Err(error);
-        }
-        let section_count_u16 = match u16::try_from(section_count)
-            .map_err(|_| Error::Emulation("ELF section count exceeds 65535".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u16(output, 48, section_count_u16) {
-            return Err(error);
-        }
-        let section_names_index_u16 = match u16::try_from(section_names_index)
-            .map_err(|_| Error::Emulation("ELF section name index exceeds 65535".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u16(output, 50, section_names_index_u16) {
-            return Err(error);
-        }
-    }
-    Ok(())
+        fields.narrow32(24, entry, "ELF32 entry exceeds 32 bits");
+        fields.u32(28, 52);
+        fields.narrow32(
+            32,
+            section_header_offset,
+            "ELF32 section table exceeds 32 bits",
+        );
+        36
+    };
+    fields.u32(tail, 0);
+    fields.u16(tail + 4, header_size as u16);
+    fields.u16(tail + 6, program_header_size as u16);
+    fields.u16(tail + 8, phnum as u16);
+    fields.u16(tail + 10, section_header_size as u16);
+    fields.narrow16(tail + 12, section_count, "ELF section count exceeds 65535");
+    fields.narrow16(
+        tail + 14,
+        section_names_index,
+        "ELF section name index exceeds 65535",
+    );
+    fields.result
 }
 
 fn write_section_header(output: &mut [u8], header: SectionHeader) -> Result<()> {
@@ -977,120 +935,42 @@ fn write_section_header(output: &mut [u8], header: SectionHeader) -> Result<()> 
         entry_size,
     } = header;
     let header_size = if is_64 { 64usize } else { 40usize };
-    let value = match usize::try_from(table_offset).map_err(|_| {
-        Error::Emulation("ELF section header offset exceeds the host address space".to_owned())
-    }) {
-        Ok(value) => value,
-        Err(error) => return Err(error),
+    let Ok(table_offset) = usize::try_from(table_offset) else {
+        return Err(Error::Emulation(
+            "ELF section header offset exceeds the host address space".to_owned(),
+        ));
     };
-    let header_offset = match index
+    let Some(base) = index
         .checked_mul(header_size)
-        .ok_or_else(|| Error::Emulation("ELF section header offset overflows".to_owned()))
-    {
-        Ok(value) => value,
-        Err(error) => return Err(error),
+        .and_then(|offset| table_offset.checked_add(offset))
+    else {
+        return Err(Error::Emulation(
+            "ELF section header offset overflows".to_owned(),
+        ));
     };
-    let base = match value
-        .checked_add(header_offset)
-        .ok_or_else(|| Error::Emulation("ELF section header offset overflows".to_owned()))
-    {
-        Ok(value) => value,
-        Err(error) => return Err(error),
-    };
-    if let Err(error) = put_u32(output, base, name) {
-        return Err(error);
-    }
-    if let Err(error) = put_u32(output, base + 4, kind) {
-        return Err(error);
-    }
+    let mut fields = Fields::at(output, base);
+    fields.u32(0, name);
+    fields.u32(4, kind);
     if is_64 {
-        if let Err(error) = put_u64(output, base + 8, flags) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 16, address) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 24, offset) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 32, size) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 40, link) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 44, info) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 48, alignment) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 56, entry_size) {
-            return Err(error);
-        }
+        fields.u64(8, flags);
+        fields.u64(16, address);
+        fields.u64(24, offset);
+        fields.u64(32, size);
+        fields.u32(40, link);
+        fields.u32(44, info);
+        fields.u64(48, alignment);
+        fields.u64(56, entry_size);
     } else {
-        let flags_u32 = match u32::try_from(flags)
-            .map_err(|_| Error::Emulation("ELF32 section flags exceed 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 8, flags_u32) {
-            return Err(error);
-        }
-        let address_u32 = match u32::try_from(address)
-            .map_err(|_| Error::Emulation("ELF32 section address exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 12, address_u32) {
-            return Err(error);
-        }
-        let offset_u32 = match u32::try_from(offset)
-            .map_err(|_| Error::Emulation("ELF32 section offset exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 16, offset_u32) {
-            return Err(error);
-        }
-        let size_u32 = match u32::try_from(size)
-            .map_err(|_| Error::Emulation("ELF32 section size exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 20, size_u32) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 24, link) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 28, info) {
-            return Err(error);
-        }
-        let alignment_u32 = match u32::try_from(alignment)
-            .map_err(|_| Error::Emulation("ELF32 section alignment exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 32, alignment_u32) {
-            return Err(error);
-        }
-        let entry_size_u32 = match u32::try_from(entry_size)
-            .map_err(|_| Error::Emulation("ELF32 symbol size exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 36, entry_size_u32) {
-            return Err(error);
-        }
+        fields.narrow32(8, flags, "ELF32 section flags exceed 32 bits");
+        fields.narrow32(12, address, "ELF32 section address exceeds 32 bits");
+        fields.narrow32(16, offset, "ELF32 section offset exceeds 32 bits");
+        fields.narrow32(20, size, "ELF32 section size exceeds 32 bits");
+        fields.u32(24, link);
+        fields.u32(28, info);
+        fields.narrow32(32, alignment, "ELF32 section alignment exceeds 32 bits");
+        fields.narrow32(36, entry_size, "ELF32 symbol size exceeds 32 bits");
     }
-    Ok(())
+    fields.result
 }
 
 fn write_program_header(output: &mut [u8], header: ProgramHeader) -> Result<()> {
@@ -1105,111 +985,34 @@ fn write_program_header(output: &mut [u8], header: ProgramHeader) -> Result<()> 
     } = header;
     let size = if is_64 { 56usize } else { 32usize };
     let header_size = if is_64 { 64usize } else { 52usize };
-    let header_offset = match index
+    let Some(base) = index
         .checked_mul(size)
-        .ok_or_else(|| Error::Emulation("ELF program header offset overflows".to_owned()))
-    {
-        Ok(value) => value,
-        Err(error) => return Err(error),
+        .and_then(|offset| header_size.checked_add(offset))
+    else {
+        return Err(Error::Emulation(
+            "ELF program header offset overflows".to_owned(),
+        ));
     };
-    let base = match header_size
-        .checked_add(header_offset)
-        .ok_or_else(|| Error::Emulation("ELF program header offset overflows".to_owned()))
-    {
-        Ok(value) => value,
-        Err(error) => return Err(error),
-    };
-    if let Err(error) = put_u32(output, base, 1) {
-        return Err(error);
-    }
+    let mut fields = Fields::at(output, base);
+    fields.u32(0, 1);
     if is_64 {
-        if let Err(error) = put_u32(output, base + 4, flags) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 8, offset) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 16, address) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 24, address) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 32, file_size) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 40, memory_size) {
-            return Err(error);
-        }
-        if let Err(error) = put_u64(output, base + 48, PAGE_SIZE) {
-            return Err(error);
-        }
+        fields.u32(4, flags);
+        fields.u64(8, offset);
+        fields.u64(16, address);
+        fields.u64(24, address);
+        fields.u64(32, file_size);
+        fields.u64(40, memory_size);
+        fields.u64(48, PAGE_SIZE);
     } else {
-        let value = match u32::try_from(offset)
-            .map_err(|_| Error::Emulation("ELF32 file offset exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 4, value) {
-            return Err(error);
-        }
-        let address_u32 = match u32::try_from(address)
-            .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 8, address_u32) {
-            return Err(error);
-        }
-        let address_u32 = match u32::try_from(address)
-            .map_err(|_| Error::Emulation("ELF32 address exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 12, address_u32) {
-            return Err(error);
-        }
-        let file_size_u32 = match u32::try_from(file_size)
-            .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 16, file_size_u32) {
-            return Err(error);
-        }
-        let memory_size_u32 = match u32::try_from(memory_size)
-            .map_err(|_| Error::Emulation("ELF32 segment exceeds 32 bits".to_owned()))
-        {
-            Ok(value) => value,
-            Err(error) => return Err(error),
-        };
-        if let Err(error) = put_u32(output, base + 20, memory_size_u32) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 24, flags) {
-            return Err(error);
-        }
-        if let Err(error) = put_u32(output, base + 28, PAGE_SIZE as u32) {
-            return Err(error);
-        }
+        fields.narrow32(4, offset, "ELF32 file offset exceeds 32 bits");
+        fields.narrow32(8, address, "ELF32 address exceeds 32 bits");
+        fields.narrow32(12, address, "ELF32 address exceeds 32 bits");
+        fields.narrow32(16, file_size, "ELF32 segment exceeds 32 bits");
+        fields.narrow32(20, memory_size, "ELF32 segment exceeds 32 bits");
+        fields.u32(24, flags);
+        fields.u32(28, PAGE_SIZE as u32);
     }
-    Ok(())
-}
-
-fn put_u16(output: &mut [u8], offset: usize, value: u16) -> Result<()> {
-    put(output, offset, &value.to_le_bytes())
-}
-
-fn put_u32(output: &mut [u8], offset: usize, value: u32) -> Result<()> {
-    put(output, offset, &value.to_le_bytes())
-}
-
-fn put_u64(output: &mut [u8], offset: usize, value: u64) -> Result<()> {
-    put(output, offset, &value.to_le_bytes())
+    fields.result
 }
 
 fn put(output: &mut [u8], offset: usize, bytes: &[u8]) -> Result<()> {
