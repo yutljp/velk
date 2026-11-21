@@ -206,7 +206,7 @@ fn render_prepared(
     let mut types = variables::variable_types(
         &folded,
         &narrow_registers(&folded),
-        float_return(&folded.ret_type),
+        folded.ret_type.precision(),
         variables::MixedAccess::Untyped,
     );
     types.extend(
@@ -229,7 +229,7 @@ fn render_prepared(
     let variable_types = variables::variable_types(
         ir,
         &narrow_registers(ir),
-        float_return(&ir.ret_type),
+        ir.ret_type.precision(),
         variables::MixedAccess::Untyped,
     );
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
@@ -262,7 +262,7 @@ fn render_prepared(
     let variable_types = variables::variable_types(
         &split,
         &narrow_registers(&split),
-        float_return(&split.ret_type),
+        split.ret_type.precision(),
         variables::MixedAccess::Bytes,
     );
     if let Some(locations) = split_locations {
@@ -393,23 +393,12 @@ fn render_prepared(
     )
 }
 
-/// The precision of a float the function returns.
-fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
-    ty.is_sse_float().then(|| {
-        if ty.to_string().contains("double") {
-            crate::ir::Precision::Double
-        } else {
-            crate::ir::Precision::Single
-        }
-    })
-}
-
 /// Variable types for storage layout and value analysis.
 pub(crate) fn variable_types(ir: &FunctionIr) -> std::collections::BTreeMap<u16, CType> {
     variables::variable_types(
         ir,
         &narrow_registers(ir),
-        float_return(&ir.ret_type),
+        ir.ret_type.precision(),
         variables::MixedAccess::Untyped,
     )
 }
@@ -522,7 +511,7 @@ fn render_with(
         .map(|param| param.index)
         .collect();
     let narrow_registers = narrow_registers(ir);
-    let float_return = float_return(&ir.ret_type);
+    let float_return = ir.ret_type.precision();
     let mut variable_types = variables::variable_types(
         ir,
         &narrow_registers,
@@ -590,7 +579,7 @@ fn render_with(
     let readonly_floats = ir.params.iter()
         .filter(|param| float_entries.contains(&param.index) && !written_registers.contains(&param.index))
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
-        .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
+        .filter_map(|param| param.ty.precision().map(|precision| (param.index, (param.name.clone(), precision))))
         .collect();
     let project_names: Vec<_> = symbols
         .variable_names
@@ -1927,7 +1916,7 @@ fn physical_float_parameters(ir: &mut FunctionIr) -> std::collections::HashSet<u
         if crate::arch::vector_half(ir.isa, param.index).is_none() {
             continue;
         }
-        let Some(precision) = float_return(&param.ty) else {
+        let Some(precision) = param.ty.precision() else {
             continue;
         };
         let supplied = crate::ir::semantics::mask(u32::from(precision.bits()));

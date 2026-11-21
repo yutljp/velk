@@ -136,8 +136,10 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
                     .iter()
                     .find(|param| param.index == *index)
                     .expect("a floating formal");
-                let precision =
-                    super::float_return(&param.ty).expect("a floating entry representation");
+                let precision = param
+                    .ty
+                    .precision()
+                    .expect("a floating entry representation");
                 let bits = expr::float_bits(param.name.clone(), precision).text;
                 out.push_str(&format!("uint64_t {name} = {bits};\n"));
             } else {

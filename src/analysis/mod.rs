@@ -153,15 +153,11 @@ fn float_result(blocks: &[crate::ir::Block], image: &Image) -> Option<crate::ir:
                     }
                     if written.contains(&slot)
                         && let Some(prototype) = prototypes::called(image, stmt)
-                        && prototype.ret.is_sse_float()
+                        && let Some(precision) = prototype.ret.precision()
                     {
                         state.float = true;
                         state.float_last = true;
-                        state.precision = Some(if prototype.ret.to_string() == "float" {
-                            Precision::Single
-                        } else {
-                            Precision::Double
-                        });
+                        state.precision = Some(precision);
                     }
                 }
                 Stmt::Ret { .. } => returns.push(state),
@@ -1179,12 +1175,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // arguments.
     let stack_results = stack_results(image, function.addr);
     let float_return = match declared {
-        Some(ret) if ret.is_sse_float() => Some(if ret.to_string().contains("double") {
-            crate::ir::Precision::Double
-        } else {
-            crate::ir::Precision::Single
-        }),
-        Some(_) => None,
+        Some(ret) => ret.precision(),
         None if !stack_results.is_empty() => None,
         None => float_result(&blocks, image),
     };

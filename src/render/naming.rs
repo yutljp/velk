@@ -358,18 +358,7 @@ impl Place {
     }
 
     pub(crate) fn precision(&self) -> Option<Precision> {
-        self.ty.is_sse_float().then(|| {
-            if self
-                .ty
-                .to_string()
-                .split_whitespace()
-                .any(|word| word == "float")
-            {
-                Precision::Single
-            } else {
-                Precision::Double
-            }
-        })
+        self.ty.precision()
     }
 
     pub(crate) fn plain_char(&self) -> bool {

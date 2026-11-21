@@ -199,6 +199,21 @@ impl CType {
         (words.contains(&"float") || words.contains(&"double")) && !words.contains(&"long")
     }
 
+    /// Whether the type is `float` or `double`, None for any other type.
+    #[must_use]
+    pub fn precision(&self) -> Option<super::Precision> {
+        let CType::Named(name) = self else {
+            return None;
+        };
+        self.is_sse_float().then(|| {
+            if name.split_whitespace().any(|word| word == "float") {
+                super::Precision::Single
+            } else {
+                super::Precision::Double
+            }
+        })
+    }
+
     #[must_use]
     pub fn is_32_bit_int(&self) -> bool {
         matches!(self, CType::Int { bytes: 4, .. })
@@ -495,4 +510,21 @@ pub struct Member {
     pub name: String,
     pub ty: CType,
     pub width: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CType;
+    use crate::ir::Precision;
+
+    #[test]
+    fn precision_is_known_only_for_float_and_double() {
+        let precision = |name: &str| CType::Named(name.to_owned()).precision();
+        assert_eq!(precision("float"), Some(Precision::Single));
+        assert_eq!(precision("const float"), Some(Precision::Single));
+        assert_eq!(precision("double"), Some(Precision::Double));
+        assert_eq!(precision("long double"), None);
+        assert_eq!(precision("int"), None);
+        assert_eq!(CType::int(4, true).precision(), None);
+    }
 }
