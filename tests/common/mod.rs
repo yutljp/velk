@@ -159,3 +159,23 @@ pub fn mcp_request(mut child: Child, request: &Value) -> Output {
         .expect("writing MCP request");
     child.wait_with_output().expect("MCP server shutdown")
 }
+
+/// Whether an SMT solver can be run for `what`. A test without one prints a
+/// skip line and passes, unless `VELK_REQUIRE_SOLVER` is set, which makes it
+/// fail.
+pub fn solver_available(what: &str) -> bool {
+    let available = ["z3", "bitwuzla"].iter().any(|program| {
+        std::process::Command::new(program)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+    });
+    if !available {
+        assert!(
+            std::env::var_os("VELK_REQUIRE_SOLVER").is_none(),
+            "{what}: VELK_REQUIRE_SOLVER is set and no SMT solver is on PATH"
+        );
+        eprintln!("SKIP {what}: no SMT solver on PATH");
+    }
+    available
+}

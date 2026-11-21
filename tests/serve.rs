@@ -1,3 +1,5 @@
+mod common;
+
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 
@@ -80,12 +82,7 @@ fn requests_share_a_process_and_preserve_json_values() {
 
 #[test]
 fn symbolic_states_persist_until_disposed() {
-    if !["z3", "bitwuzla"].iter().any(|program| {
-        Command::new(program)
-            .arg("--version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-    }) {
+    if !common::solver_available("symbolic states over the server") {
         return;
     }
     let binary = "target/serve-symbolic.bin";

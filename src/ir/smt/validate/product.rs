@@ -2349,8 +2349,7 @@ mod tests {
 
     #[test]
     fn functions_are_compared_across_blocks_and_loops() {
-        if Command::new("z3").arg("-version").output().is_err() {
-            eprintln!("SKIP product validation: z3 unavailable");
+        if !crate::ir::smt::z3_available("product validation") {
             return;
         }
         // A register renamed throughout the function.

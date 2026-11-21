@@ -334,12 +334,7 @@ mod tests {
 
     #[test]
     fn scopes_and_values() {
-        if !Command::new("z3")
-            .arg("-version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
-            eprintln!("SKIP solver protocol test: z3 is unavailable");
+        if !crate::ir::smt::z3_available("solver protocol test") {
             return;
         }
         let mut solver = Solver::command("z3 -in").unwrap();
@@ -378,11 +373,7 @@ mod tests {
 
     #[test]
     fn unknown_includes_the_solver_reason() {
-        if !Command::new("z3")
-            .arg("-version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
+        if !crate::ir::smt::z3_available("solver protocol test") {
             return;
         }
         let mut solver = Solver::command("z3 -in").unwrap();
@@ -402,12 +393,7 @@ mod tests {
         assert!(Solver::command("velk-missing-smt-solver").is_err());
         assert!(Solver::command("'unclosed").is_err());
         assert!(Solver::command("").is_err());
-        if !Command::new("z3")
-            .arg("-version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-        {
-            eprintln!("SKIP solver protocol test: z3 is unavailable");
+        if !crate::ir::smt::z3_available("solver protocol test") {
             return;
         }
         let mut solver = Solver::command("z3 -in").unwrap();

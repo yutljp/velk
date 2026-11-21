@@ -518,6 +518,24 @@ fn returned(statements: &[super::Stmt]) -> Value {
     panic!("SMT statement sequence must return a value");
 }
 
+/// Whether z3 can be run for `what`. A test without it prints a skip line
+/// and passes, unless `VELK_REQUIRE_SOLVER` is set, which makes it fail.
+#[cfg(test)]
+pub(crate) fn z3_available(what: &str) -> bool {
+    use std::process::Command;
+    match Command::new("z3").arg("-version").output() {
+        Ok(output) if output.status.success() => true,
+        result => {
+            assert!(
+                std::env::var_os("VELK_REQUIRE_SOLVER").is_none(),
+                "{what}: VELK_REQUIRE_SOLVER is set and z3 cannot be run ({result:?})"
+            );
+            eprintln!("SKIP {what}: z3 executable unavailable ({result:?})");
+            false
+        }
+    }
+}
+
 #[cfg(test)]
 #[derive(Default)]
 pub(crate) struct Proofs {
@@ -534,13 +552,7 @@ impl Proofs {
     }
 
     pub(crate) fn available() -> bool {
-        match Command::new("z3").arg("-version").output() {
-            Ok(output) if output.status.success() => true,
-            result => {
-                eprintln!("SKIP SMT proofs: z3 executable unavailable ({result:?})");
-                false
-            }
-        }
+        z3_available("SMT proofs")
     }
 
     pub(crate) fn predicate(&mut self, name: impl Into<String>, before: &str, after: &str) {

@@ -227,6 +227,9 @@ fn floats(expr: &Expr) -> bool {
 
 #[test]
 fn translation_agrees_with_the_interpreter() {
+    if !crate::ir::smt::z3_available("translation agreement") {
+        return;
+    }
     let Ok(mut child) = Command::new("z3")
         .args(["-in", "-smt2"])
         .stdin(Stdio::piped())

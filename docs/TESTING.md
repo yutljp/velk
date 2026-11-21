@@ -54,6 +54,9 @@ The compiler used by the C checks can be chosen with `VELK_TEST_CC` (default `cl
 installed, a subset of the checks also runs with it, because newer compilers reject some conversions older ones
 accept.
 
+Checks that need an SMT solver print a skip line and pass when none is installed. Set `VELK_REQUIRE_SOLVER=1` to
+make them fail instead, for example before a release.
+
 Recompilation checks compile functions in batches and use up to three workers.
 Compilation and execution results and expected IR results are cached in `target/recompile-cache/`
 and reused when their inputs are unchanged.

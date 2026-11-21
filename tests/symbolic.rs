@@ -14,16 +14,7 @@ use velk::service::Binary;
 use velk::symbolic::{self, Options, State, Step, Term};
 
 fn solver_available() -> bool {
-    let available = ["z3", "bitwuzla"].iter().any(|program| {
-        Command::new(program)
-            .arg("--version")
-            .output()
-            .is_ok_and(|output| output.status.success())
-    });
-    if !available {
-        eprintln!("SKIP symbolic execution: no SMT solver on PATH");
-    }
-    available
+    common::solver_available("symbolic execution")
 }
 
 fn fixtures() -> &'static Path {

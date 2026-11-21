@@ -1108,8 +1108,7 @@ mod tests {
 
     #[test]
     fn rewrites_are_checked_against_the_statements_before_them() {
-        if Command::new("z3").arg("-version").output().is_err() {
-            eprintln!("SKIP rewrite validation: z3 unavailable");
+        if !crate::ir::smt::z3_available("rewrite validation") {
             return;
         }
         let r = |index| Expr::reg(index, 64);
