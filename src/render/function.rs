@@ -1,4 +1,5 @@
 mod declarations;
+mod prototypes;
 
 use super::unions::MemberIndex;
 use super::{
@@ -1213,173 +1214,16 @@ fn render_with(
     let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
         && mentions.contains(&stack_name))
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
-    let mut call_returns: rustc_hash::FxHashMap<String, &CType> = rustc_hash::FxHashMap::default();
-    for (address, ty) in &symbols.import_returns {
-        if let Some(name) = symbols.import_name(address) {
-            call_returns.insert(sanitize(name), ty);
-        }
-    }
-    for (address, ty) in &symbols.function_returns {
-        let name = symbols
-            .functions
-            .get(address)
-            .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
-        call_returns.insert(name, ty);
-    }
-    // The callees whose calls are printed with their declarations are
-    // declared as their debug information declares them.
-    let mut declared_callees: HashMap<String, String> = ir
-        .callee_signatures
-        .iter()
-        .filter_map(|(target, signature)| {
-            let callee = symbols
-                .functions
-                .get(target)
-                .map_or_else(|| format!("sub_{target:x}"), |name| sanitize(name));
-            if callee == own || !mentions.contains(&callee) {
-                return None;
-            }
-            if let Some(header) = super::support::declaration_header(&callee, symbols.target_format)
-            {
-                return Some((callee, format!("#include <{header}>\n")));
-            }
-            let params = if signature.params.is_empty() {
-                "void".to_owned()
-            } else {
-                signature
-                    .params
-                    .iter()
-                    .map(|(_, ty)| ty.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            };
-            let prototype = declaration(&signature.ret, &format!("{callee}({params})"));
-            Some((callee, format!("{prototype};\n")))
-        })
-        .collect();
-    for (callee, prototype) in &symbols.library_prototypes {
-        if callee == &own || declared_callees.contains_key(callee) || !mentions.contains(callee) {
-            continue;
-        }
-        declared_callees.insert(
-            callee.clone(),
-            super::support::prototype(callee, prototype, symbols.target_format),
-        );
-    }
-    for callee in ctx.taken.borrow().iter() {
-        if callee == &own
-            || declared_callees.contains_key(callee)
-            || !code_names.contains(callee.as_str())
-        {
-            continue;
-        }
-        if let Some(header) = super::support::declaration_header(callee, symbols.target_format) {
-            declared_callees.insert(callee.clone(), format!("#include <{header}>\n"));
-            continue;
-        }
-        let Some(prototype) = crate::analysis::prototypes::of(
-            callee,
-            symbols.target_format == Some(crate::loader::Format::MachO),
-        ) else {
-            continue;
-        };
-        declared_callees.insert(
-            callee.clone(),
-            super::support::prototype(callee, prototype, symbols.target_format),
-        );
-    }
-    if !body.contains("main(")
-        && let Some(prototype) = declared_callees.get_mut("main")
-    {
-        *prototype = "int main(int, char **, char **);\n".to_owned();
-    }
-    let mut prototypes: String = ctx
-        .taken
-        .borrow()
-        .iter()
-        .filter(|taken| {
-            **taken != own
-                && !declared_callees.contains_key(*taken)
-                && code_names.contains(taken.as_str())
-        })
-        .map(|taken| {
-            if taken == "main" && !body.contains("main(") {
-                return "int main(int, char **, char **);\n".to_owned();
-            }
-            if let Some(types) = symbols
-                .import_parameters
-                .iter()
-                .find_map(|(address, types)| {
-                    let Some(name) = symbols.functions.get(address) else {
-                        return None;
-                    };
-                    (sanitize(name) == *taken).then_some(types)
-                })
-            {
-                let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);
-                let params = if types.is_empty() {
-                    "void".to_owned()
-                } else {
-                    types
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                };
-                let specified = declaration(ty, &format!("{taken}({params})"));
-                let unspecified = declaration(ty, &format!("{taken}()"));
-                return format!("#if defined(__x86_64__) && !defined(_WIN32)\n{unspecified};\n#else\n{specified};\n#endif\n");
-            }
-            if let Some(types) = symbols
-                .unused_parameters
-                .iter()
-                .find_map(|(address, types)| {
-                    let name = symbols
-                        .functions
-                        .get(address)
-                        .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
-                    (name == *taken).then_some(types)
-                })
-            {
-                let ret = if types.params.is_empty()
-                    && types.ret == CType::Void
-                    && ctx.call_returns_used.borrow().get(taken) == Some(&true)
-                {
-                    call_returns.get(taken).copied().unwrap_or(&CType::U64)
-                } else {
-                    &types.ret
-                };
-                let parameters = if types.params.iter().any(super::prelude::promoted_parameter) {
-                    unused_signature(&types.params, &mut std::collections::HashSet::<String>::new())
-                } else {
-                    String::new()
-                };
-                let prototype = declaration(ret, &format!("{taken}({parameters})"));
-                return format!("{prototype};\n");
-            }
-            if let Some(types) = symbols.function_parameters.iter().find_map(|(address, types)| {
-                let name = symbols.functions.get(address).map_or_else(
-                    || format!("sub_{address:x}"), |name| sanitize(name));
-                (name == *taken).then_some(types)
-            }) {
-                let ret = call_returns.get(taken).copied().unwrap_or(&CType::U64);
-                let params = unused_signature(types, &mut std::collections::HashSet::<String>::new());
-                return format!("{};\n", declaration(ret, &format!("{taken}({params})")));
-            }
-            if body.contains(&format!("{taken}(")) {
-                let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);
-                format!("{ty} {taken}();\n")
-            } else {
-                let ty = call_returns.get(taken).copied().unwrap_or(&CType::Void);
-                format!("{ty} {taken}();\n")
-            }
-        })
-        .collect();
-    let mut declared_callees: Vec<(String, String)> = declared_callees.into_iter().collect();
-    declared_callees.sort();
-    for (_, prototype) in declared_callees {
-        prototypes.push_str(&prototype);
-    }
+    let mut prototypes = prototypes::callees(&prototypes::Input {
+        ir,
+        symbols,
+        own: &own,
+        body: &body,
+        mentions: &mentions,
+        code_names: &code_names,
+        taken: &ctx.taken.borrow(),
+        call_returns_used: &ctx.call_returns_used.borrow(),
+    });
     if let Some(provider) = &stack_provider {
         prototypes.push_str(&format!(
             "uint64_t {provider}(void); /* target entry stack pointer */\n"
