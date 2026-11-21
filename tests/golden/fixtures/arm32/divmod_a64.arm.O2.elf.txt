@@ -1,4 +1,4 @@
-# arm32/divmod_a64.arm.O2.elf: elf arm32 no entry, 25 functions, 0 lift failures, 4 unsupported, 0 gotos
+# arm32/divmod_a64.arm.O2.elf: elf arm32 no entry, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201a4 20 udiv3 symtab,dwarf
 0x201b8 20 udiv10 symtab,dwarf
 0x201cc 8 udiv64 symtab,dwarf
@@ -160,7 +160,8 @@ fn hdiv10 @ 0x20218 (size 80)
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x20268 */
 int sdiv3(int x) {
-    /* unsupported: undecodable ARM instruction at 0x20270: incomplete decoder */
+    uint32_t v1 = (uint64_t)((int64_t)x * 0x55555556) >> 32;
+    return v1 + (v1 >> 31);
 }
 -- signature
 int (int x)
@@ -169,17 +170,17 @@ int (int x)
 -- ir
 fn sdiv3 @ 0x20268 (size 20)
   blk0 @ 0x20268:
-    v1 = #0x5556
-    v2 = #0x55555556
-    unsupported: undecodable ARM instruction at 0x20270: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x55555556)) >> #0x20)
+    ret ((v1 + (v1 >> #0x1f)) & #0xffffffff)
 -- card
-{"addr":"0x20268","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":1}
+{"addr":"0x20268","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x2027c sdiv10
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x2027c */
 int sdiv10(int x) {
-    /* unsupported: undecodable ARM instruction at 0x20284: incomplete decoder */
+    int32_t v1 = (uint64_t)((int64_t)x * 0x66666667) >> 32;
+    return (v1 >> 2) + ((uint32_t)v1 >> 31);
 }
 -- signature
 int (int x)
@@ -188,11 +189,10 @@ int (int x)
 -- ir
 fn sdiv10 @ 0x2027c (size 24)
   blk0 @ 0x2027c:
-    v1 = #0x6667
-    v2 = #0x66666667
-    unsupported: undecodable ARM instruction at 0x20284: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x66666667)) >> #0x20)
+    ret (((sext32(v1) >>> #0x2) + (v1 >> #0x1f)) & #0xffffffff)
 -- card
-{"addr":"0x2027c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":1}
+{"addr":"0x2027c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x20294 sdiv16
 -- decompile
@@ -242,7 +242,8 @@ fn ldiv16 @ 0x202a4 (size 28)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x202c0 */
 int smod3(int x) {
-    /* unsupported: undecodable ARM instruction at 0x202c8: incomplete decoder */
+    uint32_t v1 = (uint64_t)((int64_t)x * 0x55555556) >> 32;
+    return x - (v1 + (v1 >> 31)) * 3;
 }
 -- signature
 int (int x)
@@ -251,11 +252,10 @@ int (int x)
 -- ir
 fn smod3 @ 0x202c0 (size 28)
   blk0 @ 0x202c0:
-    v1 = #0x5556
-    v2 = #0x55555556
-    unsupported: undecodable ARM instruction at 0x202c8: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x55555556)) >> #0x20)
+    ret ((r0 - (((v1 + (v1 >> #0x1f)) & #0xffffffff) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x202c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":1}
+{"addr":"0x202c0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x202dc umod3
 -- decompile
@@ -295,7 +295,8 @@ fn umod10 @ 0x202f8 (size 28)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x20314 */
 int smod10(int x) {
-    /* unsupported: undecodable ARM instruction at 0x2031c: incomplete decoder */
+    int32_t v1 = (uint64_t)((int64_t)x * 0x66666667) >> 32;
+    return x - (((v1 >> 2) + ((uint32_t)v1 >> 31)) * 5 << 1);
 }
 -- signature
 int (int x)
@@ -304,11 +305,10 @@ int (int x)
 -- ir
 fn smod10 @ 0x20314 (size 32)
   blk0 @ 0x20314:
-    v1 = #0x6667
-    v2 = #0x66666667
-    unsupported: undecodable ARM instruction at 0x2031c: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x66666667)) >> #0x20)
+    ret ((r0 - (((((sext32(v1) >>> #0x2) + (v1 >> #0x1f)) * #0x5) & #0xffffffff) << #0x1)) & #0xffffffff)
 -- card
-{"addr":"0x20314","approxTokens":114,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":1}
+{"addr":"0x20314","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x20334 lmod10
 -- decompile

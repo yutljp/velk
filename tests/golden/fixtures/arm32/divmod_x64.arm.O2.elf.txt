@@ -1,4 +1,4 @@
-# arm32/divmod_x64.arm.O2.elf: elf arm32 no entry, 18 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/divmod_x64.arm.O2.elf: elf arm32 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2016c 20 l3 symtab,dwarf
 0x20180 20 l10 symtab,dwarf
 0x20194 68 h3 symtab,dwarf
@@ -227,7 +227,8 @@ fn umod3x @ 0x20268 (size 28)
 -- decompile
 /* velk pseudo-C: smod3x @ 0x20284 */
 int smod3x(int x) {
-    /* unsupported: undecodable ARM instruction at 0x2028c: incomplete decoder */
+    uint32_t v1 = (uint64_t)((int64_t)x * 0x55555556) >> 32;
+    return x - (v1 + (v1 >> 31)) * 3;
 }
 -- signature
 int (int x)
@@ -236,11 +237,10 @@ int (int x)
 -- ir
 fn smod3x @ 0x20284 (size 28)
   blk0 @ 0x20284:
-    v1 = #0x5556
-    v2 = #0x55555556
-    unsupported: undecodable ARM instruction at 0x2028c: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x55555556)) >> #0x20)
+    ret ((r0 - (((v1 + (v1 >> #0x1f)) & #0xffffffff) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x20284","approxTokens":114,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":1}
+{"addr":"0x20284","approxTokens":138,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x202a0 pmod8x
 -- decompile
@@ -428,7 +428,8 @@ fn qdiv64 @ 0x20358 (size 28)
 -- decompile
 /* velk pseudo-C: pdiv10 @ 0x20374 */
 int pdiv10(int x) {
-    /* unsupported: undecodable ARM instruction at 0x2037c: incomplete decoder */
+    int32_t v1 = (uint64_t)((int64_t)x * 0x66666667) >> 32;
+    return (v1 >> 2) + ((uint32_t)v1 >> 31);
 }
 -- signature
 int (int x)
@@ -437,8 +438,7 @@ int (int x)
 -- ir
 fn pdiv10 @ 0x20374 (size 24)
   blk0 @ 0x20374:
-    v1 = #0x6667
-    v2 = #0x66666667
-    unsupported: undecodable ARM instruction at 0x2037c: incomplete decoder
+    v1 = ((sext32(r0) * sext32(#0x66666667)) >> #0x20)
+    ret (((sext32(v1) >>> #0x2) + (v1 >> #0x1f)) & #0xffffffff)
 -- card
-{"addr":"0x20374","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":1}
+{"addr":"0x20374","approxTokens":132,"blocks":1,"hardReasons":[],"name":"pdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}

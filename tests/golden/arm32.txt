@@ -18,12 +18,12 @@ arm32/control.arm.O0.elf: functions 7, complete lifts 6, syntax 7/7, does not li
 arm32/control.arm.O2.elf: functions 7, complete lifts 6, syntax 7/7, does not lift 0
 arm32/control.thumb.O0.elf: functions 7, complete lifts 6, syntax 7/7, does not lift 0
 arm32/control.thumb.O2.elf: functions 7, complete lifts 7, syntax 7/7, does not lift 0
-arm32/divmod_a64.arm.O0.elf: functions 25, complete lifts 23, syntax 25/25, does not lift 0
-arm32/divmod_a64.arm.O2.elf: functions 25, complete lifts 21, syntax 25/25, does not lift 0
+arm32/divmod_a64.arm.O0.elf: functions 25, complete lifts 25, syntax 25/25, does not lift 0
+arm32/divmod_a64.arm.O2.elf: functions 25, complete lifts 25, syntax 25/25, does not lift 0
 arm32/divmod_a64.thumb.O0.elf: functions 25, complete lifts 25, syntax 25/25, does not lift 0
 arm32/divmod_a64.thumb.O2.elf: functions 25, complete lifts 25, syntax 25/25, does not lift 0
-arm32/divmod_x64.arm.O0.elf: functions 18, complete lifts 17, syntax 18/18, does not lift 0
-arm32/divmod_x64.arm.O2.elf: functions 18, complete lifts 16, syntax 18/18, does not lift 0
+arm32/divmod_x64.arm.O0.elf: functions 18, complete lifts 18, syntax 18/18, does not lift 0
+arm32/divmod_x64.arm.O2.elf: functions 18, complete lifts 18, syntax 18/18, does not lift 0
 arm32/divmod_x64.thumb.O0.elf: functions 18, complete lifts 18, syntax 18/18, does not lift 0
 arm32/divmod_x64.thumb.O2.elf: functions 18, complete lifts 18, syntax 18/18, does not lift 0
 arm32/float.arm.O0.elf: functions 5, complete lifts 0, syntax 5/5, does not lift 0

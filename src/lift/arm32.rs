@@ -21,6 +21,7 @@ pub(crate) fn position_independent_instruction(bytes: &[u8]) -> bool {
                 | instruction_fallback::Instruction::Bitfield { .. }
                 | instruction_fallback::Instruction::Reverse { .. }
                 | instruction_fallback::Instruction::HalfMultiply { .. }
+                | instruction_fallback::Instruction::HighMultiply { .. }
         )
     )
 }
@@ -2024,6 +2025,38 @@ mod tests {
     }
     fn halves(words: &[u16]) -> Vec<u8> {
         words.iter().flat_map(|word| word.to_le_bytes()).collect()
+    }
+
+    #[test]
+    fn the_high_word_of_a_signed_product_is_kept_with_and_without_rounding() {
+        for (left, right) in [
+            (0u32, 0u32),
+            (7, 0x9249_2493),
+            (0xffff_fff9, 0x9249_2493),
+            (0x7fff_ffff, 0x7fff_ffff),
+            (0x8000_0000, 0x8000_0000),
+            (0x8000_0000, 0x7fff_ffff),
+            (0xffff_ffff, 1),
+            (0x1234_5678, 0x8000_0001),
+        ] {
+            let product = i64::from(left as i32) * i64::from(right as i32);
+            for (word, expected) in [
+                (0xe750_f110, (product >> 32) as u32),
+                (
+                    0xe750_f130,
+                    (product.wrapping_add(0x8000_0000) >> 32) as u32,
+                ),
+            ] {
+                // smmul r0, r0, r1 or smmulr r0, r0, r1; bx lr
+                let value = run(
+                    words(&[word, 0xe12f_ff1e]),
+                    false,
+                    &[(0, u64::from(left)), (1, u64::from(right))],
+                    &[],
+                );
+                assert_eq!(value, u64::from(expected), "{word:#x} {left:#x} {right:#x}");
+            }
+        }
     }
 
     #[test]

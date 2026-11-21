@@ -20,12 +20,12 @@ arm32/control.arm.O0.elf: 139 lines, 6 prelude lines, 27 variables, 38 casts, 0 
 arm32/control.arm.O2.elf: 184 lines, 7 prelude lines, 42 variables, 36 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/control.thumb.O0.elf: 128 lines, 5 prelude lines, 23 variables, 37 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/control.thumb.O2.elf: 432 lines, 7 prelude lines, 86 variables, 82 casts, 0 registers, 0 unsigned, 0 traps, 2 gotos, 0 indirect calls
-arm32/divmod_a64.arm.O0.elf: 187 lines, 14 prelude lines, 56 variables, 38 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-arm32/divmod_a64.arm.O2.elf: 155 lines, 8 prelude lines, 38 variables, 38 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm32/divmod_a64.arm.O0.elf: 175 lines, 14 prelude lines, 50 variables, 43 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm32/divmod_a64.arm.O2.elf: 159 lines, 8 prelude lines, 42 variables, 48 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/divmod_a64.thumb.O0.elf: 171 lines, 8 prelude lines, 52 variables, 50 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/divmod_a64.thumb.O2.elf: 159 lines, 8 prelude lines, 42 variables, 48 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-arm32/divmod_x64.arm.O0.elf: 149 lines, 11 prelude lines, 60 variables, 44 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-arm32/divmod_x64.arm.O2.elf: 130 lines, 7 prelude lines, 47 variables, 42 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm32/divmod_x64.arm.O0.elf: 143 lines, 11 prelude lines, 57 variables, 46 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm32/divmod_x64.arm.O2.elf: 132 lines, 7 prelude lines, 49 variables, 47 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/divmod_x64.thumb.O0.elf: 144 lines, 7 prelude lines, 58 variables, 49 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/divmod_x64.thumb.O2.elf: 132 lines, 7 prelude lines, 49 variables, 47 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm32/float.arm.O0.elf: 118 lines, 10 prelude lines, 42 variables, 45 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

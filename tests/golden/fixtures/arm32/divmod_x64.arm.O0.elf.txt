@@ -1,4 +1,4 @@
-# arm32/divmod_x64.arm.O0.elf: elf arm32 no entry, 18 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/divmod_x64.arm.O0.elf: elf arm32 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2016c 48 l3 symtab,dwarf
 0x2019c 48 l10 symtab,dwarf
 0x201cc 96 h3 symtab,dwarf
@@ -241,14 +241,8 @@ fn umod3x @ 0x2031c (size 52)
 -- decompile
 /* velk pseudo-C: smod3x @ 0x20350 */
 int smod3x(int x) {
-    uint32_t v1;
-    uint32_t v2;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
-
-    local_0 = v1;
-    local_1 = v2;
-    /* unsupported: undecodable ARM instruction at 0x2036c: incomplete decoder */
+    uint32_t v2 = (uint64_t)((int64_t)x * 0x55555556) >> 32;
+    return x - (v2 + (v2 >> 31)) * 3;
 }
 -- signature
 int (int x)
@@ -257,15 +251,11 @@ int (int x)
 -- ir
 fn smod3x @ 0x20350 (size 52)
   blk0 @ 0x20350:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    store32(r0, (sp + #0xfffffffffffffff4))
     v1 = r0
-    v2 = #0x5556
-    v3 = #0x55555556
-    unsupported: undecodable ARM instruction at 0x2036c: incomplete decoder
+    v2 = ((sext32(v1) * sext32(#0x55555556)) >> #0x20)
+    ret ((v1 - (((v2 + (v2 >> #0x1f)) & #0xffffffff) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x20350","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":1}
+{"addr":"0x20350","approxTokens":174,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x20384 pmod8x
 -- decompile

@@ -1,4 +1,4 @@
-# arm32/divmod_a64.arm.O0.elf: elf arm32 no entry, 25 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/divmod_a64.arm.O0.elf: elf arm32 no entry, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201a4 36 udiv3 symtab,dwarf
 0x201c8 36 udiv10 symtab,dwarf
 0x201ec 36 udiv64 symtab,dwarf
@@ -252,14 +252,8 @@ fn ldiv16 @ 0x20348 (size 60)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x20384 */
 int smod3(int x) {
-    uint32_t v1;
-    uint32_t v2;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
-
-    local_0 = v1;
-    local_1 = v2;
-    /* unsupported: undecodable ARM instruction at 0x203a0: incomplete decoder */
+    uint32_t v2 = (uint64_t)((int64_t)x * 0x55555556) >> 32;
+    return x - (v2 + (v2 >> 31)) * 3;
 }
 -- signature
 int (int x)
@@ -268,15 +262,11 @@ int (int x)
 -- ir
 fn smod3 @ 0x20384 (size 52)
   blk0 @ 0x20384:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    store32(r0, (sp + #0xfffffffffffffff4))
     v1 = r0
-    v2 = #0x5556
-    v3 = #0x55555556
-    unsupported: undecodable ARM instruction at 0x203a0: incomplete decoder
+    v2 = ((sext32(v1) * sext32(#0x55555556)) >> #0x20)
+    ret ((v1 - (((v2 + (v2 >> #0x1f)) & #0xffffffff) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x20384","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":1}
+{"addr":"0x20384","approxTokens":174,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x203b8 umod3
 -- decompile
@@ -316,14 +306,8 @@ fn umod10 @ 0x203ec (size 52)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x20420 */
 int smod10(int x) {
-    uint32_t v1;
-    uint32_t v2;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
-
-    local_0 = v1;
-    local_1 = v2;
-    /* unsupported: undecodable ARM instruction at 0x2043c: incomplete decoder */
+    int32_t v2 = (uint64_t)((int64_t)x * 0x66666667) >> 32;
+    return x - (((v2 >> 2) + ((uint32_t)v2 >> 31)) * 5 << 1);
 }
 -- signature
 int (int x)
@@ -332,15 +316,11 @@ int (int x)
 -- ir
 fn smod10 @ 0x20420 (size 56)
   blk0 @ 0x20420:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    store32(r0, (sp + #0xfffffffffffffff4))
     v1 = r0
-    v2 = #0x6667
-    v3 = #0x66666667
-    unsupported: undecodable ARM instruction at 0x2043c: incomplete decoder
+    v2 = ((sext32(v1) * sext32(#0x66666667)) >> #0x20)
+    ret ((v1 - (((((sext32(v2) >>> #0x2) + (v2 >> #0x1f)) * #0x5) & #0xffffffff) << #0x1)) & #0xffffffff)
 -- card
-{"addr":"0x20420","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":1}
+{"addr":"0x20420","approxTokens":180,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x20458 lmod10
 -- decompile

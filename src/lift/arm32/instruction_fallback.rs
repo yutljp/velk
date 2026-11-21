@@ -26,6 +26,13 @@ pub(in crate::lift) enum Instruction {
         right: u8,
         halves: u8,
     },
+    /// The high word of a signed 64-bit product, rounded when `round`.
+    HighMultiply {
+        destination: u8,
+        left: u8,
+        right: u8,
+        round: bool,
+    },
     Extend {
         destination: u8,
         addend: Option<u8>,
@@ -217,6 +224,17 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
                 left: register_number(0),
                 right: register_number(8),
                 signed: word & (1 << 21) == 0,
+            });
+        }
+        if word & 0x0ff0_f0d0 == 0x0750_f010 {
+            if register_number(16) == 15 || register_number(0) == 15 || register_number(8) == 15 {
+                return None;
+            }
+            return Some(Instruction::HighMultiply {
+                destination: register_number(16),
+                left: register_number(0),
+                right: register_number(8),
+                round: word & (1 << 5) != 0,
             });
         }
         if word & 0x0fff_0ff0 == 0x06bf_0f30
@@ -472,6 +490,25 @@ impl Instruction {
                     value = Expr::bin(BinOp::Add, Expr::reg(u16::from(addend), 32), value);
                 }
                 lifter.assign(destination, value);
+            }
+            Self::HighMultiply {
+                destination,
+                left,
+                right,
+                round,
+            } => {
+                let word = |register| Expr::SignExtend {
+                    value: Box::new(Expr::reg(u16::from(register), 32)),
+                    width: 4,
+                };
+                let mut product = Expr::bin(BinOp::Mul, word(left), word(right));
+                if round {
+                    product = Expr::bin(BinOp::Add, product, Expr::constant(0x8000_0000));
+                }
+                lifter.assign(
+                    destination,
+                    Expr::bin(BinOp::Shr, product, Expr::constant(32)),
+                );
             }
             Self::Divide {
                 destination,
@@ -749,6 +786,16 @@ impl fmt::Display for Instruction {
                 }
                 write!(f, "r{source}, ror #{rotation}")
             }
+            Self::HighMultiply {
+                destination,
+                left,
+                right,
+                round,
+            } => write!(
+                f,
+                "smmul{} r{destination}, r{left}, r{right}",
+                if *round { "r" } else { "" }
+            ),
             Self::Divide {
                 destination,
                 left,

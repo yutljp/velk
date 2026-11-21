@@ -393,6 +393,49 @@ fn shifted_carry_matches_extracted_bits() {
 }
 
 #[test]
+fn high_multiply_is_the_top_word_of_the_signed_product() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let image = Image::from_code(Isa::Arm32, 0, vec![0; 4]);
+    let summaries = |_| Default::default();
+    for round in [false, true] {
+        // smmul r3, r4, r5 and smmulr r3, r4, r5
+        let word: u32 = 0xe753_f514 | (u32::from(round) << 5);
+        let instruction = instruction_fallback::decode(&word.to_le_bytes(), ArmMode::Arm)
+            .expect("high multiply encoding");
+        let mut lifter = Lifter {
+            image: &image,
+            summaries: &summaries,
+            stmts: Vec::new(),
+            flags: None,
+            float_comparison: false,
+            touched: false,
+        };
+        instruction.execute(&mut lifter, 0, false);
+        let [Stmt::Assign { dest, value, .. }] = lifter.stmts.as_slice() else {
+            panic!("expected one assignment");
+        };
+        assert_eq!(dest.index, 3);
+        let word = |name: &str| format!("((_ sign_extend 32) ((_ extract 31 0) {name}))");
+        let product = format!("(bvmul {} {})", word("r4"), word("r5"));
+        let rounded = if round {
+            format!("(bvadd {product} #x0000000080000000)")
+        } else {
+            product
+        };
+        let expected = format!("((_ zero_extend 32) ((_ extract 63 32) {rounded}))");
+        proofs.predicate(
+            format!("high multiply/{round}"),
+            &expected,
+            &smt::term(&low(value.clone())),
+        );
+    }
+    proofs.check();
+}
+
+#[test]
 fn long_multiply_matches_a_wide_product() {
     if !Proofs::available() {
         return;
