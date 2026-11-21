@@ -798,6 +798,9 @@ fn branch_target(instruction: &Instruction, pc: u64) -> Option<u64> {
     }
 }
 
+/// The undefined instruction Go writes where control never arrives.
+const GO_UNDEFINED: u32 = 0xbea7_1700;
+
 pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Option<String>) {
     let mut reader = ReaderBuilder::<u64, u8>::read_at(bytes, 0);
     let decoder = a64::InstDecoder::default();
@@ -817,6 +820,20 @@ pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Opt
                 next,
                 instruction,
             }),
+            // Go's assembler marks code that is never reached with this
+            // word, which no processor decodes: it traps like `udf`.
+            Err(_)
+                if bytes.get((pc - addr) as usize..(next - addr) as usize)
+                    == Some(&GO_UNDEFINED.to_le_bytes()[..])
+                    && let Ok(instruction) = decoder
+                        .decode(&mut ReaderBuilder::<u64, u8>::read_at(&[0u8; 4][..], 0)) =>
+            {
+                decoded.push(Decoded {
+                    pc,
+                    next,
+                    instruction,
+                });
+            }
             Err(error) => {
                 return (
                     decoded,
@@ -900,6 +917,20 @@ impl Machine for Lifter<'_> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
+
+    #[test]
+    fn the_undefined_word_of_go_decodes_as_a_trap_and_other_unknown_words_do_not() {
+        let (decoded, stop) = super::decode(&0xbea7_1700u32.to_le_bytes(), 0x1000);
+        assert!(stop.is_none(), "{stop:?}");
+        let [instruction] = decoded.as_slice() else {
+            panic!("expected one instruction");
+        };
+        assert_eq!((instruction.pc, instruction.next), (0x1000, 0x1004));
+        assert_eq!(instruction.instruction.opcode, super::a64::Opcode::UDF);
+        let (decoded, stop) = super::decode(&0xbea7_1701u32.to_le_bytes(), 0x1000);
+        assert!(decoded.is_empty());
+        assert!(stop.is_some());
+    }
 
     use crate::arch::aarch64::V0;
     use crate::ir::eval::{self, Convention, Outcome, Setup};
