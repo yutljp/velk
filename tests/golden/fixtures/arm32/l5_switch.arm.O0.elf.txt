@@ -1,4 +1,4 @@
-# arm32/l5_switch.arm.O0.elf: elf arm32 no entry, 18 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/l5_switch.arm.O0.elf: elf arm32 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2018c 288 dense symtab,dwarf
 0x202ac 48 c0 symtab,dwarf
 0x202dc 48 c1 symtab,dwarf
@@ -22,7 +22,22 @@
 
 extern uint32_t g_sink; /* address: 0x30628 */
 
-uint64_t sub_201c0();
+void c0();
+void c1();
+void c10();
+void c11();
+void c12();
+void c13();
+void c14();
+void c15();
+void c2();
+void c3();
+void c4();
+void c5();
+void c6();
+void c7();
+void c8();
+void c9();
 /* end velk prelude */
 
 == 0x2018c dense
@@ -30,33 +45,69 @@ uint64_t sub_201c0();
 /* velk pseudo-C: dense @ 0x2018c */
 /* ref: 0x30628 .bss */
 int dense(int x) {
-    uint64_t v2;
-    uint32_t v5;
-    uint32_t v6;
-    uint32_t v7;
-    uint32_t v8;
-    int32_t v4;
-    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; } local_0; /* [sp-10] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
 
-    local_0.f_8 = v7;
-    local_0.f_c = v8;
-    v7 = (uintptr_t)(&local_0.f_8);
-    local_0.f_4 = x;
-    uint32_t v1 = (uint32_t)x - 10;
-    local_0.f_0 = v1;
-    if (v1 <= 15) {
-        int32_t v3 = *(uint32_t *)(0x201c0 + (local_0.f_0 << 2));
-        /* unsupported: ARM add pc, r0, r1 at 0x201bc */
-        {
-            uint64_t call_values[2];
-            call_values[0] = sub_201c0((uint32_t)x, v2, v5, v6);
-            call_values[1] = v2; /* also returned by the call */
-            v4 = (uint32_t)(call_values[0]);
-            v2 = (uint32_t)(call_values[1]);
-        }
-        return v4;
+    local_0 = x;
+    uint32_t v1 = local_0 - 10;
+    local_1 = v1;
+    if (v1 > 15) {
+        g_sink = 0;
+        return g_sink;
     }
-    g_sink = 0;
+    int32_t v3 = *(uint32_t *)(0x201c0 + (local_1 << 2));
+    switch (local_1) {
+    case 0:
+        c0();
+        return g_sink;
+    case 1:
+        c1();
+        return g_sink;
+    case 2:
+        c2();
+        return g_sink;
+    case 3:
+        c3();
+        return g_sink;
+    case 4:
+        c4();
+        return g_sink;
+    case 5:
+        c5();
+        return g_sink;
+    case 6:
+        c6();
+        return g_sink;
+    case 7:
+        c7();
+        return g_sink;
+    case 8:
+        c8();
+        return g_sink;
+    case 9:
+        c9();
+        return g_sink;
+    case 10:
+        c10();
+        return g_sink;
+    case 11:
+        c11();
+        return g_sink;
+    case 12:
+        c12();
+        return g_sink;
+    case 13:
+        c13();
+        return g_sink;
+    case 14:
+        c14();
+        return g_sink;
+    case 15:
+        c15();
+        return g_sink;
+    default:
+        __builtin_unreachable();
+    }
     return g_sink;
 }
 -- signature
@@ -66,27 +117,69 @@ int (int x)
 -- ir
 fn dense @ 0x2018c (size 288)
   blk0 @ 0x2018c:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    r11 = (sp + #0xfffffffffffffff8)
     store32(r0, (sp + #0xfffffffffffffff4))
-    v1 = ((r0 - #0xa) & #0xffffffff)
+    v1 = ((load32((sp + #0xfffffffffffffff4)) - #0xa) & #0xffffffff)
     store32(v1, (sp + #0xfffffffffffffff0))
     brif ls v1, #0xf -> 0x201b0
   blk1 @ 0x201ad:
     br 0x20280
   blk2 @ 0x201b0:
-    v2 = #0x201c0
     v3 = load32(((#0x201c0 + (load32((sp + #0xfffffffffffffff0)) << #0x2)) & #0xffffffff))
-    unsupported: ARM add pc, r0, r1 at 0x201bc
-    v4:r0, r1 = call 0x201c0(r0, r1, r2, r3)
-    ret v4
-  blk3 @ 0x20280:
+    switch load32((sp + #0xfffffffffffffff0)) [0->0x20200, 1->0x20208, 2->0x20210, 3->0x20218, 4->0x20220, 5->0x20228, 6->0x20230, 7->0x20238, 8->0x20240, 9->0x20248, 10->0x20250, 11->0x20258, 12->0x20260, 13->0x20268, 14->0x20270, 15->0x20278] default <none>
+  blk3 @ 0x20200:
+    r0, r1 = call 0x202ac()
+    br 0x20290
+  blk4 @ 0x20208:
+    r0, r1 = call 0x202dc()
+    br 0x20290
+  blk5 @ 0x20210:
+    r0, r1 = call 0x2030c()
+    br 0x20290
+  blk6 @ 0x20218:
+    r0, r1 = call 0x2033c()
+    br 0x20290
+  blk7 @ 0x20220:
+    r0, r1 = call 0x2036c()
+    br 0x20290
+  blk8 @ 0x20228:
+    r0, r1 = call 0x2039c()
+    br 0x20290
+  blk9 @ 0x20230:
+    r0, r1 = call 0x203cc()
+    br 0x20290
+  blk10 @ 0x20238:
+    r0, r1 = call 0x203fc()
+    br 0x20290
+  blk11 @ 0x20240:
+    r0, r1 = call 0x2042c()
+    br 0x20290
+  blk12 @ 0x20248:
+    r0, r1 = call 0x2045c()
+    br 0x20290
+  blk13 @ 0x20250:
+    r0, r1 = call 0x2048c()
+    br 0x20290
+  blk14 @ 0x20258:
+    r0, r1 = call 0x204bc()
+    br 0x20290
+  blk15 @ 0x20260:
+    r0, r1 = call 0x204ec()
+    br 0x20290
+  blk16 @ 0x20268:
+    r0, r1 = call 0x2051c()
+    br 0x20290
+  blk17 @ 0x20270:
+    r0, r1 = call 0x2054c()
+    br 0x20290
+  blk18 @ 0x20278:
+    r0, r1 = call 0x2057c()
+    br 0x20290
+  blk19 @ 0x20280:
     store32(#0x0, #0x30628)
-  blk4 @ 0x20290:
+  blk20 @ 0x20290:
     ret load32(#0x30628)
 -- card
-{"addr":"0x2018c","approxTokens":240,"blocks":5,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":288,"unsupported":1}
+{"addr":"0x2018c","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":288,"unsupported":0}
 
 == 0x202ac c0
 -- decompile

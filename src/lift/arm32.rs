@@ -949,6 +949,35 @@ impl Lifter<'_> {
                 });
                 return Some(true);
             }
+            // A jump through the table of byte offsets after the instruction,
+            // each counting half the distance from the table.
+            Opcode::TBB => {
+                let Operand::RegDerefPreindexReg(base, index, true, false) = a else {
+                    return None;
+                };
+                if base.number() != 15 || index.number() == 15 {
+                    return None;
+                }
+                let table = Expr::constant(u64::from((pc as u32).wrapping_add(4)));
+                let entry = Expr::Load {
+                    addr: Box::new(low(Expr::bin(
+                        BinOp::Add,
+                        table.clone(),
+                        low(Self::read(index.number(), pc, instruction.thumb)),
+                    ))),
+                    width: 1,
+                    signed: false,
+                };
+                self.stmts.push(Stmt::BrIndirect {
+                    target: low(Expr::bin(
+                        BinOp::Add,
+                        table,
+                        Expr::bin(BinOp::Shl, entry, Expr::constant(1)),
+                    )),
+                    at: None,
+                });
+                return Some(true);
+            }
             Opcode::BX => {
                 let Some(value) = operand(a) else {
                     return None;
@@ -1551,7 +1580,15 @@ impl Lifter<'_> {
                 return None;
             };
             if reg.number() == 15 {
-                return None;
+                // A jump through a table of offsets: `add pc, table, offset`.
+                if instruction.opcode != Opcode::ADD || instruction.s || instruction.thumb {
+                    return None;
+                }
+                self.stmts.push(Stmt::BrIndirect {
+                    target: low(value),
+                    at: None,
+                });
+                return Some(true);
             }
             let value = if frame || (reg.number() == 13 && matches!(op, BinOp::Add | BinOp::Sub)) {
                 let left = if matches!(left, Operand::Reg(reg) if reg.number() == 13) {
@@ -1873,6 +1910,14 @@ fn shift_value(value: Expr, style: ShiftStyle, amount: Expr) -> Option<Expr> {
             } else {
                 Expr::constant(0)
             };
+            // An immediate amount is known to be in range or not.
+            if let Expr::Const(count) = amount {
+                return Some(if count >= 32 {
+                    beyond
+                } else {
+                    Expr::bin(op, value, amount)
+                });
+            }
             Some(Expr::Select {
                 cond: Cond::Cs,
                 lhs: Box::new(amount.clone()),

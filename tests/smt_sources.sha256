@@ -31,7 +31,7 @@ a1c5b3116f4ba458882c29aea4a6c6f3469b0b2117a78c102c4ddc4a342db89d  src/lift/arm32
 35fa026398fd31717aa2d6d291b4b33b9c1aeb03fa0cd930097243c52680f53b  src/lift/arm32.rs	fn carry_arithmetic(
 69d7ab725abfe3cdba0ce51c147446aa756839b30054a233bd27fd2772b98633  src/lift/arm32.rs	fn extend(
 86f1ec0d338f644d35b0201b68bcfc456d24c698be417cf725bbd162b4267b0a  src/lift/arm32.rs	fn literal(
-0313d5aefd9cadd061254c3b0c990480ec0b43995c8f898c6f00fa50ff4ff002  src/lift/arm32.rs	fn shift_value(
+dad7c2ca289be06cc5f6cf3fdf4ca71feb4941874ad8481f69f193f30d3f6b06  src/lift/arm32.rs	fn shift_value(
 1484aa121fca2a4f6514f303b1265240c1d45427f0f1695b88e8bdf805415cc7  src/lift/arm32.rs	fn shifted_carry(
 83ce027dd0b696cadca1e8e82dd516a712cabd1a161ab688500f7cfd27244281  src/lift/arm32/instruction_fallback.rs	super::extend(Expr::reg(u16::from(source), 32), width, signed, rotation);
 d956cf29bc459ad50d824d968b439adb435c95f144f13e3d81bc75c58b6ca4ff  src/lift/flags.rs	fn both(

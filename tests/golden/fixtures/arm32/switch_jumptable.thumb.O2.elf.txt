@@ -1,11 +1,9 @@
-# arm32/switch_jumptable.thumb.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/switch_jumptable.thumb.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20104 348 d7 symtab,dwarf
 /* velk prelude */
 #include <stdint.h>
 
 extern uint32_t g; /* address: 0x30260 */
-
-uint64_t sub_20116();
 /* end velk prelude */
 
 == 0x20104 d7
@@ -13,16 +11,93 @@ uint64_t sub_20116();
 /* velk pseudo-C: d7 @ 0x20104 */
 /* ref: 0x30260 .bss */
 int d7(int x) {
-    uint32_t v1;
-    uint32_t v3;
-    uint32_t v4;
+    int32_t v1;
 
     if ((uint32_t)x <= 9) {
-        /* unsupported: ARM tbb [pc, r0] at 0x20112 */
-        return ((int32_t)(sub_20116((uint32_t)x, v1, v3, v4)));
+        switch (x) {
+        case 0:
+            v1 = g;
+            break;
+        case 1:
+            g = g;
+            v1 = g + 1;
+            break;
+        case 2:
+            g = g;
+            g += 1;
+            v1 = g + 2;
+            break;
+        case 3:
+            g = g;
+            g += 1;
+            g += 2;
+            v1 = g + 3;
+            break;
+        case 4:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            v1 = g + 4;
+            break;
+        case 5:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            v1 = g + 5;
+            break;
+        case 6:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            v1 = g + 6;
+            break;
+        case 7:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            v1 = g + 7;
+            break;
+        case 8:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            g += 7;
+            v1 = g + 8;
+            break;
+        case 9:
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            g += 7;
+            g += 8;
+            v1 = g + 9;
+            break;
+        default:
+            __builtin_unreachable();
+        }
+    } else {
+        v1 = -1;
     }
-    g = 0xffffffff;
-    return -1;
+    g = v1;
+    return g;
 }
 -- signature
 int (int x)
@@ -31,18 +106,90 @@ int (int x)
 -- ir
 fn d7 @ 0x20104 (size 348)
   blk0 @ 0x20104:
-    v1 = #0x30260
     brif ls r0, #0x9 -> 0x20112
   blk1 @ 0x2010f:
     br 0x20222
   blk2 @ 0x20112:
-    unsupported: ARM tbb [pc, r0] at 0x20112
-    v2:r0 = call 0x20116(r0, r1, r2, r3)
-    ret v2
-  blk3 @ 0x20222:
+    switch r0 [0->0x20120, 1->0x201ce, 2->0x2017a, 3->0x2018a, 4->0x20124, 5->0x201d8, 6->0x201fa, 7->0x201a0, 8->0x20228, 9->0x20140] default <none>
+  blk3 @ 0x20120:
+    v1 = load32(#0x30260)
     br 0x2025a
-  blk4 @ 0x2025a:
-    store32(#0xffffffff, #0x30260)
-    ret #0xffffffff
+  blk4 @ 0x20124:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    v1 = ((load32(#0x30260) + #0x4) & #0xffffffff)
+    br 0x2025a
+  blk5 @ 0x20140:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    store32((load32(#0x30260) + #0x4), #0x30260)
+    store32((load32(#0x30260) + #0x5), #0x30260)
+    store32((load32(#0x30260) + #0x6), #0x30260)
+    store32((load32(#0x30260) + #0x7), #0x30260)
+    store32((load32(#0x30260) + #0x8), #0x30260)
+    v1 = ((load32(#0x30260) + #0x9) & #0xffffffff)
+    br 0x2025a
+  blk6 @ 0x2017a:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    v1 = ((load32(#0x30260) + #0x2) & #0xffffffff)
+    br 0x2025a
+  blk7 @ 0x2018a:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    v1 = ((load32(#0x30260) + #0x3) & #0xffffffff)
+    br 0x2025a
+  blk8 @ 0x201a0:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    store32((load32(#0x30260) + #0x4), #0x30260)
+    store32((load32(#0x30260) + #0x5), #0x30260)
+    store32((load32(#0x30260) + #0x6), #0x30260)
+    v1 = ((load32(#0x30260) + #0x7) & #0xffffffff)
+    br 0x2025a
+  blk9 @ 0x201ce:
+    store32(load32(#0x30260), #0x30260)
+    v1 = ((load32(#0x30260) + #0x1) & #0xffffffff)
+    br 0x2025a
+  blk10 @ 0x201d8:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    store32((load32(#0x30260) + #0x4), #0x30260)
+    v1 = ((load32(#0x30260) + #0x5) & #0xffffffff)
+    br 0x2025a
+  blk11 @ 0x201fa:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    store32((load32(#0x30260) + #0x4), #0x30260)
+    store32((load32(#0x30260) + #0x5), #0x30260)
+    v1 = ((load32(#0x30260) + #0x6) & #0xffffffff)
+    br 0x2025a
+  blk12 @ 0x20222:
+    v1 = #0xffffffff
+    br 0x2025a
+  blk13 @ 0x20228:
+    store32(load32(#0x30260), #0x30260)
+    store32((load32(#0x30260) + #0x1), #0x30260)
+    store32((load32(#0x30260) + #0x2), #0x30260)
+    store32((load32(#0x30260) + #0x3), #0x30260)
+    store32((load32(#0x30260) + #0x4), #0x30260)
+    store32((load32(#0x30260) + #0x5), #0x30260)
+    store32((load32(#0x30260) + #0x6), #0x30260)
+    store32((load32(#0x30260) + #0x7), #0x30260)
+    v1 = ((load32(#0x30260) + #0x8) & #0xffffffff)
+  blk14 @ 0x2025a:
+    store32(v1, #0x30260)
+    ret load32(#0x30260)
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":348,"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":15,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":348,"unsupported":0}

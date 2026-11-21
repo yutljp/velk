@@ -114,7 +114,7 @@ arm32/calls.thumb.O2.elf 0x20228:
 arm32/calls.thumb.O2.elf 0x20254: 4if ( 8if ( 8else 12while ( 16if ( 12if ( 8if ( 12if (
 arm32/control.arm.O0.elf 0x20114: 4for ( 8for ( 12if (
 arm32/control.arm.O0.elf 0x201cc: 4if (
-arm32/control.arm.O0.elf 0x20234: 4if (
+arm32/control.arm.O0.elf 0x20234: 4if ( 8switch ( 8case 12break; 8case 12break; 8case 8case 8default:
 arm32/control.arm.O0.elf 0x202c4: 4if ( 8if ( 12if ( 16if (
 arm32/control.arm.O0.elf 0x20360: 4if ( 8if ( 12if ( 16if (
 arm32/control.arm.O0.elf 0x203f4: 4for ( 8if ( 8else
@@ -128,7 +128,7 @@ arm32/control.arm.O2.elf 0x20240: 4if ( 4if (
 arm32/control.arm.O2.elf 0x202c8: 4if ( 8do { 12if ( 16for ( 20if ( 20if ( 24break; 8while (
 arm32/control.thumb.O0.elf 0x20114: 4for ( 8for ( 12if (
 arm32/control.thumb.O0.elf 0x20178: 4if ( 4if (
-arm32/control.thumb.O0.elf 0x201b4: 4if (
+arm32/control.thumb.O0.elf 0x201b4: 4if ( 8switch ( 8case 12break; 8case 12break; 8case 8case 8default:
 arm32/control.thumb.O0.elf 0x201fc: 4if ( 8if ( 12if ( 16if (
 arm32/control.thumb.O0.elf 0x2024c: 4if ( 4if ( 8if (
 arm32/control.thumb.O0.elf 0x202a0: 4for ( 8if ( 8else
@@ -428,7 +428,7 @@ arm32/l4_memory.thumb.O2.elf 0x20128:
 arm32/l4_memory.thumb.O2.elf 0x20134: 4if ( 4if ( 8if ( 12while ( 16if ( 12if ( 8else 8if ( 12if ( 12if (
 arm32/l4_memory.thumb.O2.elf 0x201a0:
 arm32/l4_memory.thumb.O2.elf 0x201b0:
-arm32/l5_switch.arm.O0.elf 0x2018c: 4if (
+arm32/l5_switch.arm.O0.elf 0x2018c: 4if ( 4switch ( 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4default:
 arm32/l5_switch.arm.O0.elf 0x202ac:
 arm32/l5_switch.arm.O0.elf 0x202dc:
 arm32/l5_switch.arm.O0.elf 0x2030c:
@@ -446,7 +446,7 @@ arm32/l5_switch.arm.O0.elf 0x2051c:
 arm32/l5_switch.arm.O0.elf 0x2054c:
 arm32/l5_switch.arm.O0.elf 0x2057c:
 arm32/l5_switch.arm.O0.elf 0x205ac: 4if ( 8if ( 12if (
-arm32/l5_switch.arm.O2.elf 0x2018c: 4if (
+arm32/l5_switch.arm.O2.elf 0x2018c: 4if ( 8switch ( 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8case 8default:
 arm32/l5_switch.arm.O2.elf 0x2029c:
 arm32/l5_switch.arm.O2.elf 0x202c0:
 arm32/l5_switch.arm.O2.elf 0x202e4:
@@ -464,7 +464,7 @@ arm32/l5_switch.arm.O2.elf 0x20470:
 arm32/l5_switch.arm.O2.elf 0x20494:
 arm32/l5_switch.arm.O2.elf 0x204b8:
 arm32/l5_switch.arm.O2.elf 0x204dc: 4if ( 4if ( 8if ( 8if ( 12if ( 12if (
-arm32/l5_switch.thumb.O0.elf 0x2018c: 4if (
+arm32/l5_switch.thumb.O0.elf 0x2018c: 4if ( 4switch ( 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4default:
 arm32/l5_switch.thumb.O0.elf 0x20230:
 arm32/l5_switch.thumb.O0.elf 0x20240:
 arm32/l5_switch.thumb.O0.elf 0x20254:
@@ -482,7 +482,7 @@ arm32/l5_switch.thumb.O0.elf 0x20318:
 arm32/l5_switch.thumb.O0.elf 0x2032c:
 arm32/l5_switch.thumb.O0.elf 0x2033c:
 arm32/l5_switch.thumb.O0.elf 0x20350: 4if ( 8if ( 12if (
-arm32/l5_switch.thumb.O2.elf 0x2018c: 4if (
+arm32/l5_switch.thumb.O2.elf 0x2018c: 4if ( 4switch ( 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4case 4default:
 arm32/l5_switch.thumb.O2.elf 0x20238:
 arm32/l5_switch.thumb.O2.elf 0x20248:
 arm32/l5_switch.thumb.O2.elf 0x2025c:
@@ -616,13 +616,13 @@ arm32/structs.thumb.O2.elf 0x201f0:
 arm32/structs.thumb.O2.elf 0x201f8:
 arm32/structs.thumb.O2.elf 0x201fc: 4if (
 arm32/structs.thumb.O2.elf 0x2020c:
-arm32/switch_jumptable.arm.O0.elf 0x20104: 4if (
-arm32/switch_jumptable.arm.O2.elf 0x20104: 4if (
-arm32/switch_jumptable.thumb.O0.elf 0x20104: 4if (
-arm32/switch_jumptable.thumb.O2.elf 0x20104: 4if (
-arm32/switch_value_table.arm.O0.elf 0x200e4: 4if (
+arm32/switch_jumptable.arm.O0.elf 0x20104: 4if ( 4switch ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4default:
+arm32/switch_jumptable.arm.O2.elf 0x20104: 4if ( 8switch ( 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8default: 4else
+arm32/switch_jumptable.thumb.O0.elf 0x20104: 4if ( 4switch ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4case 8for ( 4default:
+arm32/switch_jumptable.thumb.O2.elf 0x20104: 4if ( 8switch ( 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8case 12break; 8default: 4else
+arm32/switch_value_table.arm.O0.elf 0x200e4: 4if ( 4switch ( 4case 4case 4case 4case 4case 4default:
 arm32/switch_value_table.arm.O2.elf 0x200ec: 4if ( 4if ( 4if (
-arm32/switch_value_table.thumb.O0.elf 0x200e4: 4if (
+arm32/switch_value_table.thumb.O0.elf 0x200e4: 4if ( 4switch ( 4case 4case 4case 4case 4case 4default:
 arm32/switch_value_table.thumb.O2.elf 0x200ec: 4if ( 4if ( 4if ( 4if (
 arm32/tail_calls.arm.O0.elf 0x200f4:
 arm32/tail_calls.arm.O0.elf 0x20124:

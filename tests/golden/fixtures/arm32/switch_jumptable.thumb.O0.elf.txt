@@ -1,11 +1,9 @@
-# arm32/switch_jumptable.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/switch_jumptable.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20104 480 d7 symtab,dwarf
 /* velk prelude */
 #include <stdint.h>
 
 extern uint32_t g; /* address: 0x302e4 */
-
-uint64_t sub_20118();
 /* end velk prelude */
 
 == 0x20104 d7
@@ -13,23 +11,75 @@ uint64_t sub_20118();
 /* velk pseudo-C: d7 @ 0x20104 */
 /* ref: 0x302e4 .bss */
 int d7(int x) {
-    uint64_t v1;
-    uint32_t v2;
-    uint32_t v4;
-    int32_t v3;
+    int32_t i; /* [sp-8] */
+    int32_t i_2; /* [sp-c] */
+    int32_t i_3; /* [sp-10] */
+    int32_t i_4; /* [sp-14] */
+    int32_t i_5; /* [sp-18] */
+    int32_t i_6; /* [sp-1c] */
+    int32_t i_7; /* [sp-20] */
+    int32_t i_8; /* [sp-24] */
+    int32_t i_9; /* [sp-28] */
+    int32_t i_10; /* [sp-2c] */
 
-    if ((uint32_t)x <= 9) {
-        /* unsupported: ARM tbb [pc, r1] at 0x20114 */
-        {
-            uint64_t call_values[2];
-            call_values[0] = sub_20118((uint32_t)x, v1, v2, v4);
-            call_values[1] = v1; /* also returned by the call */
-            v3 = (uint32_t)(call_values[0]);
-            v1 = (uint32_t)(call_values[1]);
-        }
-        return v3;
+    if ((uint32_t)x > 9) {
+        g = 0xffffffff;
+        return g;
     }
-    g = 0xffffffff;
+    switch (x) {
+    case 0:
+        for (i = 0; i <= 0; i++) {
+            g += i;
+        }
+        return g;
+    case 1:
+        for (i_2 = 0; i_2 <= 1; i_2++) {
+            g += i_2;
+        }
+        return g;
+    case 2:
+        for (i_3 = 0; i_3 <= 2; i_3++) {
+            g += i_3;
+        }
+        return g;
+    case 3:
+        for (i_4 = 0; i_4 <= 3; i_4++) {
+            g += i_4;
+        }
+        return g;
+    case 4:
+        for (i_5 = 0; i_5 <= 4; i_5++) {
+            g += i_5;
+        }
+        return g;
+    case 5:
+        for (i_6 = 0; i_6 <= 5; i_6++) {
+            g += i_6;
+        }
+        return g;
+    case 6:
+        for (i_7 = 0; i_7 <= 6; i_7++) {
+            g += i_7;
+        }
+        return g;
+    case 7:
+        for (i_8 = 0; i_8 <= 7; i_8++) {
+            g += i_8;
+        }
+        return g;
+    case 8:
+        for (i_9 = 0; i_9 <= 8; i_9++) {
+            g += i_9;
+        }
+        return g;
+    case 9:
+        for (i_10 = 0; i_10 <= 9; i_10++) {
+            g += i_10;
+        }
+        return g;
+    default:
+        __builtin_unreachable();
+    }
     return g;
 }
 -- signature
@@ -39,20 +89,188 @@ int (int x)
 -- ir
 fn d7 @ 0x20104 (size 480)
   blk0 @ 0x20104:
-    v1 = r0
+    store32(r0, (sp + #0xfffffffffffffffc))
+    v1 = load32((sp + #0xfffffffffffffffc))
     store32(v1, (sp + #0xffffffffffffffd0))
     brif ls v1, #0x9 -> 0x20112
   blk1 @ 0x2010f:
     br 0x202c6
   blk2 @ 0x20112:
-    v2 = load32((sp + #0xffffffffffffffd0))
-    unsupported: ARM tbb [pc, r1] at 0x20114
-    v3:r0, r1 = call 0x20118(r0, r1, r2, r3)
-    ret v3
-  blk3 @ 0x202c6:
+    switch load32((sp + #0xffffffffffffffd0)) [0->0x20122, 1->0x2014c, 2->0x20176, 3->0x201a0, 4->0x201ca, 5->0x201f4, 6->0x2021e, 7->0x20248, 8->0x20272, 9->0x2029c] default <none>
+  blk3 @ 0x20122:
+    store32(#0x0, (sp + #0xfffffffffffffff8))
+    br 0x20128
+  blk4 @ 0x20128:
+    brif le load32((sp + #0xfffffffffffffff8)), #0x0 -> 0x2012e
+  blk5 @ 0x2012d:
+    br 0x2014a
+  blk6 @ 0x2012e:
+    br 0x20130
+  blk7 @ 0x20130:
+    store32((load32(#0x302e4) + load32((sp + #0xfffffffffffffff8))), #0x302e4)
+    br 0x20142
+  blk8 @ 0x20142:
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
+    br 0x20128
+  blk9 @ 0x2014a:
+    br 0x202d6
+  blk10 @ 0x2014c:
+    store32(#0x0, (sp + #0xfffffffffffffff4))
+    br 0x20152
+  blk11 @ 0x20152:
+    brif le load32((sp + #0xfffffffffffffff4)), #0x1 -> 0x20158
+  blk12 @ 0x20157:
+    br 0x20174
+  blk13 @ 0x20158:
+    br 0x2015a
+  blk14 @ 0x2015a:
+    store32((load32(#0x302e4) + load32((sp + #0xfffffffffffffff4))), #0x302e4)
+    br 0x2016c
+  blk15 @ 0x2016c:
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
+    br 0x20152
+  blk16 @ 0x20174:
+    br 0x202d6
+  blk17 @ 0x20176:
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    br 0x2017c
+  blk18 @ 0x2017c:
+    brif le load32((sp + #0xfffffffffffffff0)), #0x2 -> 0x20182
+  blk19 @ 0x20181:
+    br 0x2019e
+  blk20 @ 0x20182:
+    br 0x20184
+  blk21 @ 0x20184:
+    store32((load32(#0x302e4) + load32((sp + #0xfffffffffffffff0))), #0x302e4)
+    br 0x20196
+  blk22 @ 0x20196:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    br 0x2017c
+  blk23 @ 0x2019e:
+    br 0x202d6
+  blk24 @ 0x201a0:
+    store32(#0x0, (sp + #0xffffffffffffffec))
+    br 0x201a6
+  blk25 @ 0x201a6:
+    brif le load32((sp + #0xffffffffffffffec)), #0x3 -> 0x201ac
+  blk26 @ 0x201ab:
+    br 0x201c8
+  blk27 @ 0x201ac:
+    br 0x201ae
+  blk28 @ 0x201ae:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffec))), #0x302e4)
+    br 0x201c0
+  blk29 @ 0x201c0:
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x201a6
+  blk30 @ 0x201c8:
+    br 0x202d6
+  blk31 @ 0x201ca:
+    store32(#0x0, (sp + #0xffffffffffffffe8))
+    br 0x201d0
+  blk32 @ 0x201d0:
+    brif le load32((sp + #0xffffffffffffffe8)), #0x4 -> 0x201d6
+  blk33 @ 0x201d5:
+    br 0x201f2
+  blk34 @ 0x201d6:
+    br 0x201d8
+  blk35 @ 0x201d8:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffe8))), #0x302e4)
+    br 0x201ea
+  blk36 @ 0x201ea:
+    store32((load32((sp + #0xffffffffffffffe8)) + #0x1), (sp + #0xffffffffffffffe8))
+    br 0x201d0
+  blk37 @ 0x201f2:
+    br 0x202d6
+  blk38 @ 0x201f4:
+    store32(#0x0, (sp + #0xffffffffffffffe4))
+    br 0x201fa
+  blk39 @ 0x201fa:
+    brif le load32((sp + #0xffffffffffffffe4)), #0x5 -> 0x20200
+  blk40 @ 0x201ff:
+    br 0x2021c
+  blk41 @ 0x20200:
+    br 0x20202
+  blk42 @ 0x20202:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffe4))), #0x302e4)
+    br 0x20214
+  blk43 @ 0x20214:
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    br 0x201fa
+  blk44 @ 0x2021c:
+    br 0x202d6
+  blk45 @ 0x2021e:
+    store32(#0x0, (sp + #0xffffffffffffffe0))
+    br 0x20224
+  blk46 @ 0x20224:
+    brif le load32((sp + #0xffffffffffffffe0)), #0x6 -> 0x2022a
+  blk47 @ 0x20229:
+    br 0x20246
+  blk48 @ 0x2022a:
+    br 0x2022c
+  blk49 @ 0x2022c:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffe0))), #0x302e4)
+    br 0x2023e
+  blk50 @ 0x2023e:
+    store32((load32((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
+    br 0x20224
+  blk51 @ 0x20246:
+    br 0x202d6
+  blk52 @ 0x20248:
+    store32(#0x0, (sp + #0xffffffffffffffdc))
+    br 0x2024e
+  blk53 @ 0x2024e:
+    brif le load32((sp + #0xffffffffffffffdc)), #0x7 -> 0x20254
+  blk54 @ 0x20253:
+    br 0x20270
+  blk55 @ 0x20254:
+    br 0x20256
+  blk56 @ 0x20256:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffdc))), #0x302e4)
+    br 0x20268
+  blk57 @ 0x20268:
+    store32((load32((sp + #0xffffffffffffffdc)) + #0x1), (sp + #0xffffffffffffffdc))
+    br 0x2024e
+  blk58 @ 0x20270:
+    br 0x202d6
+  blk59 @ 0x20272:
+    store32(#0x0, (sp + #0xffffffffffffffd8))
+    br 0x20278
+  blk60 @ 0x20278:
+    brif le load32((sp + #0xffffffffffffffd8)), #0x8 -> 0x2027e
+  blk61 @ 0x2027d:
+    br 0x2029a
+  blk62 @ 0x2027e:
+    br 0x20280
+  blk63 @ 0x20280:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffd8))), #0x302e4)
+    br 0x20292
+  blk64 @ 0x20292:
+    store32((load32((sp + #0xffffffffffffffd8)) + #0x1), (sp + #0xffffffffffffffd8))
+    br 0x20278
+  blk65 @ 0x2029a:
+    br 0x202d6
+  blk66 @ 0x2029c:
+    store32(#0x0, (sp + #0xffffffffffffffd4))
+    br 0x202a2
+  blk67 @ 0x202a2:
+    brif le load32((sp + #0xffffffffffffffd4)), #0x9 -> 0x202a8
+  blk68 @ 0x202a7:
+    br 0x202c4
+  blk69 @ 0x202a8:
+    br 0x202aa
+  blk70 @ 0x202aa:
+    store32((load32(#0x302e4) + load32((sp + #0xffffffffffffffd4))), #0x302e4)
+    br 0x202bc
+  blk71 @ 0x202bc:
+    store32((load32((sp + #0xffffffffffffffd4)) + #0x1), (sp + #0xffffffffffffffd4))
+    br 0x202a2
+  blk72 @ 0x202c4:
+    br 0x202d6
+  blk73 @ 0x202c6:
     store32(#0xffffffff, #0x302e4)
     br 0x202d6
-  blk4 @ 0x202d6:
+  blk74 @ 0x202d6:
     ret load32(#0x302e4)
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":480,"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":75,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":480,"unsupported":0}

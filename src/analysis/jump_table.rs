@@ -536,7 +536,7 @@ fn recognize(
     let entry_bytes = match entry {
         Entry::Absolute => 8,
         Entry::Absolute32 => 4,
-        Entry::Offset32 => 4,
+        Entry::Offset32 | Entry::Wrapped32 => 4,
         Entry::Byte => 1,
     };
     let read_case = |position: u64| -> Option<u64> {
@@ -562,7 +562,7 @@ fn recognize(
                 };
                 i64::from(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
             }
-            Entry::Offset32 => {
+            Entry::Offset32 | Entry::Wrapped32 => {
                 let Some(at) = entry_address(table, position, 4) else {
                     return None;
                 };
@@ -585,6 +585,11 @@ fn recognize(
             }
         };
         let case = base.wrapping_add(offset as u64);
+        let case = if matches!(entry, Entry::Wrapped32) {
+            case & 0xffff_ffff
+        } else {
+            case
+        };
         image
             .section_at(case)
             .is_some_and(|section| section.executable)
@@ -618,13 +623,28 @@ fn recognize(
             (largest as i64 + 1, None, 0, index.clone())
         }
         None => {
+            // A table ends before the first case it jumps to: what lies
+            // there is that case's code.
+            let mut first_case = u64::MAX;
             let count = (0..4096u64)
                 .take_while(|position| {
                     let Some(at) = entry_address(table, *position, entry_bytes) else {
                         return false;
                     };
-                    (*position == 0 || !limits.tables.contains(&at))
-                        && read_case(*position).is_some_and(|case| limits.extent.contains(&case))
+                    if at >= first_case || (*position != 0 && limits.tables.contains(&at)) {
+                        return false;
+                    }
+                    let Some(case) = read_case(*position) else {
+                        return false;
+                    };
+                    // Nor does a case lie in the entries themselves.
+                    if !limits.extent.contains(&case) || (table..=at).contains(&case) {
+                        return false;
+                    }
+                    if case > table {
+                        first_case = first_case.min(case);
+                    }
+                    true
                 })
                 .count();
             if count < 2 {
@@ -684,6 +704,8 @@ enum Entry {
     Byte,
     /// A signed 32-bit offset from a base.
     Offset32,
+    /// A 4-byte offset added to the base in 32 bits.
+    Wrapped32,
     /// The address itself.
     Absolute,
     /// An unsigned 32-bit address.
@@ -825,11 +847,41 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
         };
         return Some((0, table, index, 0, entry));
     }
+    // (base + load4(table + (index << 2))) & 0xffffffff: an unsigned offset
+    // added in 32 bits, where it wraps as a signed one does.
+    if let Expr::Bin {
+        op: BinOp::And,
+        lhs: sum,
+        rhs: mask,
+    } = expr
+        && constant(mask) == Some(0xffff_ffff)
+        && let Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } = sum.as_ref()
+        && let Some((base, value)) = match (constant(lhs), constant(rhs)) {
+            (Some(base), None) => Some((base, rhs.as_ref())),
+            (None, Some(base)) => Some((base, lhs.as_ref())),
+            _ => None,
+        }
+        && let Expr::Load {
+            addr,
+            width: 4,
+            signed: false,
+        } = strip_constant_masks(value)
+        && let addr = unwrap_mask(addr)
+        && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
+    {
+        return Some((base, table, index, 0, Entry::Wrapped32));
+    }
+    // A sum masked to 32 bits names the same address while it stays below
+    // that; a case beyond it is no code and is refused when it is read.
     let Expr::Bin {
         op: BinOp::Add,
         lhs,
         rhs,
-    } = expr
+    } = unwrap_mask(expr)
     else {
         return Option::None;
     };
@@ -857,6 +909,7 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
         ) = (peeled, constant(rhs))
             && *width == 1
             && !*signed
+            && let addr = unwrap_mask(addr)
             && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
         {
             return Some((base, table, index, scale as i64, Entry::Byte));
@@ -1013,6 +1066,96 @@ mod tests {
                 assert!(pattern.is_none());
             }
         }
+    }
+
+    #[test]
+    fn offsets_added_in_32_bits_reach_cases_on_either_side_of_the_table() {
+        // Three 4-byte offsets at start + 8, then the code they reach.
+        let start = 0x2_0000u64;
+        let table = start + 8;
+        let mut bytes = vec![0; 64];
+        for (position, case) in [start + 32, start + 40, start].into_iter().enumerate() {
+            let offset = (case as u32).wrapping_sub(table as u32);
+            bytes[8 + position * 4..12 + position * 4].copy_from_slice(&offset.to_le_bytes());
+        }
+        // What follows the table reads as an offset far outside the code.
+        bytes[20..24].copy_from_slice(&0xe59f_0430u32.to_le_bytes());
+        let image = Image::from_code(crate::loader::Isa::Arm32, start, bytes);
+        let low = |value| Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff));
+        let entry = Expr::Load {
+            addr: Box::new(low(Expr::bin(
+                BinOp::Add,
+                Expr::Const(table),
+                Expr::bin(BinOp::Shl, Expr::reg(0, 32), Expr::Const(2)),
+            ))),
+            width: 4,
+            signed: false,
+        };
+        let block = Block {
+            start,
+            stmts: vec![Stmt::BrIndirect {
+                target: low(Expr::bin(BinOp::Add, Expr::Const(table), low(entry))),
+                at: None,
+            }],
+        };
+        let recovered = recover(&[block], &image, start..start + 64);
+        assert_eq!(recovered.len(), 1);
+        assert_eq!(
+            recovered[0].cases,
+            [(0, start + 32), (1, start + 40), (2, start)]
+        );
+    }
+
+    #[test]
+    fn a_byte_table_ends_at_its_first_case_and_at_a_case_inside_itself() {
+        let start = 0x2_0000u64;
+        let table = start + 4;
+        let byte_table = |entries: &[u8]| {
+            let mut bytes = vec![0xff; 64];
+            bytes[4..4 + entries.len()].copy_from_slice(entries);
+            let image = Image::from_code(crate::loader::Isa::Arm32, start, bytes);
+            let low = |value| Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff));
+            let entry = Expr::Load {
+                addr: Box::new(low(Expr::bin(
+                    BinOp::Add,
+                    Expr::Const(table),
+                    low(Expr::reg(0, 32)),
+                ))),
+                width: 1,
+                signed: false,
+            };
+            let block = Block {
+                start,
+                stmts: vec![Stmt::BrIndirect {
+                    target: low(Expr::bin(
+                        BinOp::Add,
+                        Expr::Const(table),
+                        Expr::bin(BinOp::Shl, entry, Expr::Const(1)),
+                    )),
+                    at: None,
+                }],
+            };
+            recover(&[block], &image, start..start + 64)
+                .into_iter()
+                .map(|table| table.cases)
+                .collect::<Vec<_>>()
+        };
+        // Four entries; the first case begins right after them, so the byte
+        // there, which would read as a fifth entry, is code.
+        assert_eq!(
+            byte_table(&[2, 5, 9, 12, 6]),
+            [vec![
+                (0, table + 4),
+                (1, table + 10),
+                (2, table + 18),
+                (3, table + 24)
+            ]]
+        );
+        // Three entries and a padding byte, whose case would be the table.
+        assert_eq!(
+            byte_table(&[4, 6, 8, 0, 7]),
+            [vec![(0, table + 8), (1, table + 12), (2, table + 16)]]
+        );
     }
 
     #[test]

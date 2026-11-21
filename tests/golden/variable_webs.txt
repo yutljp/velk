@@ -1,5 +1,5 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
-C/C++ debug: 145 -> 0; 822; 1; 0
+C/C++ debug: 145 -> 0; 826; 1; 0
 C/C++ stripped: 97 -> 0; 761; 0; 0
 Go: 5882 -> 0; 27920; 526; 2
 Rust: 8106 -> 0; 50985; 708; 189
@@ -85,9 +85,9 @@ Rust: 8106 -> 0; 50985; 708; 189
 # arm32/structs.thumb.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/structs.thumb.O2.elf | C/C++ debug: 1 -> 0; 6; 0; 0
 # arm32/switch_jumptable.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
-# arm32/switch_jumptable.arm.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
+# arm32/switch_jumptable.arm.O2.elf | C/C++ debug: 0 -> 0; 2; 0; 0
 # arm32/switch_jumptable.thumb.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
-# arm32/switch_jumptable.thumb.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
+# arm32/switch_jumptable.thumb.O2.elf | C/C++ debug: 0 -> 0; 2; 0; 0
 # arm32/switch_value_table.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/switch_value_table.arm.O2.elf | C/C++ debug: 0 -> 0; 2; 0; 0
 # arm32/switch_value_table.thumb.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0

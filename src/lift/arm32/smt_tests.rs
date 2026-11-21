@@ -526,41 +526,44 @@ fn rotated_extensions_and_shifted_operands_are_equivalent() {
             }
         }
     }
-    let amount = Expr::reg(1, 8);
-    let count = smt::term(&amount);
-    for style in [
-        ShiftStyle::LSL,
-        ShiftStyle::LSR,
-        ShiftStyle::ASR,
-        ShiftStyle::ROR,
-    ] {
-        let expected = match style {
-            ShiftStyle::ROR => format!(
-                "((_ zero_extend 32) (ext_rotate_right {input} ((_ extract 31 0) {count})))"
-            ),
-            ShiftStyle::ASR => smt::low(
-                &format!("(bvashr {} {count})", smt::signed(&smt::term(&x), 32)),
-                32,
-            ),
-            _ => smt::low(
-                &format!(
-                    "({} {} {count})",
-                    if style == ShiftStyle::LSL {
-                        "bvshl"
-                    } else {
-                        "bvlshr"
-                    },
-                    smt::term(&x)
+    // An amount held in a register, and immediates on both sides of 32.
+    let amounts = std::iter::once(Expr::reg(1, 8)).chain([0, 1, 31, 32, 33, 255].map(Expr::Const));
+    for amount in amounts {
+        let count = smt::term(&amount);
+        for style in [
+            ShiftStyle::LSL,
+            ShiftStyle::LSR,
+            ShiftStyle::ASR,
+            ShiftStyle::ROR,
+        ] {
+            let expected = match style {
+                ShiftStyle::ROR => format!(
+                    "((_ zero_extend 32) (ext_rotate_right {input} ((_ extract 31 0) {count})))"
                 ),
-                32,
-            ),
-        };
-        let actual = shift_value(x.clone(), style, amount.clone()).expect("supported shift");
-        proofs.predicate(
-            format!("A32 shift/{style:?}"),
-            &expected,
-            &smt::low(&smt::term(&actual), 32),
-        );
+                ShiftStyle::ASR => smt::low(
+                    &format!("(bvashr {} {count})", smt::signed(&smt::term(&x), 32)),
+                    32,
+                ),
+                _ => smt::low(
+                    &format!(
+                        "({} {} {count})",
+                        if style == ShiftStyle::LSL {
+                            "bvshl"
+                        } else {
+                            "bvlshr"
+                        },
+                        smt::term(&x)
+                    ),
+                    32,
+                ),
+            };
+            let actual = shift_value(x.clone(), style, amount.clone()).expect("supported shift");
+            proofs.predicate(
+                format!("A32 shift/{style:?}/{amount:?}"),
+                &expected,
+                &smt::low(&smt::term(&actual), 32),
+            );
+        }
     }
     proofs.check();
 }

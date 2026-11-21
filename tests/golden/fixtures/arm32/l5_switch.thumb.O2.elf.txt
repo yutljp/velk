@@ -1,4 +1,4 @@
-# arm32/l5_switch.thumb.O2.elf: elf arm32 no entry, 18 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/l5_switch.thumb.O2.elf: elf arm32 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2018c 172 dense symtab,dwarf
 0x20238 16 c0 symtab,dwarf
 0x20248 18 c1 symtab,dwarf
@@ -22,7 +22,22 @@
 
 extern uint32_t g_sink; /* address: 0x30378 */
 
-uint64_t sub_201a0();
+void c0();
+void c1();
+void c10();
+void c11();
+void c12();
+void c13();
+void c14();
+void c15();
+void c2();
+void c3();
+void c4();
+void c5();
+void c6();
+void c7();
+void c8();
+void c9();
 /* end velk prelude */
 
 == 0x2018c dense
@@ -30,25 +45,63 @@ uint64_t sub_201a0();
 /* velk pseudo-C: dense @ 0x2018c */
 /* ref: 0x30378 .bss */
 int dense(int x) {
-    uint64_t v2;
-    uint32_t v4;
-    uint32_t v5;
-    int32_t v3;
-
     uint32_t v1 = (uint32_t)x - 10;
-    if (v1 <= 15) {
-        /* unsupported: ARM tbb [pc, r0] at 0x2019c */
-        {
-            uint64_t call_values[2];
-            call_values[0] = sub_201a0((uint32_t)x, v2, v4, v5);
-            call_values[1] = v2; /* also returned by the call */
-            v3 = (uint32_t)(call_values[0]);
-            v2 = (uint32_t)(call_values[1]);
-        }
-        return v3;
+    if (v1 > 15) {
+        g_sink = 0;
+        return g_sink;
     }
-    g_sink = 0;
-    return 0;
+    switch (v1) {
+    case 0:
+        c0();
+        return g_sink;
+    case 1:
+        c1();
+        return g_sink;
+    case 2:
+        c2();
+        return g_sink;
+    case 3:
+        c3();
+        return g_sink;
+    case 4:
+        c4();
+        return g_sink;
+    case 5:
+        c5();
+        return g_sink;
+    case 6:
+        c6();
+        return g_sink;
+    case 7:
+        c7();
+        return g_sink;
+    case 8:
+        c8();
+        return g_sink;
+    case 9:
+        c9();
+        return g_sink;
+    case 10:
+        c10();
+        return g_sink;
+    case 11:
+        c11();
+        return g_sink;
+    case 12:
+        c12();
+        return g_sink;
+    case 13:
+        c13();
+        return g_sink;
+    case 14:
+        c14();
+        return g_sink;
+    case 15:
+        c15();
+        return g_sink;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int (int x)
@@ -58,19 +111,64 @@ int (int x)
 fn dense @ 0x2018c (size 172)
   blk0 @ 0x2018c:
     v1 = ((r0 - #0xa) & #0xffffffff)
-    v2 = #0x30378
     brif ls v1, #0xf -> 0x2019c
   blk1 @ 0x2019b:
     br 0x20230
   blk2 @ 0x2019c:
-    unsupported: ARM tbb [pc, r0] at 0x2019c
-    v3:r0, r1 = call 0x201a0(r0, r1, r2, r3)
-    ret v3
-  blk3 @ 0x20230:
+    switch v1 [0->0x201b0, 1->0x20200, 2->0x201e0, 3->0x201f0, 4->0x201c8, 5->0x20208, 6->0x20218, 7->0x201f8, 8->0x20228, 9->0x201d8, 10->0x20220, 11->0x201c0, 12->0x201d0, 13->0x20210, 14->0x201b8, 15->0x201e8] default <none>
+  blk3 @ 0x201b0:
+    r0, r1 = call 0x20238()
+    ret load32(#0x30378)
+  blk4 @ 0x201b8:
+    r0, r1 = call 0x20334()
+    ret load32(#0x30378)
+  blk5 @ 0x201c0:
+    r0, r1 = call 0x202fc()
+    ret load32(#0x30378)
+  blk6 @ 0x201c8:
+    r0, r1 = call 0x20280()
+    ret load32(#0x30378)
+  blk7 @ 0x201d0:
+    r0, r1 = call 0x20310()
+    ret load32(#0x30378)
+  blk8 @ 0x201d8:
+    r0, r1 = call 0x202d8()
+    ret load32(#0x30378)
+  blk9 @ 0x201e0:
+    r0, r1 = call 0x2025c()
+    ret load32(#0x30378)
+  blk10 @ 0x201e8:
+    r0, r1 = call 0x20344()
+    ret load32(#0x30378)
+  blk11 @ 0x201f0:
+    r0, r1 = call 0x2026c()
+    ret load32(#0x30378)
+  blk12 @ 0x201f8:
+    r0, r1 = call 0x202b4()
+    ret load32(#0x30378)
+  blk13 @ 0x20200:
+    r0, r1 = call 0x20248()
+    ret load32(#0x30378)
+  blk14 @ 0x20208:
+    r0, r1 = call 0x20290()
+    ret load32(#0x30378)
+  blk15 @ 0x20210:
+    r0, r1 = call 0x20320()
+    ret load32(#0x30378)
+  blk16 @ 0x20218:
+    r0, r1 = call 0x202a4()
+    ret load32(#0x30378)
+  blk17 @ 0x20220:
+    r0, r1 = call 0x202ec()
+    ret load32(#0x30378)
+  blk18 @ 0x20228:
+    r0, r1 = call 0x202c8()
+    ret load32(#0x30378)
+  blk19 @ 0x20230:
     store32(#0x0, #0x30378)
-    ret #0x0
+    ret load32(#0x30378)
 -- card
-{"addr":"0x2018c","approxTokens":240,"blocks":4,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":172,"unsupported":1}
+{"addr":"0x2018c","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":172,"unsupported":0}
 
 == 0x20238 c0
 -- decompile

@@ -1,4 +1,4 @@
-# arm32/control.thumb.O0.elf: elf arm32 no entry, 7 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/control.thumb.O0.elf: elf arm32 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20114 100 matrix_trace symtab,dwarf
 0x20178 58 cleanup_on_error symtab,dwarf
 0x201b4 70 fallthrough symtab,dwarf
@@ -8,8 +8,6 @@
 0x202e8 114 find_pair symtab,dwarf
 /* velk prelude */
 #include <stdint.h>
-
-uint64_t sub_201ca();
 /* end velk prelude */
 
 == 0x20114 matrix_trace
@@ -133,26 +131,27 @@ fn cleanup_on_error @ 0x20178 (size 58)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x201b4 */
 int fallthrough(int x) {
-    uint64_t v1;
-    uint32_t v2;
-    uint32_t v4;
-    int32_t v3;
-    uint32_t local_0; /* [sp-8] */
+    uint32_t result; /* [sp-8] */
 
-    local_0 = 0;
+    result = 0;
     if ((uint32_t)x <= 3) {
-        /* unsupported: ARM tbb [pc, r1] at 0x201c6 */
-        {
-            uint64_t call_values[2];
-            call_values[0] = sub_201ca((uint32_t)x, v1, v2, v4);
-            call_values[1] = v1; /* also returned by the call */
-            v3 = (uint32_t)(call_values[0]);
-            v1 = (uint32_t)(call_values[1]);
+        switch (x) {
+        case 0:
+            result += 1;
+            break;
+        case 1:
+            break;
+        case 2:
+            return result + 4;
+        case 3:
+            return 8;
+        default:
+            __builtin_unreachable();
         }
-        return v3;
+        result += 2;
+        return result + 4;
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    return -1;
 }
 -- signature
 int (int x)
@@ -161,24 +160,34 @@ int (int x)
 -- ir
 fn fallthrough @ 0x201b4 (size 70)
   blk0 @ 0x201b4:
+    store32(r0, (sp + #0xfffffffffffffffc))
     store32(#0x0, (sp + #0xfffffffffffffff8))
-    v1 = r0
+    v1 = load32((sp + #0xfffffffffffffffc))
     store32(v1, (sp + #0xfffffffffffffff4))
     brif ls v1, #0x3 -> 0x201c4
   blk1 @ 0x201c3:
     br 0x201ec
   blk2 @ 0x201c4:
-    v2 = load32((sp + #0xfffffffffffffff4))
-    unsupported: ARM tbb [pc, r1] at 0x201c6
-    v3:r0, r1 = call 0x201ca(r0, r1, r2, r3)
-    ret v3
-  blk3 @ 0x201ec:
+    switch load32((sp + #0xfffffffffffffff4)) [0->0x201ce, 1->0x201d6, 2->0x201de, 3->0x201e6] default <none>
+  blk3 @ 0x201ce:
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
+    br 0x201d6
+  blk4 @ 0x201d6:
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x2), (sp + #0xfffffffffffffff8))
+    br 0x201de
+  blk5 @ 0x201de:
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x4), (sp + #0xfffffffffffffff8))
+    br 0x201f4
+  blk6 @ 0x201e6:
+    store32(#0x8, (sp + #0xfffffffffffffff8))
+    br 0x201f4
+  blk7 @ 0x201ec:
     store32(#0xffffffff, (sp + #0xfffffffffffffff8))
     br 0x201f4
-  blk4 @ 0x201f4:
+  blk8 @ 0x201f4:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x201b4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":1}
+{"addr":"0x201b4","approxTokens":240,"blocks":9,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}
 
 == 0x201fc sparse
 -- decompile

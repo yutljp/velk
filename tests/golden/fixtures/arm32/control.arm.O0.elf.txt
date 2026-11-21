@@ -1,4 +1,4 @@
-# arm32/control.arm.O0.elf: elf arm32 no entry, 7 functions, 0 lift failures, 1 unsupported, 0 gotos
+# arm32/control.arm.O0.elf: elf arm32 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20114 184 matrix_trace symtab,dwarf
 0x201cc 104 cleanup_on_error symtab,dwarf
 0x20234 144 fallthrough symtab,dwarf
@@ -10,7 +10,6 @@
 #include <stdint.h>
 
 uint64_t sub_20218();
-uint64_t sub_2026c();
 /* end velk prelude */
 
 == 0x20114 matrix_trace
@@ -124,35 +123,28 @@ fn cleanup_on_error @ 0x201cc (size 104)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x20234 */
 int fallthrough(int x) {
-    uint64_t v2;
-    uint32_t v5;
-    uint32_t v6;
-    uint32_t v7;
-    uint32_t v8;
-    int32_t v4;
-    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; uint32_t f_10; } local_0; /* [sp-14] */
+    uint32_t result; /* [sp-10] */
 
-    local_0.f_c = v7;
-    local_0.f_10 = v8;
-    v7 = (uintptr_t)(&local_0.f_c);
-    local_0.f_8 = x;
-    local_0.f_4 = 0;
-    uint32_t v1 = local_0.f_8;
-    local_0.f_0 = v1;
-    if (v1 <= 3) {
-        int32_t v3 = *(uint32_t *)(0x2026c + (local_0.f_0 << 2));
-        /* unsupported: ARM add pc, r0, r1 at 0x20268 */
-        {
-            uint64_t call_values[2];
-            call_values[0] = sub_2026c((uint32_t)x, v2, v5, v6);
-            call_values[1] = v2; /* also returned by the call */
-            v4 = (uint32_t)(call_values[0]);
-            v2 = (uint32_t)(call_values[1]);
+    result = 0;
+    if ((uint32_t)x <= 3) {
+        int32_t v3 = *(uint32_t *)((0x2026c + ((uint64_t)x << 2)) & 0xffffffff);
+        switch (x) {
+        case 0:
+            result += 1;
+            break;
+        case 1:
+            break;
+        case 2:
+            return result + 4;
+        case 3:
+            return 8;
+        default:
+            __builtin_unreachable();
         }
-        return v4;
+        result += 2;
+        return result + 4;
     }
-    local_0.f_4 = 0xffffffff;
-    return local_0.f_4;
+    return -1;
 }
 -- signature
 int (int x)
@@ -161,9 +153,6 @@ int (int x)
 -- ir
 fn fallthrough @ 0x20234 (size 144)
   blk0 @ 0x20234:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    r11 = (sp + #0xfffffffffffffff8)
     store32(r0, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     v1 = load32((sp + #0xfffffffffffffff4))
@@ -172,17 +161,24 @@ fn fallthrough @ 0x20234 (size 144)
   blk1 @ 0x20259:
     br 0x202b0
   blk2 @ 0x2025c:
-    v2 = #0x2026c
     v3 = load32(((#0x2026c + (load32((sp + #0xffffffffffffffec)) << #0x2)) & #0xffffffff))
-    unsupported: ARM add pc, r0, r1 at 0x20268
-    v4:r0, r1 = call 0x2026c(r0, r1, r2, r3)
-    ret v4
-  blk3 @ 0x202b0:
+    switch load32((sp + #0xffffffffffffffec)) [0->0x2027c, 1->0x20288, 2->0x20294, 3->0x202a4] default <none>
+  blk3 @ 0x2027c:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+  blk4 @ 0x20288:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x2), (sp + #0xfffffffffffffff0))
+  blk5 @ 0x20294:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x4), (sp + #0xfffffffffffffff0))
+    br 0x202b8
+  blk6 @ 0x202a4:
+    store32(#0x8, (sp + #0xfffffffffffffff0))
+    br 0x202b8
+  blk7 @ 0x202b0:
     store32(#0xffffffff, (sp + #0xfffffffffffffff0))
-  blk4 @ 0x202b8:
+  blk8 @ 0x202b8:
     ret load32((sp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x20234","approxTokens":240,"blocks":5,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":144,"unsupported":1}
+{"addr":"0x20234","approxTokens":240,"blocks":9,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":144,"unsupported":0}
 
 == 0x202c4 sparse
 -- decompile
