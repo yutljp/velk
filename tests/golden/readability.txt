@@ -512,9 +512,9 @@ predicates_aarch64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 regi
 predicates_x86_64_O0.o: 47 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 predicates_x86_64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 rust_demo: 52290 lines, 2527 prelude lines, 10328 variables, 10806 casts, 11 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
-rust_demo_arm64: 50665 lines, 2837 prelude lines, 10520 variables, 9847 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
+rust_demo_arm64: 50007 lines, 2821 prelude lines, 10208 variables, 9817 casts, 24 registers, 0 unsigned, 32 traps, 1236 gotos, 154 indirect calls
 rust_probe: 52290 lines, 2527 prelude lines, 10328 variables, 10806 casts, 11 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
-rust_probe_arm64: 50665 lines, 2837 prelude lines, 10520 variables, 9847 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
+rust_probe_arm64: 50007 lines, 2821 prelude lines, 10208 variables, 9817 casts, 24 registers, 0 unsigned, 32 traps, 1236 gotos, 154 indirect calls
 rust_probe_arm64_stripped: 50661 lines, 2828 prelude lines, 10516 variables, 9801 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
 rust_probe_stripped: 52642 lines, 2433 prelude lines, 10485 variables, 10946 casts, 11 registers, 0 unsigned, 31 traps, 1319 gotos, 125 indirect calls
 seh.O0.dll: 95 lines, 8 prelude lines, 14 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

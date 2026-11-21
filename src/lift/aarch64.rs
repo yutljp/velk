@@ -657,8 +657,17 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
             }
         }
         O::BL => {
-            lifter.last_compare = None;
             let target = lifter.target_of(operands[0], pc);
+            // An outlined sequence runs as part of its caller: it reads and
+            // leaves flags and registers no call would.
+            if let Some(body) = target.and_then(|target| outlined_body(lifter.image, target)) {
+                link(lifter, pc);
+                for step in &body {
+                    Machine::step(lifter, &step.instruction, step.pc);
+                }
+                return false;
+            }
+            lifter.last_compare = None;
             link(lifter, pc);
             let made = call(CallKind::Invoke, lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);
@@ -786,6 +795,62 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
         }
     }
     false
+}
+
+/// The most instructions of an outlined sequence written into its caller.
+const OUTLINED_LIMIT: usize = 32;
+
+/// The instructions of the outlined sequence at `address`, without the
+/// return that ends it: the compiler moved them out of several functions
+/// and calls them with whatever registers and flags they need. Only a
+/// sequence named as one, with no branch or call in it, is taken.
+fn outlined_body(image: &crate::loader::Image, address: u64) -> Option<Vec<Decoded<Instruction>>> {
+    use a64::Opcode as O;
+    let Some(function) = image.functions.get(&address) else {
+        return None;
+    };
+    let named = function.name.iter().chain(&function.aliases).any(|name| {
+        name.trim_start_matches('_')
+            .starts_with("OUTLINED_FUNCTION_")
+    });
+    let Some(size) = function.size else {
+        return None;
+    };
+    if !named || function.size_estimated || size == 0 || size > (OUTLINED_LIMIT as u64 + 1) * 4 {
+        return None;
+    }
+    let Some(bytes) = image.read_vaddr(address, size) else {
+        return None;
+    };
+    // The sequence returns through the link register.
+    if !bytes.ends_with(&0xd65f_03c0u32.to_le_bytes()) {
+        return None;
+    }
+    let (mut body, stop) = decode(bytes, address);
+    if stop.is_some() || body.len() as u64 * 4 != size {
+        return None;
+    }
+    body.pop();
+    let straight = body.iter().all(|step| {
+        !matches!(
+            step.instruction.opcode,
+            O::B | O::Bcc(_)
+                | O::BL
+                | O::BLR
+                | O::BR
+                | O::CBZ
+                | O::CBNZ
+                | O::TBZ
+                | O::TBNZ
+                | O::RET
+                | O::RETAA
+                | O::RETAB
+                | O::BRK
+                | O::UDF
+                | O::SVC
+        )
+    });
+    straight.then_some(body)
 }
 
 fn branch_target(instruction: &Instruction, pc: u64) -> Option<u64> {
@@ -946,6 +1011,82 @@ mod tests {
         let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
         ir.blocks = crate::lift::lift(&image, 0, size, &HashSet::new()).expect("decoded lift");
         ir
+    }
+
+    /// A caller of the sequence at 12, lifted alone: `bl 12; csinc x0, x9,
+    /// xzr, ne; ret`, then the sequence `words` under `name`.
+    fn calling_a_sequence(name: Option<&str>, words: &[u32]) -> FunctionIr {
+        let caller = [0x9400_0003, 0x9a9f_1520, RET];
+        let code: Vec<_> = caller
+            .iter()
+            .chain(words)
+            .flat_map(|word| word.to_le_bytes())
+            .collect();
+        let mut image = Image::from_code(Isa::AArch64, 0, code);
+        image.functions.insert(
+            12,
+            crate::loader::Function {
+                addr: 12,
+                size: Some(words.len() as u64 * 4),
+                size_estimated: false,
+                name: name.map(str::to_owned),
+                aliases: Vec::new(),
+                library: None,
+                sources: Vec::new(),
+            },
+        );
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = crate::lift::lift(&image, 0, 12, &HashSet::new()).expect("decoded lift");
+        ir
+    }
+
+    fn calls(ir: &FunctionIr) -> usize {
+        ir.blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .filter(|stmt| matches!(stmt, Stmt::Call { .. }))
+            .count()
+    }
+
+    #[test]
+    fn a_named_outlined_sequence_runs_in_its_caller_with_its_flags_and_registers() {
+        // cmp x0, #0; csel x9, xzr, x1, eq; ret
+        let sequence = [0xf100_001f, 0x9a81_03e9, RET];
+        let ir = calling_a_sequence(Some("_OUTLINED_FUNCTION_0"), &sequence);
+        assert_eq!(calls(&ir), 0, "{}", ir.render());
+        assert!(!ir.render().contains("unsupported"), "{}", ir.render());
+        for (x0, x1, expected) in [(0u64, 7u64, 1u64), (5, 7, 7), (u64::MAX, 0, 0)] {
+            let registers = [(0, x0), (1, x1)];
+            match eval::run(&ir, &setup(&registers)) {
+                Outcome::Return { value, .. } => assert_eq!(value, expected, "{x0} {x1}"),
+                other => panic!("{other:?}\n{}", ir.render()),
+            }
+        }
+    }
+
+    #[test]
+    fn other_callees_stay_calls() {
+        let sequence = [0xf100_001f, 0x9a81_03e9, RET];
+        // No name says the callee is an outlined sequence.
+        assert_eq!(calls(&calling_a_sequence(None, &sequence)), 1);
+        assert_eq!(calls(&calling_a_sequence(Some("compare"), &sequence)), 1);
+        // A branch inside, `b .+8`, or an end that is no return.
+        let branching = [0xf100_001f, 0x1400_0002, 0x9a81_03e9, RET];
+        assert_eq!(
+            calls(&calling_a_sequence(
+                Some("_OUTLINED_FUNCTION_0"),
+                &branching
+            )),
+            1
+        );
+        let unfinished = [0xf100_001f, 0x9a81_03e9];
+        assert_eq!(
+            calls(&calling_a_sequence(
+                Some("_OUTLINED_FUNCTION_0"),
+                &unfinished
+            )),
+            1
+        );
     }
 
     #[test]

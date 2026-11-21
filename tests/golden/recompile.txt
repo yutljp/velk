@@ -1,5 +1,5 @@
 # functions left out:
-#   accesses memory: 288
+#   accesses memory: 280
 #   calls: 8096
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 4
@@ -7,9 +7,9 @@
 #   refers to data: 366
 #   requires an external machine-state source: 4
 #   returns no integer: 311
-#   returns nothing: 708
-#   takes an argument that is no integer: 1002
-#   takes arguments on the stack: 81
+#   returns nothing: 742
+#   takes an argument that is no integer: 1000
+#   takes arguments on the stack: 73
 # runs left out:
 #   step limit: 50
 #   takes a function's address: 24
@@ -321,9 +321,9 @@
 # predicates_x86_64_O0.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # predicates_x86_64_O2.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # rust_demo: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# rust_demo_arm64: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
+# rust_demo_arm64: 670 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
 # rust_probe: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# rust_probe_arm64: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
+# rust_probe_arm64: 670 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
 # rust_probe_arm64_stripped: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
 # rust_probe_stripped: 545 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
 # seh.O0.dll: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
