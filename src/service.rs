@@ -1372,49 +1372,23 @@ impl Binary {
             self.shared_analyses.insert(addr, root.clone());
             return Ok(());
         };
-        let neighbors = batch::neighbors(&self.image, root_analysis);
-        let declaration_callers = declarations::dependencies(&self.image, root_analysis);
-        let mut functions = vec![root_analysis.clone()];
-        for neighbor in neighbors {
-            let Some(function) = self.image.functions.get(&neighbor) else {
-                continue;
+        let root_analysis = root_analysis.clone();
+        let image = &self.image;
+        let analyses = &mut self.analyses;
+        let analysis = match batch::shared(image, &self.data_ranges, root_analysis, |address| {
+            let Some(function) = image.functions.get(&address) else {
+                return Ok(None);
             };
-            match cached(&mut self.analyses, &self.image, function, deadline) {
-                Ok(Ok(analysis)) => functions.push(analysis.clone()),
-                Ok(Err(_)) => continue,
-                Err(error) => return Err(error),
-            }
-        }
-        functions.sort_by_key(|analysis| analysis.ir.addr);
-        let mut irs: Vec<_> = functions
-            .iter_mut()
-            .map(|analysis| &mut analysis.ir)
-            .collect();
-        analysis::shared_structures::share(&mut irs, &self.data_ranges);
-        for address in declaration_callers {
-            if functions.iter().any(|analysis| analysis.ir.addr == address) {
-                continue;
-            }
-            let Some(function) = self.image.functions.get(&address) else {
-                continue;
-            };
-            match cached(&mut self.analyses, &self.image, function, deadline) {
-                Ok(Ok(analysis)) => functions.push(analysis.clone()),
-                Ok(Err(_)) => continue,
-                Err(error) => return Err(error),
-            }
-        }
-        batch::share_parameters(&mut functions, self.image.go);
-        crate::analysis::declarations::recover(&self.image, &mut functions);
+            cached(analyses, image, function, deadline)
+                .map(|analysis| analysis.as_ref().ok().cloned())
+        }) {
+            Ok(analysis) => analysis,
+            Err(error) => return Err(error),
+        };
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
-        for analysis in functions {
-            if analysis.ir.addr == addr {
-                self.shared_analyses.insert(addr, Ok(analysis));
-                break;
-            }
-        }
+        self.shared_analyses.insert(addr, Ok(analysis));
         Ok(())
     }
 

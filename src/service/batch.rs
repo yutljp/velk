@@ -159,6 +159,52 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
     }
 }
 
+/// The analysis of `root` after it shared structure layouts, parameter
+/// types and declarations with the functions around it. `other` gives the
+/// analysis of one of those, or None for one to leave out.
+pub(super) fn shared(
+    image: &Image,
+    data_ranges: &[(u64, u64)],
+    root: Analysis,
+    mut other: impl FnMut(u64) -> Result<Option<Analysis>>,
+) -> Result<Analysis> {
+    let addr = root.ir.addr;
+    let neighbors = neighbors(image, &root);
+    let dependencies = super::declarations::dependencies(image, &root);
+    let mut functions = vec![root];
+    for neighbor in neighbors {
+        match other(neighbor) {
+            Ok(Some(analysis)) => functions.push(analysis),
+            Ok(None) => {}
+            Err(error) => return Err(error),
+        }
+    }
+    // Each root shares layouts with the same bounded neighborhood as a single request.
+    // Merged layouts never become inputs to another function's neighborhood.
+    functions.sort_by_key(|analysis| analysis.ir.addr);
+    let mut irs: Vec<_> = functions
+        .iter_mut()
+        .map(|analysis| &mut analysis.ir)
+        .collect();
+    analysis::shared_structures::share(&mut irs, data_ranges);
+    for address in dependencies {
+        if functions.iter().any(|analysis| analysis.ir.addr == address) {
+            continue;
+        }
+        match other(address) {
+            Ok(Some(analysis)) => functions.push(analysis),
+            Ok(None) => {}
+            Err(error) => return Err(error),
+        }
+    }
+    share_parameters(&mut functions, image.go);
+    crate::analysis::declarations::recover(image, &mut functions);
+    Ok(functions
+        .into_iter()
+        .find(|analysis| analysis.ir.addr == addr)
+        .expect("root belongs to its neighborhood"))
+}
+
 fn original(
     image: &Image,
     analyses: &Mutex<Analyses>,
@@ -295,44 +341,13 @@ impl Binary {
                     });
                 }
             };
-            let mut functions = vec![root.clone()];
-            for neighbor in neighbors(&self.image, root) {
-                match original(&self.image, &originals, neighbor, deadline) {
-                    Ok(analysis) => {
-                        if let Ok(analysis) = analysis.as_ref() {
-                            functions.push(analysis.clone());
-                        }
-                    }
-                    Err(error) => return Err(error),
-                }
-            }
-            // Each root shares layouts with the same bounded neighborhood as a single request.
-            // Merged layouts never become inputs to another function's neighborhood.
-            functions.sort_by_key(|analysis| analysis.ir.addr);
-            let mut irs: Vec<_> = functions
-                .iter_mut()
-                .map(|analysis| &mut analysis.ir)
-                .collect();
-            analysis::shared_structures::share(&mut irs, &self.data_ranges);
-            for address in super::declarations::dependencies(&self.image, root) {
-                if functions.iter().any(|analysis| analysis.ir.addr == address) {
-                    continue;
-                }
-                match original(&self.image, &originals, address, deadline) {
-                    Ok(analysis) => {
-                        if let Ok(analysis) = analysis.as_ref() {
-                            functions.push(analysis.clone());
-                        }
-                    }
-                    Err(error) => return Err(error),
-                }
-            }
-            share_parameters(&mut functions, self.image.go);
-            crate::analysis::declarations::recover(&self.image, &mut functions);
-            let analysis = functions
-                .into_iter()
-                .find(|analysis| analysis.ir.addr == addr)
-                .expect("root belongs to its neighborhood");
+            let analysis = match shared(&self.image, &self.data_ranges, root.clone(), |address| {
+                original(&self.image, &originals, address, deadline)
+                    .map(|analysis| analysis.as_ref().as_ref().ok().cloned())
+            }) {
+                Ok(analysis) => analysis,
+                Err(error) => return Err(error),
+            };
             match self.render_analysis(
                 &analysis,
                 &overrides,
