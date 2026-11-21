@@ -1,7 +1,321 @@
 use super::*;
 use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};
+use crate::ir::calls::{CallAbi, CallFallback, CallInput, CallInputPiece, CallTransport};
 use crate::ir::{CallKind, Convention, Expr, FunctionIr, Precision, RegRef, Stmt};
 use crate::loader::Isa;
+
+fn physical_outputs(outputs: &[crate::ir::CallOutput]) -> bool {
+    !outputs.iter().enumerate().any(|(at, output)| {
+        output.dest.index != output.register
+            || output.dest.width != 64
+            || !crate::arch::machine_registers().contains(&output.register)
+            || outputs[..at].iter().any(|before| {
+                before.register == output.register || before.dest.index == output.dest.index
+            })
+    })
+}
+
+fn attach_outputs(image: &Image, blocks: &mut [crate::ir::Block]) {
+    if image.go {
+        return;
+    }
+    let Ok(profile) = crate::ir::abi::profile(image.isa, image.format) else {
+        return;
+    };
+    let convention = crate::analysis::abi::convention(profile);
+    for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+        let crate::ir::Stmt::Call {
+            target: Some(address),
+            through: None,
+            convention: called,
+            outputs,
+            ..
+        } = stmt
+        else {
+            continue;
+        };
+        if *called != convention {
+            continue;
+        }
+        // This hook precedes SSA; a renamed or shared destination is not a physical output.
+        if !physical_outputs(outputs) {
+            continue;
+        }
+        let Ok(Some(declaration)) = declaration(image, *address) else {
+            continue;
+        };
+        let Ok(binding) = &declaration.signature.abi else {
+            continue;
+        };
+        if binding.profile != profile {
+            continue;
+        }
+        let Some(value) = &binding.result else {
+            continue;
+        };
+        let Some(registers) = result_registers(value) else {
+            continue;
+        };
+        for register in registers {
+            if !outputs.iter().any(|output| output.register == register) {
+                outputs.push(crate::ir::CallOutput {
+                    register,
+                    dest: crate::ir::RegRef {
+                        index: register,
+                        width: 64,
+                    },
+                });
+            }
+        }
+    }
+}
+
+fn attach_inputs(image: &Image, blocks: &mut [crate::ir::Block]) {
+    if image.go {
+        return;
+    }
+    let Ok(profile) = crate::ir::abi::profile(image.isa, image.format) else {
+        return;
+    };
+    let expected = crate::analysis::abi::convention(profile);
+    for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+        let crate::ir::Stmt::Call {
+            target: Some(target),
+            through: None,
+            kind,
+            convention,
+            args,
+            floats_named,
+            outputs,
+            abi,
+            ..
+        } = stmt
+        else {
+            continue;
+        };
+        if abi.is_some() || *convention != expected {
+            continue;
+        }
+        if !physical_outputs(outputs) {
+            continue;
+        }
+        let Ok(Some(record)) = declaration(image, *target) else {
+            continue;
+        };
+        let fallback = match args {
+            Some(args) => CallFallback::Named {
+                count: args.len(),
+                floats_named: *floats_named,
+            },
+            None => CallFallback::Implicit {
+                floats_named: *floats_named,
+            },
+        };
+        let Ok(candidate) = input_binding(
+            record,
+            *target,
+            *kind,
+            image.isa,
+            *convention,
+            crate::arch::stack_pointer(image.isa),
+            fallback,
+        ) else {
+            continue;
+        };
+        let Ok(binding) = &candidate.declaration.signature.abi else {
+            continue;
+        };
+        if binding.result.as_ref().is_some_and(|value| {
+            result_registers(value).is_none_or(|registers| {
+                registers
+                    .iter()
+                    .any(|register| !outputs.iter().any(|out| out.register == *register))
+            })
+        }) {
+            continue;
+        }
+        *abi = Some(Arc::new(candidate));
+    }
+}
+
+fn input_binding(
+    declaration: Arc<CallDeclaration>,
+    target: u64,
+    kind: crate::ir::CallKind,
+    isa: crate::loader::Isa,
+    convention: crate::ir::Convention,
+    sp: u16,
+    fallback: CallFallback,
+) -> Result<CallAbi, AbiIssue> {
+    use crate::ir::{AbiLocation, Passing};
+    let binding = declaration.signature.abi.as_ref().map_err(|issue| *issue)?;
+    if crate::analysis::abi::convention(binding.profile) != convention
+        || declaration.signature.variadic
+        || binding.arguments.len() != declaration.signature.params.len()
+        || !crate::arch::machine_registers().contains(&sp)
+        || sp != crate::arch::stack_pointer(isa)
+        || kind == crate::ir::CallKind::Syscall
+        || kind.push_bytes(isa, convention).is_none()
+    {
+        return Err(AbiIssue::UnknownLayout);
+    }
+    // Callee stack effects use the stack pointer before the call.
+    let mut dependencies = vec![sp];
+    let mut registers = HashSet::new();
+    let mut count = 0;
+    let mut transport = |location: AbiLocation, bytes: u8| -> Result<CallTransport, AbiIssue> {
+        if bytes == 0 || bytes > 8 {
+            return Err(AbiIssue::UnknownLayout);
+        }
+        count += 1;
+        if count > 65536 {
+            return Err(AbiIssue::UnknownLayout);
+        }
+        Ok(match location {
+            AbiLocation::Register(register) => {
+                if !crate::arch::machine_registers().contains(&register)
+                    || !registers.insert(register)
+                {
+                    return Err(AbiIssue::UnknownLayout);
+                }
+                dependencies.push(register);
+                CallTransport::Register { register, bytes }
+            }
+            AbiLocation::Stack(offset) => {
+                if !matches!(bytes, 1 | 2 | 4 | 8)
+                    || offset
+                        < convention
+                            .stack_arguments()
+                            .ok_or(AbiIssue::UnknownLayout)?
+                {
+                    return Err(AbiIssue::UnknownLayout);
+                }
+                let offset = kind
+                    .stack_offset(isa, convention, offset)
+                    .ok_or(AbiIssue::UnknownLayout)?;
+                offset
+                    .checked_add(i64::from(bytes))
+                    .ok_or(AbiIssue::UnknownLayout)?;
+                dependencies.push(sp);
+                CallTransport::Stack { offset, bytes }
+            }
+        })
+    };
+    let mut deferred_memory = false;
+    let mut arguments = Vec::new();
+    for value in &binding.arguments {
+        value.validate()?;
+        arguments.push(match &value.passing {
+            Passing::Direct(pieces) => {
+                let mut mapped = Vec::new();
+                for piece in pieces {
+                    match piece.location {
+                        AbiLocation::Register(_) => mapped.push(CallInputPiece {
+                            object_offset: piece.object_offset,
+                            source: transport(
+                                piece.location,
+                                piece
+                                    .bytes
+                                    .try_into()
+                                    .map_err(|_| AbiIssue::UnknownLayout)?,
+                            )?,
+                        }),
+                        AbiLocation::Stack(offset) => {
+                            deferred_memory = true;
+                            let mut done = 0;
+                            while done < piece.bytes {
+                                let remaining = piece.bytes - done;
+                                let bytes = [8, 4, 2, 1]
+                                    .into_iter()
+                                    .find(|width| *width <= remaining)
+                                    .ok_or(AbiIssue::UnknownLayout)?;
+                                let location = AbiLocation::Stack(
+                                    offset
+                                        .checked_add(
+                                            i64::try_from(done)
+                                                .map_err(|_| AbiIssue::UnknownLayout)?,
+                                        )
+                                        .ok_or(AbiIssue::UnknownLayout)?,
+                                );
+                                mapped.push(CallInputPiece {
+                                    object_offset: piece
+                                        .object_offset
+                                        .checked_add(done)
+                                        .ok_or(AbiIssue::UnknownLayout)?,
+                                    source: transport(location, bytes as u8)?,
+                                });
+                                done = done.checked_add(bytes).ok_or(AbiIssue::UnknownLayout)?;
+                            }
+                        }
+                    }
+                }
+                CallInput::Direct(mapped)
+            }
+            Passing::Indirect {
+                pointer,
+                returned_pointer,
+            } => {
+                if returned_pointer.is_some() {
+                    return Err(AbiIssue::UnknownLayout);
+                }
+                deferred_memory = true;
+                CallInput::Indirect {
+                    pointer: transport(*pointer, 8)?,
+                }
+            }
+        });
+    }
+    let hidden_result = match &binding.result {
+        Some(value) => {
+            value.validate()?;
+            match value.passing {
+                Passing::Indirect { pointer, .. } => {
+                    deferred_memory = true;
+                    Some(transport(pointer, 8)?)
+                }
+                Passing::Direct(_) => None,
+            }
+        }
+        None => None,
+    };
+    dependencies.sort_unstable();
+    dependencies.dedup();
+    Ok(CallAbi {
+        kind,
+        declaration,
+        target,
+        convention,
+        arguments,
+        hidden_result,
+        dependencies,
+        deferred_memory,
+        fallback,
+    })
+}
+
+fn result_registers(value: &crate::ir::ValueAbi) -> Option<Vec<u16>> {
+    value.validate().ok()?;
+    let candidates = match &value.passing {
+        crate::ir::Passing::Direct(pieces) => pieces
+            .iter()
+            .map(|piece| match piece.location {
+                crate::ir::AbiLocation::Register(register) => Some(register),
+                crate::ir::AbiLocation::Stack(_) => None,
+            })
+            .collect::<Option<Vec<_>>>()?,
+        crate::ir::Passing::Indirect {
+            returned_pointer, ..
+        } => returned_pointer.iter().copied().collect(),
+    };
+    let mut registers = Vec::new();
+    for register in candidates {
+        if !crate::arch::machine_registers().contains(&register) || registers.contains(&register) {
+            return None;
+        }
+        registers.push(register);
+    }
+    Some(registers)
+}
 
 fn declaration_for(profile: AbiProfile, count: usize) -> Arc<CallDeclaration> {
     let layout = crate::ir::abi::TypeLayout {
