@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
 use crate::render::Symbols;
@@ -482,16 +482,23 @@ pub(in crate::render) fn name_parameters(ir: &mut FunctionIr, symbols: &Symbols)
         return;
     }
     // A loop names its counter only where a statement sets it before the
-    // loop and another steps it inside, so a parameter written less than
-    // twice gets no name from the loops and they need not be found.
+    // loop and another steps it inside, reading it, so a parameter written
+    // less than twice, or by no statement that reads it, gets no name from
+    // the loops and they need not be found.
     let mut writes = BTreeMap::<u16, usize>::new();
+    let mut stepped = BTreeSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Assign { dest, .. } = stmt {
+        if let Stmt::Assign { dest, value, .. } = stmt {
             *writes.entry(dest.index).or_default() += 1;
+            if reads(value, &NamedPlace::Register(dest.index)) {
+                stepped.insert(dest.index);
+            }
         }
     }
     let counted = ir.params.iter().enumerate().any(|(position, param)| {
-        param.name == format!("a{position}") && writes.get(&param.index).is_some_and(|n| *n >= 2)
+        param.name == format!("a{position}")
+            && writes.get(&param.index).is_some_and(|n| *n >= 2)
+            && stepped.contains(&param.index)
     });
     let roles = if counted {
         infer(ir, symbols)
@@ -870,6 +877,74 @@ mod tests {
             );
             assert!(text.contains("i++)"), "{text}");
         }
+    }
+
+    #[test]
+    fn a_parameter_is_named_from_a_loop_only_where_a_statement_steps_it() {
+        use crate::ir::{Block, Cond};
+
+        let index = 7;
+        let counting = |step: Expr| {
+            let mut ir = FunctionIr::single_block(Isa::X86_64, vec![]);
+            ir.blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![
+                        assign(index, Expr::Const(0)),
+                        Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        },
+                    ],
+                },
+                Block {
+                    start: 10,
+                    stmts: vec![Stmt::Brif {
+                        cond: Cond::Cc,
+                        lhs: Expr::reg(index, 64),
+                        rhs: Expr::Const(10),
+                        target: 30,
+                        at: None,
+                    }],
+                },
+                Block {
+                    start: 20,
+                    stmts: vec![
+                        assign(index, step),
+                        Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        },
+                    ],
+                },
+                Block {
+                    start: 30,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                        at: None,
+                    }],
+                },
+            ];
+            ir.params = vec![Param {
+                index,
+                name: "a0".into(),
+                ty: CType::int(8, true),
+            }];
+            ir
+        };
+        let mut stepped = counting(Expr::bin(BinOp::Add, Expr::reg(index, 64), Expr::Const(1)));
+        name_parameters(&mut stepped, &Symbols::default());
+        assert_eq!(stepped.params[0].name, "i");
+
+        // Written twice, by nothing that reads it: the loops are not
+        // found, and finding them would give no name either.
+        let mut reset = counting(Expr::reg(8, 64));
+        assert_eq!(
+            infer(&reset, &Symbols::default()).register(index),
+            infer_with_nodes(&reset, &Symbols::default(), &[]).register(index)
+        );
+        name_parameters(&mut reset, &Symbols::default());
+        assert_eq!(reset.params[0].name, "a0");
     }
 
     #[test]
