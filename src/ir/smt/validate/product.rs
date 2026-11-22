@@ -433,10 +433,12 @@ struct Product {
     left: Vec<BTreeSet<u16>>,
 }
 
-/// The most candidate equations an application is checked with. Every
-/// block's run states each of them, which for three times as many was
-/// seen to take five minutes and gigabytes before the first query.
-const CANDIDATES: usize = 100_000;
+/// The most candidate equations times blocks an application is checked
+/// with. Every block's run states each candidate on entry and on each way
+/// out, a kilobyte or two apiece: this many is about half a gigabyte. Of
+/// the 5718 applications of the two Rust fixtures proved in 60 s each, one
+/// was larger.
+const SIZE: usize = 300_000;
 
 /// The invariants inferred and the obligation checked under them.
 struct Equations {
@@ -456,8 +458,8 @@ impl Product {
             .map(|(index, block)| (block.start, index))
             .collect();
         let candidates = candidates(application);
-        if candidates.len() > CANDIDATES {
-            return Err("more candidate equations than the check takes");
+        if candidates.len().saturating_mul(before.len()) > SIZE {
+            return Err("more candidate equations and blocks than the check takes");
         }
         let registers: Vec<u16> = candidates
             .iter()

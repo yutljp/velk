@@ -34,6 +34,8 @@ pub(crate) struct Solver {
     /// When the process stops answering: z3 exits by itself then, and every
     /// query after it is undecided.
     deadline: Option<Instant>,
+    /// The memory the process may take, in megabytes.
+    megabytes: Option<u32>,
 }
 
 /// Where checking an application spent its solver work.
@@ -55,13 +57,23 @@ impl Solver {
         Self::start_until(None)
     }
 
-    /// A process that answers until `deadline` and exits soon after it.
+    /// A process that answers until `deadline` and exits soon after it,
+    /// and that a query stops on taking more memory than a bounded check
+    /// is given.
     pub(crate) fn start_until(deadline: Option<Instant>) -> Option<Self> {
+        Self::start_within(deadline, deadline.map(|_| MEGABYTES))
+    }
+
+    /// A process bounded as `start_until` says, by `megabytes` of memory.
+    pub(super) fn start_within(deadline: Option<Instant>, megabytes: Option<u32>) -> Option<Self> {
         let mut command = Command::new("z3");
         command.args(["-in", "-smt2"]);
         if let Some(deadline) = deadline {
             let left = deadline.saturating_duration_since(Instant::now());
             command.arg(format!("-T:{}", left.as_secs() + 1));
+        }
+        if let Some(megabytes) = megabytes {
+            command.arg(format!("-memory:{megabytes}"));
         }
         let mut child = command
             .stdin(Stdio::piped())
@@ -79,6 +91,7 @@ impl Solver {
             horns: HashMap::new(),
             satisfied: None,
             deadline,
+            megabytes,
         })
     }
 
@@ -89,7 +102,7 @@ impl Solver {
     fn request(&mut self, request: &str) -> Option<Vec<String>> {
         let lines = self.exchange(request);
         if lines.is_none()
-            && let Some(again) = Self::start_until(self.deadline)
+            && let Some(again) = Self::start_within(self.deadline, self.megabytes)
         {
             let mut old = std::mem::replace(self, again);
             self.stats = std::mem::take(&mut old.stats);
@@ -290,6 +303,12 @@ fn digest(query: &str, names: &str) -> Digest {
 
 /// The reason a query past the deadline is undecided.
 const EXPIRED: &str = "time limit";
+
+/// The memory one solver process of a time-bounded check may take, in
+/// megabytes: z3 stops on a query that takes more, and the query is
+/// undecided. One query of the Rust fixtures took five gigabytes within
+/// its minute.
+const MEGABYTES: u32 = 2048;
 
 /// What z3 is asked to print after each request, marking the end of its reply.
 const END: &str = "velk-end";

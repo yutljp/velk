@@ -1775,3 +1775,26 @@ fn a_solver_past_its_deadline_stops_a_running_query_and_asks_no_more() {
     // Without a deadline none passes.
     assert!(!Solver::start().expect("z3").expired());
 }
+
+#[test]
+fn a_solver_past_its_memory_leaves_the_query_undecided_and_answers_the_next() {
+    if !crate::ir::smt::z3_available("solver memory") {
+        return;
+    }
+    let easy = "(declare-const x (_ BitVec 8))\n(assert (= x (bvadd x #x01)))\n";
+    // z3 takes more than this for the remainders of 64-bit products.
+    let hard = "(declare-const a (_ BitVec 64))\n(declare-const b (_ BitVec 64))\n\
+        (declare-const c (_ BitVec 64))\n\
+        (assert (distinct (bvurem (bvmul (bvurem a c) (bvurem b c)) c) (bvurem (bvmul a b) c)))\n";
+    let started = std::time::Instant::now();
+    let mut solver = Solver::start_within(None, Some(20)).expect("z3");
+    assert!(matches!(
+        solver.answer(hard, u64::from(u32::MAX), Strategy::WordLevel, &[]),
+        Reply::Unknown(_)
+    ));
+    assert!(started.elapsed() < std::time::Duration::from_secs(60));
+    assert!(matches!(
+        solver.answer(easy, 1_000_000, Strategy::WordLevel, &[]),
+        Reply::Unsat
+    ));
+}
