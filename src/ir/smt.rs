@@ -139,6 +139,29 @@ pub(crate) struct Value {
     pub(crate) defined: String,
 }
 
+/// `op` applied to `args`, with the arguments that are not short bound to
+/// names first: an operation's term repeats its argument, for every bit in
+/// some, so one nested in another would grow by that factor each time.
+fn applied(op: Operation, args: &[Value]) -> String {
+    if args.iter().all(|arg| arg.term.len() <= 64) {
+        return operation(op, args);
+    }
+    let named: Vec<Value> = args
+        .iter()
+        .enumerate()
+        .map(|(index, arg)| Value {
+            term: format!("operand{index}"),
+            defined: arg.defined.clone(),
+        })
+        .collect();
+    let bindings: Vec<String> = args
+        .iter()
+        .zip(&named)
+        .map(|(arg, name)| format!("({} {})", name.term, arg.term))
+        .collect();
+    format!("(let ({}) {})", bindings.join(" "), operation(op, &named))
+}
+
 fn operation(op: Operation, args: &[Value]) -> String {
     let a = &args[0].term;
     if let Some(result) = floating::operation(op, args) {
@@ -477,7 +500,7 @@ pub(crate) fn memory_value_resolved(
                 .map(|arg| memory_value_resolved(arg, registers, memory, resolved))
                 .collect();
             defined.extend(args.iter().map(|arg| arg.defined.clone()));
-            operation(*op, &args)
+            applied(*op, &args)
         }
     };
     Value {

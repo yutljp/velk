@@ -5,6 +5,13 @@
 //! one of its comma-separated parts. `VELK_VALIDATE_APPLICATIONS`, a
 //! comma-separated list of application numbers, checks those applications
 //! whole and nothing else, for looking into one again.
+//! `VELK_VALIDATE_SECONDS` is the elapsed time one whole check may take,
+//! 60 unless given and unbounded when 0; an application it runs out on is
+//! listed undecided, to be checked again alone without the bound.
+//!
+//! A binary's statements are checked a function at a time and its
+//! applications as each is recorded, so that the queries held at once are
+//! those of one function and the applications about as many as the workers.
 //!
 //! Each rewritten statement is first compared with the original given the
 //! statements before it in its block. A pass application with a rewrite that
@@ -17,7 +24,6 @@ mod common;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use velk::loader::OpenOptions;
 use velk::service::{Binary, CacheLocation};
@@ -33,6 +39,8 @@ const SAVED_SECONDS: f64 = 60.0;
 /// Solver work allowed for a query with bounds propagation, and for the
 /// Horn query.
 const BOUNDED_RLIMIT: u64 = 1_000_000_000;
+/// Seconds one whole check may take unless `VELK_VALIDATE_SECONDS` says.
+const SECONDS: u64 = 60;
 
 #[derive(Default)]
 struct Sites {
@@ -47,8 +55,9 @@ struct Sites {
 }
 
 /// Decompiles every function of `fixture`, without the analysis cache: a
-/// cached analysis skips the passes it would check.
-fn decompile(fixture: &std::path::Path) {
+/// cached analysis skips the passes it would check; and calls `each` after
+/// each function.
+fn decompile(fixture: &std::path::Path, each: &mut dyn FnMut()) {
     let options = OpenOptions {
         cache: Some(CacheLocation::Enabled(false)),
         ..OpenOptions::default()
@@ -59,89 +68,82 @@ fn decompile(fixture: &std::path::Path) {
         let addresses: Vec<u64> = binary.image().functions.keys().copied().collect();
         for address in addresses {
             let _ = binary.decompile(address, None, None);
+            each();
         }
     }
 }
 
 /// Where an application the check does not prove is saved.
 fn saved(directory: &std::path::Path, application: &Application) -> std::path::PathBuf {
-    let tag: String = application
-        .tag
+    saved_at(directory, &application.tag, application.index)
+}
+
+fn saved_at(directory: &std::path::Path, tag: &str, index: usize) -> std::path::PathBuf {
+    let tag: String = tag
         .chars()
         .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
         .collect();
-    directory.join(format!("not-proved-{tag}-{}.txt", application.index))
+    directory.join(format!("not-proved-{tag}-{index}.txt"))
 }
 
-/// Checks `applications`, writing a line for each to `profile` as it is
-/// checked: where the solver work went, for finding what makes a run slow;
-/// and saving one not proved to `directory` once it is checked.
-fn check_all(
-    applications: &[Application],
-    workers: usize,
+/// What became of one application checked whole.
+struct Checked {
+    site: &'static str,
+    index: usize,
+    verdict: Verdict,
+}
+
+/// Checks `application` in at most `seconds`, writing a line to `profile`:
+/// where the solver work went, for finding what makes a run slow; and
+/// saving it to `directory` when it is not proved.
+fn check_one(
+    application: &Application,
+    seconds: Option<u64>,
     profile: &Mutex<std::fs::File>,
     directory: &std::path::Path,
-) -> Vec<Verdict> {
-    let next = AtomicUsize::new(0);
-    let verdicts = Mutex::new(vec![None; applications.len()]);
-    std::thread::scope(|scope| {
-        for _ in 0..workers.max(1) {
-            scope.spawn(|| {
-                loop {
-                    let index = next.fetch_add(1, Ordering::Relaxed);
-                    let Some(application) = applications.get(index) else {
-                        break;
-                    };
-                    let started = std::time::Instant::now();
-                    let (verdict, stats) =
-                        product::check_measured(application, RLIMIT, BOUNDED_RLIMIT);
-                    let line = format!(
-                        "{}\t{}\t{}\t{:.1}\t{}\t{}\t{}\t{:?}\t{:?}\t{:?}\t{}\n",
-                        application.tag,
-                        application.site,
-                        application.index,
-                        started.elapsed().as_secs_f64(),
-                        stats.blocks,
-                        stats.candidates,
-                        stats.rounds,
-                        stats.queries,
-                        stats.undecided,
-                        stats.seconds.map(|seconds| seconds.round()),
-                        match &verdict {
-                            Verdict::Proved => "proved",
-                            Verdict::NotProved { .. } => "not proved",
-                            Verdict::Unknown { .. } => "undecided",
-                            Verdict::Unchecked(_) => "unchecked",
-                        }
-                    );
-                    if let Verdict::NotProved { what, state } = &verdict {
-                        std::fs::write(
-                            saved(directory, application),
-                            format!(
-                                "{} in {} (application {})\n{what}\nstate: {state}\n\nbefore:\n{:#?}\n\nafter:\n{:#?}\n",
-                                application.site,
-                                application.tag,
-                                application.index,
-                                application.before,
-                                application.after
-                            ),
-                        )
-                        .expect("save the application");
-                    }
-                    let mut file = profile.lock().expect("profile");
-                    std::io::Write::write_all(&mut *file, line.as_bytes())
-                        .expect("write the profile");
-                    verdicts.lock().expect("verdicts")[index] = Some(verdict);
-                }
-            });
+) -> Checked {
+    let started = std::time::Instant::now();
+    let (verdict, stats) = product::check_measured(application, RLIMIT, BOUNDED_RLIMIT, seconds);
+    let line = format!(
+        "{}\t{}\t{}\t{:.1}\t{}\t{}\t{}\t{:?}\t{:?}\t{:?}\t{}\n",
+        application.tag,
+        application.site,
+        application.index,
+        started.elapsed().as_secs_f64(),
+        stats.blocks,
+        stats.candidates,
+        stats.rounds,
+        stats.queries,
+        stats.undecided,
+        stats.seconds.map(|seconds| seconds.round()),
+        match &verdict {
+            Verdict::Proved => "proved",
+            Verdict::NotProved { .. } => "not proved",
+            Verdict::Unknown { .. } => "undecided",
+            Verdict::Unchecked(_) => "unchecked",
         }
-    });
-    verdicts
-        .into_inner()
-        .expect("verdicts")
-        .into_iter()
-        .map(|verdict| verdict.expect("every application checked"))
-        .collect()
+    );
+    if let Verdict::NotProved { what, state } = &verdict {
+        std::fs::write(
+            saved(directory, application),
+            format!(
+                "{} in {} (application {})\n{what}\nstate: {state}\n\nbefore:\n{:#?}\n\nafter:\n{:#?}\n",
+                application.site,
+                application.tag,
+                application.index,
+                application.before,
+                application.after
+            ),
+        )
+        .expect("save the application");
+    }
+    let mut file = profile.lock().expect("profile");
+    std::io::Write::write_all(&mut *file, line.as_bytes()).expect("write the profile");
+    Checked {
+        site: application.site,
+        index: application.index,
+        verdict,
+    }
 }
 
 #[test]
@@ -151,6 +153,10 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
         .output()
         .is_err()
     {
+        assert!(
+            std::env::var_os("VELK_REQUIRE_SOLVER").is_none(),
+            "rewrite validation: VELK_REQUIRE_SOLVER is set and z3 is not on PATH"
+        );
         eprintln!("SKIP rewrite validation: z3 unavailable");
         return;
     }
@@ -163,6 +169,9 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                     .map(|number| number.trim().parse().expect("an application number"))
                     .collect()
             });
+    let seconds = std::env::var("VELK_VALIDATE_SECONDS")
+        .map_or(SECONDS, |seconds| seconds.trim().parse().expect("seconds"));
+    let seconds = (seconds != 0).then_some(seconds);
     let fixtures: Vec<_> = common::fixtures()
         .into_iter()
         .filter(|fixture| {
@@ -193,19 +202,24 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
     let mut report = String::new();
     for (number, fixture) in fixtures.iter().enumerate() {
         let tag = fixture.to_string_lossy().into_owned();
-        validate::begin(&tag);
-        decompile(fixture);
-        let recorded = validate::take();
-        for (key, count) in recorded.skipped {
-            *skipped.entry(key).or_default() += count;
-        }
-        let local = std::time::Instant::now();
-        let answers = if only.is_some() {
-            Vec::new()
-        } else {
-            validate::solve(
+        let mut statements = 0;
+        let mut local = std::time::Duration::ZERO;
+        let mut wanted = BTreeSet::new();
+        let mut fingerprints = BTreeMap::new();
+        let mut statement_checks = |recorded: validate::Recorded| {
+            for (key, count) in recorded.skipped {
+                *skipped.entry(key).or_default() += count;
+            }
+            statements += recorded.obligations.len();
+            wanted.extend(recorded.unchecked);
+            fingerprints.extend(recorded.fingerprints);
+            if only.is_some() {
+                return;
+            }
+            let started = std::time::Instant::now();
+            let answers = validate::solve(
                 &recorded.obligations,
-                workers,
+                workers.min(recorded.obligations.len()),
                 RLIMIT,
                 &[Strategy::WordLevel, Strategy::Integer],
                 &|index, answer, seconds| {
@@ -226,7 +240,10 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                             .expect("write the slow queries");
                         if seconds >= SAVED_SECONDS {
                             std::fs::write(
-                                directory.join(format!("slow-{number}-{index}.smt2")),
+                                directory.join(format!(
+                                    "slow-{number}-{}-{index}.smt2",
+                                    obligation.application
+                                )),
                                 format!(
                                     "(set-option :rlimit {RLIMIT})\n{}{}",
                                     obligation.query,
@@ -237,49 +254,71 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                         }
                     }
                 },
-            )
-        };
-        let local = local.elapsed().as_secs();
-        let mut wanted = recorded.unchecked.clone();
-        for (obligation, answer) in recorded.obligations.iter().zip(&answers) {
-            let site = sites.entry(obligation.site).or_default();
-            if *answer == Answer::Proved {
-                site.statements += 1;
-            } else {
-                site.deferred += 1;
-                wanted.insert(obligation.application);
+            );
+            local += started.elapsed();
+            for (obligation, answer) in recorded.obligations.iter().zip(&answers) {
+                let site = sites.entry(obligation.site).or_default();
+                if *answer == Answer::Proved {
+                    site.statements += 1;
+                } else {
+                    site.deferred += 1;
+                    wanted.insert(obligation.application);
+                }
             }
-        }
+        };
+        validate::begin(&tag);
+        decompile(fixture, &mut || statement_checks(validate::collect()));
+        statement_checks(validate::take());
+        let local = local.as_secs();
         let wanted: BTreeSet<usize> = only
             .clone()
             .unwrap_or(wanted)
             .into_iter()
-            .filter(|application| recorded.fingerprints.contains_key(application))
+            .filter(|application| fingerprints.contains_key(application))
             .collect();
         if !wanted.is_empty() {
-            validate::revisit(&tag, wanted.clone());
-            decompile(fixture);
-            let again = validate::take();
-            let found: BTreeSet<usize> = again
-                .applications
-                .iter()
-                .map(|application| application.index)
-                .collect();
-            assert_eq!(
-                found, wanted,
-                "{tag}: decompiling again applied other passes"
-            );
-            for application in &again.applications {
+            // Each application goes to the workers as its pass returns,
+            // the decompiling thread waiting while all of them are busy, so
+            // those held at once are about as many as the workers.
+            let (sender, receiver) = std::sync::mpsc::sync_channel::<Application>(0);
+            let receiver = Mutex::new(receiver);
+            let checked = Mutex::new(Vec::new());
+            let again = std::thread::scope(|scope| {
+                for _ in 0..workers.clamp(1, wanted.len()) {
+                    scope.spawn(|| {
+                        loop {
+                            let received = receiver.lock().expect("applications").recv();
+                            let Ok(application) = received else {
+                                break;
+                            };
+                            let one = check_one(&application, seconds, &profile, &directory);
+                            checked.lock().expect("verdicts").push(one);
+                        }
+                    });
+                }
+                validate::revisit(&tag, wanted.clone(), move |application| {
+                    sender.send(application).expect("a worker takes it");
+                });
+                decompile(fixture, &mut || {});
+                validate::take()
+            });
+            let mut checked = checked.into_inner().expect("verdicts");
+            checked.sort_by_key(|one| one.index);
+            let mut found = BTreeSet::new();
+            for Checked {
+                site,
+                index,
+                verdict,
+            } in checked
+            {
+                found.insert(index);
                 assert_eq!(
-                    again.fingerprints.get(&application.index),
-                    recorded.fingerprints.get(&application.index),
-                    "{tag}: application {} changed when decompiled again",
-                    application.index
+                    again.fingerprints.get(&index),
+                    fingerprints.get(&index),
+                    "{tag}: application {index} changed when decompiled again"
                 );
-            }
-            let verdicts = check_all(&again.applications, workers, &profile, &directory);
-            for (application, verdict) in again.applications.iter().zip(verdicts) {
-                let site = sites.entry(application.site).or_default();
+                let site_name = site;
+                let site = sites.entry(site).or_default();
                 match verdict {
                     Verdict::Proved => site.proved += 1,
                     Verdict::Unchecked(reason) => {
@@ -288,29 +327,29 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                     Verdict::Unknown { what, reason } => {
                         site.unknown += 1;
                         eprintln!(
-                            "UNDECIDED {} in {tag} (application {}): {what}: {reason}",
-                            application.site, application.index
+                            "UNDECIDED {site_name} in {tag} (application {index}): {what}: {reason}"
                         );
                     }
                     Verdict::NotProved { what, state } => {
                         site.not_proved += 1;
-                        let path = saved(&directory, application);
                         writeln!(
                             report,
-                            "{} in {tag}: {what}\n  state: {state}\n  {}",
-                            application.site,
-                            path.display()
+                            "{site_name} in {tag}: {what}\n  state: {state}\n  {}",
+                            saved_at(&directory, &tag, index).display()
                         )
                         .expect("writing to a String");
                     }
                 }
             }
+            assert_eq!(
+                found, wanted,
+                "{tag}: decompiling again applied other passes"
+            );
         }
         eprintln!(
-            "{}/{} {tag}: {} statement checks in {local}s, {} applications checked whole, {}s",
+            "{}/{} {tag}: {statements} statement checks in {local}s, {} applications checked whole, {}s",
             number + 1,
             fixtures.len(),
-            recorded.obligations.len(),
             wanted.len(),
             start.elapsed().as_secs()
         );

@@ -703,3 +703,65 @@ fn word_pair_join_is_equivalent() {
     proofs.predicate("join words", &expected, &super::term(&joined));
     proofs.check();
 }
+
+#[test]
+fn an_operation_names_a_long_argument_and_means_what_it_does_inline() {
+    let apply = |op, arg: Expr| Expr::Apply {
+        op,
+        args: vec![arg],
+    };
+    let count = |arg| apply(Operation::CountLeadingZeros(64), arg);
+    // Each count repeats its argument for every bit: four inline would be
+    // some 64^4 copies of the innermost.
+    let sum = raw_bin(BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64));
+    let nested = count(count(count(count(raw_bin(BinOp::Mul, sum.clone(), sum)))));
+    assert!(term(&nested).len() < 100_000);
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let long = Value {
+        term: "(bvadd (bvmul r0 #x9e3779b97f4a7c15) (bvxor r1 (bvlshr r2 #x0000000000000007)))"
+            .to_owned(),
+        defined: "true".to_owned(),
+    };
+    for op in [
+        Operation::CountLeadingZeros(64),
+        Operation::CountLeadingZeros(32),
+        Operation::CountTrailingZeros(64),
+        Operation::ReverseBits(32),
+        Operation::PopCount(64),
+    ] {
+        let named = applied(op, std::slice::from_ref(&long));
+        let inline = operation(op, std::slice::from_ref(&long));
+        assert!(named.starts_with("(let ((operand0 "), "{named}");
+        proofs.predicate(format!("{op:?} of a named argument"), &named, &inline);
+        // A name inside the argument of another is the inner one's own.
+        let outer = applied(
+            op,
+            &[Value {
+                term: named.clone(),
+                defined: "true".to_owned(),
+            }],
+        );
+        let outer_inline = operation(
+            op,
+            &[Value {
+                term: inline,
+                defined: "true".to_owned(),
+            }],
+        );
+        proofs.predicate(format!("{op:?} of itself"), &outer, &outer_inline);
+    }
+    // A short argument stays in place.
+    let short = Value {
+        term: "r0".to_owned(),
+        defined: "true".to_owned(),
+    };
+    assert_eq!(
+        applied(Operation::ReverseBits(8), std::slice::from_ref(&short)),
+        operation(Operation::ReverseBits(8), std::slice::from_ref(&short))
+    );
+    proofs.check();
+}

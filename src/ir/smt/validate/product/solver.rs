@@ -3,8 +3,9 @@
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
+use std::time::Instant;
 
-use super::horn::solve_horn;
+use super::horn::{HORN_SECONDS, solve_horn};
 use crate::ir::smt::validate::Strategy;
 
 #[derive(Clone)]
@@ -21,12 +22,18 @@ pub(crate) struct Solver {
     pub(super) stdin: std::process::ChildStdin,
     pub(super) stdout: BufReader<std::process::ChildStdout>,
     pub(super) stats: Stats,
-    /// The replies to queries asked already, by query, strategy and limit.
-    pub(super) replies: HashMap<(String, Strategy, u64), Reply>,
-    /// The replies to Horn clauses solved already, by clauses and limit.
-    pub(super) horns: HashMap<(String, u64), Reply>,
+    /// The replies to queries asked already, by the digest of the query
+    /// and the names asked for, strategy and limit: the queries of one large
+    /// function, kept whole, take gigabytes.
+    pub(super) replies: HashMap<(Digest, Strategy, u64), Reply>,
+    /// The replies to Horn clauses solved already, by the clauses' digest
+    /// and limit.
+    pub(super) horns: HashMap<(Digest, u64), Reply>,
     /// The query z3 last found satisfiable and still holds a model of.
     satisfied: Option<String>,
+    /// When the process stops answering: z3 exits by itself then, and every
+    /// query after it is undecided.
+    deadline: Option<Instant>,
 }
 
 /// Where checking an application spent its solver work.
@@ -45,8 +52,18 @@ pub struct Stats {
 
 impl Solver {
     pub(crate) fn start() -> Option<Self> {
-        let mut child = Command::new("z3")
-            .args(["-in", "-smt2"])
+        Self::start_until(None)
+    }
+
+    /// A process that answers until `deadline` and exits soon after it.
+    pub(crate) fn start_until(deadline: Option<Instant>) -> Option<Self> {
+        let mut command = Command::new("z3");
+        command.args(["-in", "-smt2"]);
+        if let Some(deadline) = deadline {
+            let left = deadline.saturating_duration_since(Instant::now());
+            command.arg(format!("-T:{}", left.as_secs() + 1));
+        }
+        let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
@@ -61,6 +78,7 @@ impl Solver {
             replies: HashMap::new(),
             horns: HashMap::new(),
             satisfied: None,
+            deadline,
         })
     }
 
@@ -71,7 +89,7 @@ impl Solver {
     fn request(&mut self, request: &str) -> Option<Vec<String>> {
         let lines = self.exchange(request);
         if lines.is_none()
-            && let Some(again) = Self::start()
+            && let Some(again) = Self::start_until(self.deadline)
         {
             let mut old = std::mem::replace(self, again);
             self.stats = std::mem::take(&mut old.stats);
@@ -79,6 +97,12 @@ impl Solver {
             self.horns = std::mem::take(&mut old.horns);
         }
         lines
+    }
+
+    /// Whether the deadline has passed.
+    pub(crate) fn expired(&self) -> bool {
+        self.deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
     }
 
     fn exchange(&mut self, request: &str) -> Option<Vec<String>> {
@@ -115,11 +139,11 @@ impl Solver {
         strategy: Strategy,
         names: &[&str],
     ) -> Reply {
-        let key = (format!("{query}{}", names.join(" ")), strategy, rlimit);
+        let key = (digest(query, &names.join(" ")), strategy, rlimit);
         if let Some(reply) = self.replies.get(&key) {
             return reply.clone();
         }
-        let started = std::time::Instant::now();
+        let started = Instant::now();
         let reply = self.answer(query, rlimit, strategy, names);
         let kind = match strategy {
             Strategy::WordLevel => 0,
@@ -139,12 +163,21 @@ impl Solver {
     /// already, such as when equations checked again keep the same ones,
     /// get the reply they got.
     pub(super) fn horn(&mut self, text: &str, rlimit: u64) -> Reply {
-        let key = (text.to_owned(), rlimit);
+        let key = (digest(text, ""), rlimit);
         if let Some(reply) = self.horns.get(&key) {
             return reply.clone();
         }
-        let started = std::time::Instant::now();
-        let reply = solve_horn(text, rlimit);
+        let seconds = match self.deadline {
+            None => HORN_SECONDS,
+            Some(deadline) => match deadline.checked_duration_since(Instant::now()) {
+                Some(left) => {
+                    HORN_SECONDS.min(u32::try_from(left.as_secs()).unwrap_or(u32::MAX) + 1)
+                }
+                None => return Reply::Unknown(EXPIRED.to_owned()),
+            },
+        };
+        let started = Instant::now();
+        let reply = solve_horn(text, rlimit, seconds);
         self.stats.queries[2] += 1;
         self.stats.seconds[2] += started.elapsed().as_secs_f64();
         if matches!(reply, Reply::Unknown(_)) {
@@ -161,6 +194,9 @@ impl Solver {
         strategy: Strategy,
         names: &[&str],
     ) -> Reply {
+        if self.expired() {
+            return Reply::Unknown(EXPIRED.to_owned());
+        }
         let original = query;
         let Some(query) = strategy.query(query) else {
             return Reply::Unknown(format!("no {strategy:?} form"));
@@ -223,10 +259,11 @@ impl Solver {
             return String::new();
         }
         if self.satisfied.as_deref() != Some(query) {
+            let wanted = digest(query, "");
             let asked = self
                 .replies
                 .iter()
-                .find(|((asked, _, _), reply)| asked == query && matches!(reply, Reply::Sat(_)))
+                .find(|((asked, _, _), reply)| *asked == wanted && matches!(reply, Reply::Sat(_)))
                 .map(|((_, strategy, rlimit), _)| (*strategy, *rlimit));
             let Some((strategy, rlimit)) = asked else {
                 return "no model".to_owned();
@@ -239,6 +276,20 @@ impl Solver {
             .unwrap_or_else(|printed| printed)
     }
 }
+
+/// What stands for a query in the kept replies.
+type Digest = [u8; 32];
+
+fn digest(query: &str, names: &str) -> Digest {
+    use sha2::Digest as _;
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(query.as_bytes());
+    hasher.update(names.as_bytes());
+    hasher.finalize().into()
+}
+
+/// The reason a query past the deadline is undecided.
+const EXPIRED: &str = "time limit";
 
 /// What z3 is asked to print after each request, marking the end of its reply.
 const END: &str = "velk-end";

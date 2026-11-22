@@ -276,14 +276,20 @@ pub fn check(application: &Application, rlimit: u64, bounded_rlimit: u64) -> Ver
     check_with(application, &mut solver, rlimit, bounded_rlimit)
 }
 
-/// The same, with where the solver work went.
+/// The same, with where the solver work went, and with at most `seconds`
+/// of elapsed time when given. An application the time runs out on is
+/// undecided unless it was proved by then: what a query cut short leaves
+/// unproved says nothing about the rewrite.
 #[must_use]
 pub fn check_measured(
     application: &Application,
     rlimit: u64,
     bounded_rlimit: u64,
+    seconds: Option<u64>,
 ) -> (Verdict, Stats) {
-    let Some(mut solver) = Solver::start() else {
+    let deadline =
+        seconds.map(|seconds| std::time::Instant::now() + std::time::Duration::from_secs(seconds));
+    let Some(mut solver) = Solver::start_until(deadline) else {
         return (
             Verdict::Unknown {
                 what: String::new(),
@@ -292,7 +298,15 @@ pub fn check_measured(
             Stats::default(),
         );
     };
-    let verdict = check_with(application, &mut solver, rlimit, bounded_rlimit);
+    let verdict = match check_with(application, &mut solver, rlimit, bounded_rlimit) {
+        Verdict::NotProved { what, .. } | Verdict::Unknown { what, .. } if solver.expired() => {
+            Verdict::Unknown {
+                what,
+                reason: format!("time limit of {} s", seconds.unwrap_or_default()),
+            }
+        }
+        verdict => verdict,
+    };
     (verdict, std::mem::take(&mut solver.stats))
 }
 
@@ -368,7 +382,7 @@ fn check_model(
     if quick.failed.is_none() {
         return Verdict::Proved;
     }
-    let first = if quick.undecided {
+    let first = if quick.undecided && !solver.expired() {
         product.equations(application, solver, &strategies, true)
     } else {
         quick
@@ -376,6 +390,10 @@ fn check_model(
     let Some(failed) = first.failed else {
         return Verdict::Proved;
     };
+    // Equations cut short by the deadline leave no blocks for the clauses.
+    if solver.expired() {
+        return failed;
+    }
     let horned = solver.horn(
         &horn(application, &first.checked, &product.registers),
         bounded_rlimit,
@@ -415,6 +433,11 @@ struct Product {
     left: Vec<BTreeSet<u16>>,
 }
 
+/// The most candidate equations an application is checked with. Every
+/// block's run states each of them, which for three times as many was
+/// seen to take five minutes and gigabytes before the first query.
+const CANDIDATES: usize = 100_000;
+
 /// The invariants inferred and the obligation checked under them.
 struct Equations {
     /// The first obligation the invariants leave unproved.
@@ -433,6 +456,9 @@ impl Product {
             .map(|(index, block)| (block.start, index))
             .collect();
         let candidates = candidates(application);
+        if candidates.len() > CANDIDATES {
+            return Err("more candidate equations than the check takes");
+        }
         let registers: Vec<u16> = candidates
             .iter()
             .filter_map(|candidate| match candidate {
@@ -581,6 +607,18 @@ impl Product {
                 while let Some(group) = groups.pop() {
                     if group.is_empty() {
                         continue;
+                    }
+                    // Past the deadline every reply is undecided: going on
+                    // would build each remaining query to learn nothing.
+                    if solver.expired() {
+                        return Equations {
+                            failed: Some(Verdict::Unknown {
+                                what: String::new(),
+                                reason: "time limit".to_owned(),
+                            }),
+                            checked: Vec::new(),
+                            undecided: false,
+                        };
                     }
                     let kept = conjunction(&group, holds);
                     let assertion = format!("(and {assumed} {path} (not {kept}))");

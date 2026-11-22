@@ -20,12 +20,12 @@ pub(super) const HORN_MEGABYTES: u32 = 2048;
 
 /// Whether the Horn clauses `text` are satisfiable, asked of a z3 process of
 /// their own that the bounds above stop.
-pub(super) fn solve_horn(text: &str, rlimit: u64) -> Reply {
+pub(super) fn solve_horn(text: &str, rlimit: u64, seconds: u32) -> Reply {
     let Ok(mut child) = Command::new("z3")
         .args([
             "-in",
             "-smt2",
-            &format!("-T:{HORN_SECONDS}"),
+            &format!("-T:{seconds}"),
             &format!("-memory:{HORN_MEGABYTES}"),
         ])
         .stdin(Stdio::piped())

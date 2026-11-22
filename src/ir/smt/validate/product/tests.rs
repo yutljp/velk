@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use super::*;
 use crate::ir::smt::raw_bin;
 use crate::ir::{BinOp, Cond, Convention, RegRef, Stmt};
@@ -160,8 +158,7 @@ fn not_proved(verdict: &Verdict) -> bool {
 
 #[test]
 fn functions_are_compared_across_blocks_and_loops() {
-    if Command::new("z3").arg("-version").output().is_err() {
-        eprintln!("SKIP product validation: z3 unavailable");
+    if !crate::ir::smt::z3_available("product validation") {
         return;
     }
     // A register renamed throughout the function.
@@ -1677,8 +1674,7 @@ fn a_load_after_stores_to_other_bytes_suggests_an_equation_at_the_entry() {
 
 #[test]
 fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
-    if Command::new("z3").arg("-version").output().is_err() {
-        eprintln!("SKIP solver replies: z3 unavailable");
+    if !crate::ir::smt::z3_available("solver replies") {
         return;
     }
     let mut solver = Solver::start().expect("z3");
@@ -1697,4 +1693,85 @@ fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
         solver.answer(held, 1_000_000, Strategy::WordLevel, &["p"]),
         Reply::Sat(values) if values == [true]
     ));
+}
+
+#[test]
+fn a_time_limit_leaves_what_it_cuts_short_undecided_and_never_refuted() {
+    if !crate::ir::smt::z3_available("time limit") {
+        return;
+    }
+    let renamed = |k| {
+        application(
+            vec![
+                block(0, vec![assign(10, plus(0, 1)), br(1)]),
+                block(1, vec![ret(r(10))]),
+            ],
+            vec![
+                block(0, vec![assign(11, plus(0, k)), br(1)]),
+                block(1, vec![ret(r(11))]),
+            ],
+        )
+    };
+    let limited = |application: &Application, seconds| {
+        check_measured(application, 50_000_000, 1_000_000_000, seconds).0
+    };
+    // Time enough changes neither verdict.
+    for seconds in [None, Some(600)] {
+        assert_eq!(limited(&renamed(1), seconds), Verdict::Proved);
+        assert!(not_proved(&limited(&renamed(2), seconds)));
+    }
+    // With none, the rewrite that holds and the one that does not are both
+    // undecided, and say why.
+    for k in [1, 2] {
+        let Verdict::Unknown { reason, .. } = limited(&renamed(k), Some(0)) else {
+            panic!("a verdict without time for a query");
+        };
+        assert_eq!(reason, "time limit of 0 s");
+    }
+    // What needs no query is decided all the same.
+    let mut unwinding = renamed(1);
+    unwinding.landing_pads = true;
+    assert!(matches!(
+        limited(&unwinding, Some(0)),
+        Verdict::Unchecked(_)
+    ));
+}
+
+#[test]
+fn a_solver_past_its_deadline_stops_a_running_query_and_asks_no_more() {
+    if !crate::ir::smt::z3_available("solver deadline") {
+        return;
+    }
+    let easy = "(declare-const x (_ BitVec 8))\n(assert (= x (bvadd x #x01)))\n";
+    // That a product of remainders has the remainder of the product,
+    // without a limit on solver work: far longer than the test waits.
+    let hard = "(declare-const a (_ BitVec 64))\n(declare-const b (_ BitVec 64))\n\
+        (declare-const c (_ BitVec 64))\n\
+        (assert (bvult a #x0000000100000000))\n(assert (bvult b #x0000000100000000))\n\
+        (assert (bvult #x0000000000000001 c))\n\
+        (assert (distinct (bvurem (bvmul (bvurem a c) (bvurem b c)) c) (bvurem (bvmul a b) c)))\n";
+    let started = std::time::Instant::now();
+    let deadline = started + std::time::Duration::from_secs(2);
+    let mut solver = Solver::start_until(Some(deadline)).expect("z3");
+    assert!(!solver.expired());
+    assert!(matches!(
+        solver.answer(easy, 1_000_000, Strategy::WordLevel, &[]),
+        Reply::Unsat
+    ));
+    assert!(matches!(
+        solver.answer(hard, u64::from(u32::MAX), Strategy::WordLevel, &[]),
+        Reply::Unknown(_)
+    ));
+    assert!(started.elapsed() < std::time::Duration::from_secs(30));
+    assert!(solver.expired());
+    assert!(matches!(
+        solver.answer(easy, 1_000_000, Strategy::WordLevel, &[]),
+        Reply::Unknown(reason) if reason == "time limit"
+    ));
+    assert!(matches!(
+        solver.horn("(check-sat)", 1_000_000),
+        Reply::Unknown(reason) if reason == "time limit"
+    ));
+    // Without a deadline none passes.
+    assert!(!Solver::start().expect("z3").expired());
 }

@@ -276,6 +276,17 @@ cargo test --release --features validate --test validate -- --nocapture
 one of its comma-separated parts. A full run takes hours; the Go and Rust
 binaries take most of it.
 
+The whole check of one application of a pass, described below, takes at most 60
+seconds of elapsed time, or the number of seconds `VELK_VALIDATE_SECONDS`
+gives; `0` removes the bound. An application the time runs out on is listed as
+undecided with the reason `time limit`, whatever the queries cut short would
+have said, so the bound never reports a rewrite as wrong. Unlike the limits on
+solver work, it depends on the machine and its load, so two runs can differ in
+which applications are undecided. `VELK_VALIDATE_APPLICATIONS`, a
+comma-separated list of the application numbers a run printed, checks those
+applications alone; with `VELK_VALIDATE_SECONDS=0` it checks them without the
+bound.
+
 With the feature, each step of the decompiling pipeline that changes a
 function's IR runs through `passes::checked`, which records the blocks before
 and after it. A unit test reads the pipeline's source and fails when a step

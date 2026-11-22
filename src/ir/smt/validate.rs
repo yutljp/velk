@@ -29,7 +29,6 @@ static STATE: Mutex<State> = Mutex::new(State {
     unchecked: BTreeSet::new(),
     fingerprints: BTreeMap::new(),
     revisit: None,
-    applications: Vec::new(),
 });
 
 struct State {
@@ -43,10 +42,14 @@ struct State {
     applied: usize,
     unchecked: BTreeSet<usize>,
     fingerprints: BTreeMap<usize, u64>,
-    /// The applications to record whole, instead of checking statements.
-    revisit: Option<BTreeSet<usize>>,
-    applications: Vec<product::Application>,
+    /// The applications to hand over whole, instead of checking
+    /// statements, and what takes each as its pass returns: a large
+    /// function's applications, each with the function before and after,
+    /// would take gigabytes if they were kept until it is decompiled.
+    revisit: Option<(BTreeSet<usize>, Sink)>,
 }
+
+type Sink = Box<dyn FnMut(product::Application) + Send>;
 
 /// One rewritten statement and the query whose satisfiability would show
 /// that the rewrite changed what the statement does.
@@ -81,8 +84,6 @@ pub struct Recorded {
     pub unchecked: BTreeSet<usize>,
     /// A hash of each changing application's function before and after.
     pub fingerprints: BTreeMap<usize, u64>,
-    /// The applications [`revisit`] asked for.
-    pub applications: Vec<product::Application>,
 }
 
 static REPEATED: AtomicUsize = AtomicUsize::new(0);
@@ -100,18 +101,23 @@ pub fn begin(tag: &str) {
     ENABLED.store(true, Ordering::SeqCst);
 }
 
-/// Starts recording the pass applications `wanted` whole, for the
+/// Starts handing the pass applications `wanted` whole to `each`, for the
 /// whole-function check, when what is decompiled next repeats what was
-/// decompiled after [`begin`] with the same tag.
+/// decompiled after [`begin`] with the same tag. `each` runs on the thread
+/// decompiling, which waits for it; [`take`] drops it.
 ///
 /// # Panics
 ///
 /// When a thread recording before panicked.
-pub fn revisit(tag: &str, wanted: BTreeSet<usize>) {
+pub fn revisit(
+    tag: &str,
+    wanted: BTreeSet<usize>,
+    each: impl FnMut(product::Application) + Send + 'static,
+) {
     let mut state = STATE.lock().expect("validation state");
     tag.clone_into(&mut state.tag);
     state.applied = 0;
-    state.revisit = Some(wanted);
+    state.revisit = Some((wanted, Box::new(each)));
     ENABLED.store(true, Ordering::SeqCst);
 }
 
@@ -145,8 +151,22 @@ fn returned(ir: &FunctionIr) -> Option<u32> {
 /// When a thread recording before panicked.
 pub fn take() -> Recorded {
     ENABLED.store(false, Ordering::SeqCst);
+    let recorded = collect();
     let mut state = STATE.lock().expect("validation state");
     state.seen.clear();
+    state.revisit = None;
+    recorded
+}
+
+/// What was recorded since the last [`take`] or call of this, while
+/// recording goes on: for checking a large binary a function at a time
+/// rather than holding every query of it.
+///
+/// # Panics
+///
+/// When a thread recording before panicked.
+pub fn collect() -> Recorded {
+    let mut state = STATE.lock().expect("validation state");
     Recorded {
         obligations: std::mem::take(&mut state.obligations),
         skipped: std::mem::take(&mut state.skipped),
@@ -154,7 +174,6 @@ pub fn take() -> Recorded {
         unchanged: std::mem::take(&mut state.unchanged),
         unchecked: std::mem::take(&mut state.unchecked),
         fingerprints: std::mem::take(&mut state.fingerprints),
-        applications: std::mem::take(&mut state.applications),
     }
 }
 
@@ -203,7 +222,7 @@ pub(crate) fn pass<R>(
             && state
                 .revisit
                 .as_ref()
-                .is_some_and(|wanted| wanted.contains(&application))
+                .is_some_and(|(wanted, _)| wanted.contains(&application))
         {
             let tag = state.tag.clone();
             let sp = crate::arch::stack_pointer(ir.isa);
@@ -263,7 +282,7 @@ pub(crate) fn pass<R>(
                 blocks: before.clone(),
                 ..ir.clone()
             });
-            state.applications.push(product::Application {
+            let whole = product::Application {
                 site,
                 tag,
                 index: application,
@@ -298,7 +317,10 @@ pub(crate) fn pass<R>(
                     })
                     .collect(),
                 returned: returned(ir),
-            });
+            };
+            if let Some((_, each)) = &mut state.revisit {
+                each(whole);
+            }
             return result;
         }
         (application, revisiting)
@@ -1078,7 +1100,6 @@ mod tests {
     use super::*;
     use crate::ir::smt::raw_bin;
     use crate::ir::{BinOp, RegRef};
-    use std::process::Command;
 
     #[test]
     fn horn_clauses_relate_unmodeled_applications_by_their_arguments() {
@@ -1135,8 +1156,7 @@ mod tests {
 
     #[test]
     fn a_quotient_recovered_from_a_reciprocal_is_proved() {
-        if Command::new("z3").arg("-version").output().is_err() {
-            eprintln!("SKIP rewrite validation: z3 unavailable");
+        if !crate::ir::smt::z3_available("rewrite validation") {
             return;
         }
         // udiv3: the low word times 0xaaaaaaab, shifted right by 33.

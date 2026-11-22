@@ -394,6 +394,7 @@ fn unnamed_reads(ssa: &Ssa, needed: &HashSet<u16>) -> (HashSet<u16>, ScratchRead
 /// The registers each call of `ir`, by block start and position, reads
 /// unnamed that hold only scratch it passes by, as `split_variables` takes
 /// them.
+#[cfg(any(test, feature = "validate"))]
 pub(crate) fn scratch_call_reads(ir: &FunctionIr) -> ScratchReads<u64> {
     let Some(ssa) = build(ir) else {
         return BTreeMap::new();

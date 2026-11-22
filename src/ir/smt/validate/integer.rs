@@ -898,11 +898,7 @@ mod tests {
     }
 
     fn available() -> bool {
-        let found = Command::new("z3").arg("-version").output().is_ok();
-        if !found {
-            eprintln!("SKIP integer translation: z3 unavailable");
-        }
-        found
+        crate::ir::smt::z3_available("integer translation")
     }
 
     /// Proves that `term`, over the 8-bit `X` and `Y`, has the value its
