@@ -210,7 +210,13 @@ pub(crate) fn lift_shared_with_targets(
         answers.borrow_mut().push((target, call_summary(summary)));
         summary
     })
-    .map(Arc::new);
+    .map(|mut blocks| {
+        for block in &mut blocks {
+            block.stmts.shrink_to_fit();
+        }
+        blocks.shrink_to_fit();
+        Arc::new(blocks)
+    });
     let mut answers = answers.into_inner();
     answers.sort_unstable_by_key(|(target, _)| *target);
     answers.dedup_by_key(|(target, _)| *target);

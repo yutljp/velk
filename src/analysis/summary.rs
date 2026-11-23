@@ -130,7 +130,7 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
 fn summarize(image: &Image, roots: &[u64], cache: &mut HashMap<u64, Summary>, bodies: Bodies) {
     let known_runtime = image.go && image.isa == crate::loader::Isa::X86_64;
     let mut runtime = HashMap::new();
-    let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime);
+    let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime, bodies);
     let parts = strongly_connected_components(roots, &edges);
     let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime, bodies);
     cache.extend(runtime);
@@ -382,13 +382,27 @@ fn call_graph(
     known: &HashMap<u64, Summary>,
     runtime: &mut HashMap<u64, Summary>,
     use_runtime: bool,
+    bodies: Bodies,
 ) -> (HashMap<u64, Vec<u64>>, HashSet<u64>) {
     crate::timing::scope!("summary::call_graph");
     let mut edges = HashMap::new();
     let mut recursive = HashSet::new();
     let mut round = roots.to_vec();
     while !round.is_empty() {
-        let found = crate::parallel::map(&round, |addr| callees(image, *addr));
+        let found = crate::parallel::map(&round, |addr| {
+            let found = callees(image, *addr);
+            // A function that calls another is lifted again once its
+            // callees are summarized, so only the body of one that calls
+            // nothing is worth keeping until then: every function of the
+            // binary is lifted here before the first is settled.
+            if bodies == Bodies::Dropped
+                && (found.1 || !found.0.is_empty())
+                && let Some((size, starts)) = lifted_as(image, *addr)
+            {
+                image.lifts.forget(*addr, size, &starts);
+            }
+            found
+        });
         let mut next = Vec::new();
         for (addr, (callees, calls_itself)) in round.into_iter().zip(found) {
             if calls_itself {
