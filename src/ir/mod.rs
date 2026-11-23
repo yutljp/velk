@@ -675,7 +675,7 @@ impl Ordering {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     /// An indivisible machine operation. Outputs are simultaneous writes.
     Machine {

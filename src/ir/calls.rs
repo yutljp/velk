@@ -117,6 +117,22 @@ pub struct CallAbi {
     pub(crate) fallback: CallFallback,
 }
 
+/// Two calls made through one declaration in the same way. Declarations
+/// are compared by identity: the copies of a call share theirs.
+impl PartialEq for CallAbi {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.declaration, &other.declaration)
+            && self.kind == other.kind
+            && self.target == other.target
+            && self.convention == other.convention
+            && self.arguments == other.arguments
+            && self.hidden_result == other.hidden_result
+            && self.dependencies == other.dependencies
+            && self.deferred_memory == other.deferred_memory
+            && self.fallback == other.fallback
+    }
+}
+
 #[cfg(test)]
 pub(crate) fn test_call_abi(dependencies: Vec<u16>, deferred_memory: bool) -> Arc<CallAbi> {
     Arc::new(CallAbi {
