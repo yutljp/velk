@@ -205,9 +205,8 @@ fn decompile_functions(
 ) -> ExitCode {
     use std::time::Duration;
 
-    let mut code = String::new();
     let mut status = ExitCode::SUCCESS;
-    let results = if addresses.len() <= 1 {
+    let results: Vec<_> = if addresses.len() <= 1 {
         addresses
             .iter()
             .map(|&addr| {
@@ -226,6 +225,9 @@ fn decompile_functions(
             }
         }
     };
+    // Sized once: growing the text of every function of a large binary
+    // leaves each outgrown copy behind.
+    let mut code = String::with_capacity(results.iter().flatten().map(String::len).sum());
     for (&addr, result) in std::iter::zip(addresses, results) {
         match result {
             Ok(text) => code.push_str(&text),

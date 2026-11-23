@@ -222,8 +222,12 @@ pub(in crate::render) fn resolve(code: &str) -> String {
             global.ty, global.name, global.address
         ));
     }
-    let mut output = crate::render::prelude::section(&support);
-    output.reserve(code.len());
+    // No more than the input holds, and allocated in one piece, so that
+    // the buffer of the text this one was made from can be used again.
+    let support = crate::render::prelude::section(&support);
+    let mut output = String::with_capacity(code.len().max(support.len()));
+    output.push_str(&support);
+    drop(support);
     for body in bodies {
         let mut replacements = HashMap::new();
         for declaration in body.declarations {

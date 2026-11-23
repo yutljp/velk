@@ -27,7 +27,7 @@ impl Prelude {
         drop(code);
         let code = resolved.as_str();
         let mut rest = code;
-        let mut body = String::new();
+        let mut body = String::with_capacity(code.len());
         while let Some((before, after)) = rest.split_once(START) {
             let Some((definitions, remaining)) = after.split_once(END) else {
                 break;
