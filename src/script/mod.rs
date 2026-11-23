@@ -150,7 +150,7 @@ impl Engine {
             outcome.error = Some(format!("timed out after {millis} ms"));
             outcome.stack = None;
         }
-        outcome.output = crate::render::combine(&outcome.output);
+        outcome.output = crate::render::combine_owned(std::mem::take(&mut outcome.output));
         outcome
     }
 

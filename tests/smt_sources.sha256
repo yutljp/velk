@@ -147,7 +147,7 @@ b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/loc
 f9e7d043201a52f00a838e7fcd85b84fcccf5c9c5597f08b820ecc28a83fd6f7  src/render/params.rs	fn drop_unused_parameter_outputs(
 9799d726329fe02e2799764a899a6883547131980c21e0268de1521baaa82d7e  src/render/params.rs	fn fold_parameter_copies(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
-66ce10303f8f57ececb8e64aef1e5b35e5ab6f2fcdb8dd4703fc68dc6614e649  src/render/prelude/calls.rs	pub(super) fn conform(code: &str) -> String
+182f2eacfa71c80f250e364996f076db86356694220eacfd5d826fa765ff74df  src/render/prelude/calls.rs	fn conversions<'code>(
 f6d2b0045015ba544bb52366dfc3e54acfc9c37a44a54824e871799ca1145187  src/render/stack_bytes.rs	fn rewrite_address(
 75d50d9d755c1e79af7666814fb0d744acef9c069461d8abccb345a2c99170de  src/render/stmt.rs	fn function_address(value: &Expr, ctx: &Ctx<'_>) -> bool
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(

@@ -52,9 +52,36 @@ impl Declaration {
     }
 }
 
-struct Body {
-    text: String,
+/// The text of one function with the globals it declares. The text is the
+/// lines it was given, each ended by a newline: a part of the code they
+/// come from while they follow one another there ended that way.
+#[derive(Default)]
+struct Body<'code> {
+    text: std::borrow::Cow<'code, str>,
     declarations: Vec<Declaration>,
+}
+
+impl<'code> Body<'code> {
+    fn push(&mut self, code: &'code str, line: &'code str) {
+        let start = line.as_ptr() as usize - code.as_ptr() as usize;
+        let end = start + line.len();
+        let ended = code.as_bytes().get(end) == Some(&b'\n');
+        match self.text {
+            _ if ended && self.text.is_empty() => {
+                self.text = std::borrow::Cow::Borrowed(&code[start..=end]);
+            }
+            std::borrow::Cow::Borrowed(text)
+                if ended && text.as_ptr() as usize + text.len() == line.as_ptr() as usize =>
+            {
+                self.text = std::borrow::Cow::Borrowed(&code[start - text.len()..=end]);
+            }
+            _ => {
+                let text = self.text.to_mut();
+                text.push_str(line);
+                text.push('\n');
+            }
+        }
+    }
 }
 
 // A standalone function may infer a different access type from another
@@ -120,10 +147,7 @@ pub(in crate::render) fn resolve(code: &str) -> String {
     }
 
     let mut bodies = Vec::new();
-    let mut body = Body {
-        text: String::new(),
-        declarations: Vec::new(),
-    };
+    let mut body = Body::default();
     let mut support = String::new();
     let mut in_support = false;
     let mut pending = Vec::new();
@@ -131,10 +155,7 @@ pub(in crate::render) fn resolve(code: &str) -> String {
         if line == "/* velk prelude */" {
             if !body.text.is_empty() {
                 bodies.push(body);
-                body = Body {
-                    text: String::new(),
-                    declarations: Vec::new(),
-                };
+                body = Body::default();
             }
             in_support = true;
             support.push('\n');
@@ -152,43 +173,46 @@ pub(in crate::render) fn resolve(code: &str) -> String {
             if line.starts_with("/* velk pseudo-C:") {
                 bodies.push(body);
                 body = Body {
-                    text: String::new(),
                     declarations: std::mem::take(&mut pending),
+                    ..Body::default()
                 };
             } else if !pending.is_empty() {
                 body.declarations.append(&mut pending);
             }
-            body.text.push_str(line);
-            body.text.push('\n');
+            body.push(code, line);
         }
     }
     bodies.push(body);
+    // The words of the bodies stay where they are: there is one for every
+    // few bytes of the output. `reserved` holds the rest.
     let mut reserved = HashSet::new();
     for word in support.split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_') {
         reserved.insert(word.to_owned());
     }
+    let mut words = HashSet::new();
     for body in &bodies {
         for word in body
             .text
             .split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
         {
-            if !body
-                .declarations
-                .iter()
-                .any(|declaration| declaration.name == word)
+            if !words.contains(word)
+                && !body
+                    .declarations
+                    .iter()
+                    .any(|declaration| declaration.name == word)
             {
-                reserved.insert(word.to_owned());
+                words.insert(word);
             }
         }
     }
     for global in globals.values_mut() {
         let base = global.name.clone();
-        if reserved.contains(&global.name) {
+        if words.contains(global.name.as_str()) || reserved.contains(&global.name) {
             global.name = format!("{base}_{:x}", global.address);
         }
         let candidate = global.name.clone();
         let mut suffix = 2;
-        while !reserved.insert(global.name.clone()) {
+        while words.contains(global.name.as_str()) || !reserved.insert(global.name.clone()) {
             global.name = format!("{candidate}_{suffix}");
             suffix += 1;
         }
@@ -199,6 +223,7 @@ pub(in crate::render) fn resolve(code: &str) -> String {
         ));
     }
     let mut output = crate::render::prelude::section(&support);
+    output.reserve(code.len());
     for body in bodies {
         let mut replacements = HashMap::new();
         for declaration in body.declarations {
@@ -223,4 +248,33 @@ pub(in crate::render) fn resolve(code: &str) -> String {
         output.push_str(&super::replace_expressions(&body.text, &replacements));
     }
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::borrow::Cow;
+
+    #[test]
+    fn lines_that_follow_one_another_stay_part_of_the_code() {
+        let code = "first\n\nsecond\nskipped\nthird\r\nlast";
+        let lines: Vec<_> = code.lines().collect();
+        let mut body = Body::default();
+        for line in &lines[..3] {
+            body.push(code, line);
+        }
+        assert!(matches!(body.text, Cow::Borrowed("first\n\nsecond\n")));
+        // A line taken from further on, one ended another way and one the
+        // code does not end are copied with the newline they are given.
+        let mut apart = Body::default();
+        apart.push(code, lines[0]);
+        apart.push(code, lines[3]);
+        assert!(matches!(&apart.text, Cow::Owned(text) if text == "first\nskipped\n"));
+        let mut returned = Body::default();
+        returned.push(code, lines[4]);
+        assert!(matches!(&returned.text, Cow::Owned(text) if text == "third\n"));
+        let mut unended = Body::default();
+        unended.push(code, lines[5]);
+        assert!(matches!(&unended.text, Cow::Owned(text) if text == "last\n"));
+    }
 }

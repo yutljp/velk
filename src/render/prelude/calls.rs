@@ -19,6 +19,13 @@ fn offset(code: &str, token: &Token<'_>) -> usize {
 }
 
 fn tokens(code: &str) -> Vec<Token<'_>> {
+    scan(code).0
+}
+
+/// The tokens of `code`, and whether its end closes the directive, comment
+/// or literal it is in, so that text after it would be read the same alone.
+fn scan(code: &str) -> (Vec<Token<'_>>, bool) {
+    let mut closed = true;
     let bytes = code.as_bytes();
     // A token and the space after it take about six bytes of code.
     let mut result = Vec::with_capacity(code.len() / 4);
@@ -35,6 +42,7 @@ fn tokens(code: &str) -> Vec<Token<'_>> {
                 }
                 at += 1;
             }
+            closed &= at < bytes.len();
             continue;
         }
         let start = at;
@@ -49,21 +57,25 @@ fn tokens(code: &str) -> Vec<Token<'_>> {
             while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
                 at += 1;
             }
+            closed &= at < bytes.len();
             at = at.saturating_add(2).min(bytes.len());
             continue;
         }
         if matches!(bytes[at], b'"' | b'\'') {
             let quote = bytes[at];
             at += 1;
+            let mut ended = false;
             while at < bytes.len() {
                 let byte = bytes[at];
                 at += 1;
                 if byte == b'\\' {
                     at = at.saturating_add(1).min(bytes.len());
                 } else if byte == quote {
+                    ended = true;
                     break;
                 }
             }
+            closed &= ended;
         } else if bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_' {
             at += 1;
             while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
@@ -79,7 +91,7 @@ fn tokens(code: &str) -> Vec<Token<'_>> {
             text: &code[start..at],
         });
     }
-    result
+    (result, closed)
 }
 
 fn closing(tokens: &[Token<'_>], open: usize) -> Option<usize> {
@@ -199,7 +211,7 @@ fn pointer_type(tokens: &[Token<'_>]) -> u64 {
     hash.finish()
 }
 
-fn declaration<'a>(tokens: &'a [Token<'_>]) -> Option<(&'a str, Type)> {
+fn declaration<'code>(tokens: &[Token<'code>]) -> Option<(&'code str, Type)> {
     let Some(last) = tokens.last() else {
         return None;
     };
@@ -309,21 +321,35 @@ fn expression(
     None
 }
 
-pub(super) fn conform(code: &str) -> String {
-    let tokens = tokens(code);
-    let mut signatures = HashMap::new();
-    let mut returns = HashMap::new();
+/// The parameters of a function: the name and type of each one that reads
+/// as a declaration.
+type Parameters<'code> = Vec<Option<(&'code str, Type)>>;
+
+/// The functions defined at the top level of `tokens`: the tokens of each
+/// body with the parameters, the token after the last definition or
+/// declaration, and whether every bracket closed: the functions after one
+/// left open are not found. Their signatures and return types go into the
+/// two maps.
+fn definitions<'code>(
+    tokens: &[Token<'code>],
+    signatures: &mut HashMap<&'code str, Parameters<'code>>,
+    returns: &mut HashMap<&'code str, Type>,
+) -> (
+    Vec<(std::ops::Range<usize>, Parameters<'code>)>,
+    usize,
+    bool,
+) {
     let mut functions = Vec::new();
     let mut start = 0;
     let mut at = 0;
     while at < tokens.len() {
         if tokens[at].text == "(" && at > start {
-            let Some(end) = closing(&tokens, at) else {
-                break;
+            let Some(end) = closing(tokens, at) else {
+                return (functions, start, false);
             };
             if tokens.get(end + 1).is_some_and(|token| token.text == "{") {
-                let Some(body_end) = closing(&tokens, end + 1) else {
-                    break;
+                let Some(body_end) = closing(tokens, end + 1) else {
+                    return (functions, start, false);
                 };
                 let name = tokens[at - 1].text;
                 let params = parts(&tokens[at + 1..end]);
@@ -341,15 +367,27 @@ pub(super) fn conform(code: &str) -> String {
         } else if tokens[at].text == ";" {
             start = at + 1;
         } else if tokens[at].text == "{" {
-            let Some(end) = closing(&tokens, at) else {
-                break;
+            let Some(end) = closing(tokens, at) else {
+                return (functions, start, false);
             };
             at = end;
             start = at + 1;
         }
         at += 1;
     }
-    let mut edits = Vec::new();
+    (functions, start, true)
+}
+
+/// The conversions the calls in the bodies of `functions` need, as text to
+/// insert at offsets of `code`, which `tokens` is a part of.
+fn conversions<'code>(
+    code: &str,
+    tokens: &[Token<'code>],
+    functions: Vec<(std::ops::Range<usize>, Parameters<'code>)>,
+    signatures: &HashMap<&'code str, Parameters<'code>>,
+    returns: &HashMap<&'code str, Type>,
+    edits: &mut Vec<(usize, String)>,
+) {
     for (body, params) in functions {
         let mut variables: HashMap<_, _> = params
             .into_iter()
@@ -377,7 +415,7 @@ pub(super) fn conform(code: &str) -> String {
                 if tokens[statement..at]
                     .iter()
                     .any(|token| matches!(token.text, "struct" | "union"))
-                    && let Some(end) = closing(&tokens, at)
+                    && let Some(end) = closing(tokens, at)
                     && let Some(name) = tokens.get(end + 1)
                 {
                     records.insert(end, members(&tokens[at + 1..end], name.text));
@@ -400,7 +438,7 @@ pub(super) fn conform(code: &str) -> String {
             if !tokens.get(at + 1).is_some_and(|token| token.text == "(") {
                 continue;
             }
-            let Some(end) = closing(&tokens, at + 1) else {
+            let Some(end) = closing(tokens, at + 1) else {
                 continue;
             };
             let arguments = parts(&tokens[at + 2..end]);
@@ -408,7 +446,7 @@ pub(super) fn conform(code: &str) -> String {
                 let Some((_, expected)) = parameter else {
                     continue;
                 };
-                let Some(actual) = expression(argument, &variables, &returns) else {
+                let Some(actual) = expression(argument, &variables, returns) else {
                     continue;
                 };
                 if matches!(expected, Type::Pointer(_))
@@ -435,8 +473,14 @@ pub(super) fn conform(code: &str) -> String {
             }
         }
     }
+}
+
+/// `code` with each text inserted at its offset, after `before`.
+fn edited(before: &str, code: &str, mut edits: Vec<(usize, String)>) -> String {
     edits.sort_by_key(|(at, _)| *at);
-    let mut output = String::with_capacity(code.len());
+    let inserted: usize = edits.iter().map(|(_, insertion)| insertion.len()).sum();
+    let mut output = String::with_capacity(before.len() + code.len() + inserted);
+    output.push_str(before);
     let mut copied = 0;
     for (at, insertion) in edits {
         output.push_str(&code[copied..at]);
@@ -445,6 +489,93 @@ pub(super) fn conform(code: &str) -> String {
     }
     output.push_str(&code[copied..]);
     output
+}
+
+/// True when every bracket of `tokens` closes among them, each kind
+/// counted alone as [`closing`] counts it.
+fn balanced(tokens: &[Token<'_>]) -> bool {
+    let mut depths = [0usize; 3];
+    for token in tokens {
+        let (kind, opens) = match token.text {
+            "(" => (0, true),
+            ")" => (0, false),
+            "[" => (1, true),
+            "]" => (1, false),
+            "{" => (2, true),
+            "}" => (2, false),
+            _ => continue,
+        };
+        if opens {
+            depths[kind] += 1;
+        } else if depths[kind] == 0 {
+            return false;
+        } else {
+            depths[kind] -= 1;
+        }
+    }
+    depths == [0; 3]
+}
+
+const FUNCTION: &str = "/* velk pseudo-C:";
+
+/// The same as [`conform_whole`] for the outputs of many functions, read
+/// one function at a time so that only its tokens are held. `None` when
+/// some part does not stand alone: a bracket, comment or literal runs past
+/// its end, or it ends inside a declaration.
+fn conform_parts(before: &str, code: &str) -> Option<String> {
+    let mut starts = vec![0];
+    starts.extend(
+        code.match_indices(FUNCTION)
+            .map(|(at, _)| at)
+            .filter(|at| *at != 0 && code.as_bytes()[at - 1] == b'\n'),
+    );
+    if starts.len() == 1 {
+        return None;
+    }
+    starts.push(code.len());
+    let mut signatures = HashMap::new();
+    let mut returns = HashMap::new();
+    let mut functions = Vec::with_capacity(starts.len());
+    for part in starts.windows(2) {
+        let (tokens, closed) = scan(&code[part[0]..part[1]]);
+        if !closed || !balanced(&tokens) {
+            return None;
+        }
+        let (defined, end, complete) = definitions(&tokens, &mut signatures, &mut returns);
+        if !complete || end != tokens.len() {
+            return None;
+        }
+        functions.push(defined);
+    }
+    let mut edits = Vec::new();
+    for (part, defined) in std::iter::zip(starts.windows(2), functions) {
+        if defined.is_empty() {
+            continue;
+        }
+        let tokens = tokens(&code[part[0]..part[1]]);
+        conversions(code, &tokens, defined, &signatures, &returns, &mut edits);
+    }
+    Some(edited(before, code, edits))
+}
+
+fn conform_whole(before: &str, code: &str) -> String {
+    let tokens = tokens(code);
+    let mut signatures = HashMap::new();
+    let mut returns = HashMap::new();
+    let mut edits = Vec::new();
+    let (functions, _, _) = definitions(&tokens, &mut signatures, &mut returns);
+    conversions(code, &tokens, functions, &signatures, &returns, &mut edits);
+    edited(before, code, edits)
+}
+
+/// `code` with the conversions its calls need, after `before`.
+pub(super) fn conform_after(before: &str, code: &str) -> String {
+    conform_parts(before, code).unwrap_or_else(|| conform_whole(before, code))
+}
+
+#[cfg(test)]
+fn conform(code: &str) -> String {
+    conform_after("", code)
 }
 
 #[cfg(test)]
@@ -493,5 +624,37 @@ mod tests {
         assert!(output.contains("/* bits(p) */ const char *s = \"bits(p)\";"));
         assert!(output.contains("bits((uintptr_t)(s));"));
         assert_eq!(conform(&output), output);
+    }
+
+    #[test]
+    fn functions_read_one_at_a_time_get_the_conversions_of_the_whole_text() {
+        let code = "#include <stdint.h>\n/* velk pseudo-C: bits */\nuint64_t bits(uint64_t x) { return x; }\n/* velk pseudo-C: memory */\nvoid memory(void *p) {}\n/* velk pseudo-C: caller */\nvoid caller(void *p, uint64_t x) {\n bits(p); memory(x); bits(x);\n}\n";
+        let output = conform_parts("", code).expect("every function stands alone");
+        assert_eq!(output, conform_whole("", code));
+        assert!(
+            output.contains("bits((uintptr_t)(p)); memory((void *)(x)); bits(x);"),
+            "{output}"
+        );
+        assert_eq!(conform_after("before\n", code), format!("before\n{output}"));
+    }
+
+    #[test]
+    fn text_whose_functions_do_not_stand_alone_is_read_whole() {
+        let alone = "void memory(void *p) {}\nvoid caller(uint64_t x) { memory(x); }\n";
+        assert!(conform_parts("", alone).is_none());
+        for first in [
+            "void open(void) { if (1) {\n",
+            "void closed(void) { } }\n",
+            "void comment(void) {} /* runs on\n",
+            "void literal(void) { char *s = \"runs on; }\n",
+            "void declared(void) {}\nint pending\n",
+            "#define CONTINUED \\\n",
+        ] {
+            let code = format!(
+                "{first}/* velk pseudo-C: memory */\nvoid memory(void *p) {{}}\n/* velk pseudo-C: caller */\nvoid caller(uint64_t x) {{ memory(x); }}\n"
+            );
+            assert!(conform_parts("", &code).is_none(), "{code}");
+            assert_eq!(conform_after("", &code), conform_whole("", &code));
+        }
     }
 }

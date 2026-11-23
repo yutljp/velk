@@ -235,7 +235,7 @@ fn decompile_functions(
             }
         }
     }
-    let code = velk::render::combine(&code);
+    let code = velk::render::combine_owned(code);
     let addr = addresses.first().copied().unwrap_or(0);
     if json {
         println!(
