@@ -116,6 +116,7 @@ pub struct Symbols {
 pub struct SharedNames {
     sanitized: std::sync::OnceLock<Shared>,
     written: std::sync::OnceLock<Shared>,
+    globals: std::sync::OnceLock<std::sync::Arc<super::globals::Base>>,
 }
 
 /// The names of the functions, the import slots and the data as sets.
@@ -152,6 +153,14 @@ impl Symbols {
                 data: names(&self.data),
             }
         })
+    }
+
+    /// What the tables say about the data of the binary.
+    pub(crate) fn globals(&self) -> std::sync::Arc<super::globals::Base> {
+        self.shared
+            .globals
+            .get_or_init(|| std::sync::Arc::new(super::globals::Base::new(self)))
+            .clone()
     }
 
     /// Forgets the shared sets after a table changed.
