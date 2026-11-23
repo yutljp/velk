@@ -2,7 +2,7 @@ use super::{Expr, Registers};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Convention {
     Aapcs64,
     Aapcs32,
@@ -369,7 +369,7 @@ impl Convention {
 
 /// How control reaches a callee, which decides what the transfer pushes
 /// on the stack before the callee's first instruction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CallKind {
     /// A call that returns here.
     Invoke,

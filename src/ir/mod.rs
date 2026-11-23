@@ -517,7 +517,7 @@ impl Expr {
 use crate::loader::Isa;
 
 /// Where an indirect call takes its callee's address from.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Via {
     pub table: Table,
     /// The slot's index in the table: from the address point of a C++
@@ -528,7 +528,7 @@ pub struct Via {
     pub candidates: Vec<u64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Table {
     /// A C++ virtual table, read through the object.
     Vtable,
@@ -569,7 +569,7 @@ pub struct RegRef {
     pub width: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CallOutput {
     pub register: u16,
     pub dest: RegRef,
@@ -675,7 +675,7 @@ impl Ordering {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Stmt {
     /// An indivisible machine operation. Outputs are simultaneous writes.
     Machine {

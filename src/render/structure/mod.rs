@@ -20,7 +20,7 @@ use crate::render::structure::cleanup::flatten_early_returns;
 use crate::render::structure::cleanup::prune_labels;
 use crate::render::structure::cleanup::prune_unreachable;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Node {
     Stmt(Stmt),
     Label(u64),
@@ -272,12 +272,20 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     // Code the entry does not reach keeps its label, which names where it starts.
     let entries: std::collections::HashSet<u64> = graph.entries().into_iter().collect();
     // Two settings often structure the function the same way, and the
-    // second of them can never win.
-    let mut tried = vec![nodes.clone()];
+    // second of them can never win. A hash stands for each structuring, so
+    // that a large function is not kept once per setting.
+    let hash = |candidate: &Vec<Node>| {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        candidate.hash(&mut hasher);
+        hasher.finish()
+    };
+    let mut tried = vec![hash(&nodes)];
     let mut untried = |candidate: &Vec<Node>| {
-        let new = !tried.contains(candidate);
+        let candidate = hash(candidate);
+        let new = !tried.contains(&candidate);
         if new {
-            tried.push(candidate.clone());
+            tried.push(candidate);
         }
         new
     };
