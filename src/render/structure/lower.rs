@@ -437,13 +437,6 @@ fn rewrite(nodes: &mut Vec<Node>, statements: &mut impl Iterator<Item = (Stmt, b
     }
 }
 
-fn matches_exception_site(lowered: &[Stmt], original: &[String]) -> bool {
-    lowered.iter().any(|stmt| {
-        matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. })
-            && original.contains(&exception_statement(stmt))
-    })
-}
-
 fn exception_statement(stmt: &Stmt) -> String {
     let mut stmt = stmt.clone();
     stmt.set_origin(None);
@@ -462,6 +455,18 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
         .enumerate()
         .map(|(index, block)| (block.start, index as u64))
         .collect();
+    let mut lowered_sites: std::collections::HashMap<String, Vec<usize>> =
+        std::collections::HashMap::new();
+    for (position, block) in lowered.blocks.iter().enumerate() {
+        for stmt in &block.stmts {
+            if matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }) {
+                let positions = lowered_sites.entry(exception_statement(stmt)).or_default();
+                if positions.last() != Some(&position) {
+                    positions.push(position);
+                }
+            }
+        }
+    }
     let mut sites: std::collections::BTreeMap<u64, Vec<(u64, u64)>> =
         std::collections::BTreeMap::new();
     for (index, block) in original.blocks.iter().enumerate() {
@@ -470,24 +475,28 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
             index,
             &original.landing_pads,
         );
-        let statements: Vec<String> = block
+        if edges.exceptional.is_empty() {
+            continue;
+        }
+        let mut positions: Vec<usize> = block
             .stmts
             .iter()
             .filter(|stmt| matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }))
-            .map(exception_statement)
+            .filter_map(|stmt| lowered_sites.get(&exception_statement(stmt)))
+            .flatten()
+            .copied()
             .collect();
+        positions.sort_unstable();
+        positions.dedup();
         for handler in edges.exceptional {
             let Some(pad) = addresses.get(&original.blocks[handler].start) else {
                 continue;
             };
-            for (position, block) in lowered.blocks.iter().enumerate() {
-                if matches_exception_site(&block.stmts, &statements) {
-                    sites
-                        .entry(*pad)
-                        .or_default()
-                        .push((position as u64, position.saturating_add(1) as u64));
-                }
-            }
+            sites.entry(*pad).or_default().extend(
+                positions
+                    .iter()
+                    .map(|position| (*position as u64, position.saturating_add(1) as u64)),
+            );
         }
     }
     for block in &mut lowered.blocks {
