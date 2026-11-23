@@ -271,7 +271,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
     fn walk(nodes: &mut [Node], known: &mut Known) {
         for node in nodes.iter_mut() {
             // A jump into a nested body can bypass the assignments before it.
-            if super::super::label_count(std::slice::from_ref(node)) != 0 {
+            if !known.is_empty() && super::super::label_count(std::slice::from_ref(node)) != 0 {
                 known.clear();
             }
             match node {
@@ -310,25 +310,29 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                     }
                 }
                 Node::If { then, els, .. } => {
-                    let mut written = rustc_hash::FxHashSet::default();
-                    writes_in(then, &mut written);
-                    writes_in(els, &mut written);
                     walk(then, &mut known.clone());
                     walk(els, &mut known.clone());
-                    known.retain(|variable, _| !written.contains(variable));
+                    if !known.is_empty() {
+                        let mut written = rustc_hash::FxHashSet::default();
+                        writes_in(then, &mut written);
+                        writes_in(els, &mut written);
+                        known.retain(|variable, _| !written.contains(variable));
+                    }
                 }
                 // A loop's body may run after its own later writes; a
                 // label may be entered from anywhere.
                 other => {
-                    let mut written = rustc_hash::FxHashSet::default();
-                    writes_in(std::slice::from_ref(other), &mut written);
                     for child in children_mut(other) {
                         walk(child, &mut Known::new());
                     }
                     if matches!(other, Node::Label(_)) {
                         known.clear();
                     }
-                    known.retain(|variable, _| !written.contains(variable));
+                    if !known.is_empty() {
+                        let mut written = rustc_hash::FxHashSet::default();
+                        writes_in(std::slice::from_ref(other), &mut written);
+                        known.retain(|variable, _| !written.contains(variable));
+                    }
                 }
             }
         }
@@ -344,7 +348,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
 fn reads_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
     for node in nodes {
         match node {
-            Node::Stmt(stmt) => out.extend(crate::ir::visit::statement_registers(stmt).1),
+            Node::Stmt(stmt) => crate::ir::visit::collect_statement_reads(stmt, out),
             Node::If {
                 lhs,
                 rhs,

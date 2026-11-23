@@ -772,13 +772,12 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
             known.insert(limit);
         }
         for child in children_mut(&mut nodes[index]) {
-            let mut written = rustc_hash::FxHashSet::default();
-            writes_in(child, &mut written);
-            let inner: std::collections::HashSet<u16> = known
-                .iter()
-                .copied()
-                .filter(|register| !written.contains(register))
-                .collect();
+            let mut inner = std::collections::HashSet::new();
+            if !known.is_empty() {
+                let mut written = rustc_hash::FxHashSet::default();
+                writes_in(child, &mut written);
+                inner.extend(known.iter().filter(|register| !written.contains(register)));
+            }
             invert_loops(child, &inner);
         }
         if let Node::Stmt(stmt) = &nodes[index] {
@@ -814,14 +813,13 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
             (Some(a), Some(b)) if b == counter => a,
             _ => u16::MAX,
         };
+        if !steps || limit == u16::MAX || !known.contains(&limit) {
+            index += 1;
+            continue;
+        }
         let mut written = rustc_hash::FxHashSet::default();
         writes_in(rest, &mut written);
-        if !steps
-            || limit == u16::MAX
-            || written.contains(&counter)
-            || written.contains(&limit)
-            || !known.contains(&limit)
-        {
+        if written.contains(&counter) || written.contains(&limit) {
             index += 1;
             continue;
         }
