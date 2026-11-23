@@ -521,7 +521,9 @@ const FUNCTION: &str = "/* velk pseudo-C:";
 /// The same as [`conform_whole`] for the outputs of many functions, read
 /// one function at a time so that only its tokens are held. `None` when
 /// some part does not stand alone: a bracket, comment or literal runs past
-/// its end, or it ends inside a declaration.
+/// its end. Text a part leaves after its last definition, such as a line
+/// printed between two functions, is read with the next part, whose first
+/// declaration it belongs to in the whole text.
 fn conform_parts(before: &str, code: &str) -> Option<String> {
     let mut starts = vec![0];
     starts.extend(
@@ -535,24 +537,26 @@ fn conform_parts(before: &str, code: &str) -> Option<String> {
     starts.push(code.len());
     let mut signatures = HashMap::new();
     let mut returns = HashMap::new();
-    let mut functions = Vec::with_capacity(starts.len());
-    for part in starts.windows(2) {
-        let (tokens, closed) = scan(&code[part[0]..part[1]]);
+    let mut parts = Vec::with_capacity(starts.len());
+    let mut begin = 0;
+    for stop in starts[1..].iter().copied() {
+        let (tokens, closed) = scan(&code[begin..stop]);
         if !closed || !balanced(&tokens) {
             return None;
         }
         let (defined, end, complete) = definitions(&tokens, &mut signatures, &mut returns);
-        if !complete || end != tokens.len() {
+        if !complete {
             return None;
         }
-        functions.push(defined);
+        parts.push((begin..stop, defined));
+        begin = tokens.get(end).map_or(stop, |token| offset(code, token));
     }
     let mut edits = Vec::new();
-    for (part, defined) in std::iter::zip(starts.windows(2), functions) {
+    for (part, defined) in parts {
         if defined.is_empty() {
             continue;
         }
-        let tokens = tokens(&code[part[0]..part[1]]);
+        let tokens = tokens(&code[part]);
         conversions(code, &tokens, defined, &signatures, &returns, &mut edits);
     }
     Some(edited(before, code, edits))
@@ -639,6 +643,21 @@ mod tests {
     }
 
     #[test]
+    fn text_between_functions_is_read_with_the_function_after_it() {
+        for between in ["0x1000\n", "int pending\n", "0x1000\n/* note */\nstatic "] {
+            let code = format!(
+                "/* velk pseudo-C: bits */\nuint64_t bits(uint64_t x) {{ return x; }}\n{between}/* velk pseudo-C: memory */\nvoid *memory(void *p) {{ return p; }}\n0x2000\n/* velk pseudo-C: caller */\nvoid caller(void *p, uint64_t x) {{\n bits(p); memory(x); bits(memory(p));\n}}\n0x3000\n"
+            );
+            let output = conform_parts("", &code).expect("every function is closed");
+            assert_eq!(output, conform_whole("", &code), "{code}");
+            assert!(
+                output.contains("bits((uintptr_t)(p)); memory((void *)(x));"),
+                "{output}"
+            );
+        }
+    }
+
+    #[test]
     fn text_whose_functions_do_not_stand_alone_is_read_whole() {
         let alone = "void memory(void *p) {}\nvoid caller(uint64_t x) { memory(x); }\n";
         assert!(conform_parts("", alone).is_none());
@@ -647,7 +666,6 @@ mod tests {
             "void closed(void) { } }\n",
             "void comment(void) {} /* runs on\n",
             "void literal(void) { char *s = \"runs on; }\n",
-            "void declared(void) {}\nint pending\n",
             "#define CONTINUED \\\n",
         ] {
             let code = format!(
