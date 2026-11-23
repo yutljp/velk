@@ -2,7 +2,7 @@
 c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/indirect.rs	fn pointer_value(
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
 4fbbd30b31fcef84cc5899f25cb7b197cd12c50b8049863d2571147d1d399f78  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
-71c6d88d08c29bc422579026a418bccf936e7b6566b9d50c35b6fb189ac2fb64  src/analysis/structures.rs	fn rewrite(
+08e1af2c4258d901de51aadae8d8416f11622724c64153a277ecc8384a3d97fe  src/analysis/structures.rs	fn rewrite(
 614640da82c7164dcd1e11a96fa4404941f208170a0b0796344169283f77abf3  src/analysis/structures.rs	pub(super) fn layout_with_size(
 19954210ca7952d10273993b9a1f77057a22914ce61858178488a189ea81e06c  src/analysis/structures/pointers.rs	pub(super) fn normalize(
 c2ad1e69020a818c202168d6574bd3aa662bf7b10da60e7705cd33c8c35362d9  src/analysis/typing.rs	pub(crate) fn apply_width_types(

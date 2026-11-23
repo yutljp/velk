@@ -611,7 +611,7 @@ struct Array {
 }
 
 fn split_touches<'a>(
-    holders: &PointerSources,
+    holders: &PointerSources<'_>,
     touches: &'a [MemoryAccess],
 ) -> Option<Vec<(AddressParts, &'a MemoryAccess)>> {
     let mut touched = Vec::new();
@@ -700,7 +700,7 @@ fn arrange(
     size: u64,
     param: u16,
     direct: bool,
-    holders: &PointerSources,
+    holders: &PointerSources<'_>,
     touched: &[(AddressParts, &MemoryAccess)],
     minimum: usize,
 ) -> Option<Array> {
@@ -837,16 +837,16 @@ struct AddressParts {
 /// Where a parameter's value is kept: the parameter itself, unless the body
 /// assigns it, the stack slots only ever stored from it, and the registers
 /// every definition of which offsets one of those, itself included.
-struct PointerSources {
+struct PointerSources<'ir> {
     direct: Option<u16>,
-    slots: HashSet<String>,
+    slots: HashSet<&'ir Expr>,
     /// Each register set from the parameter, with its definitions.
     definitions: BTreeMap<u16, Vec<AddressParts>>,
 }
 
-fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
+fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources<'_> {
     let stmts = || ir.blocks.iter().flat_map(|block| &block.stmts);
-    let mut stored: HashMap<String, bool> = HashMap::new();
+    let mut stored: HashMap<&Expr, bool> = HashMap::new();
     let mut values: BTreeMap<u16, Vec<Option<&Expr>>> = BTreeMap::new();
     for stmt in stmts() {
         match stmt {
@@ -855,7 +855,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
             } => {
                 let from_param =
                     *width == 8 && matches!(value, Expr::Reg { index, .. } if *index == param);
-                *stored.entry(format!("{addr:?}")).or_insert(true) &= from_param;
+                *stored.entry(addr).or_insert(true) &= from_param;
             }
             Stmt::Assign { dest, value, .. } => values
                 .entry(dest.index)
@@ -894,7 +894,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
                     Stmt::Store { addr, .. }
                         if crate::passes::memory::private_address(addr, 8, sp) =>
                     {
-                        Some(format!("{addr:?}"))
+                        Some(addr)
                     }
                     _ => None,
                 })
@@ -952,7 +952,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
     holders
 }
 
-impl PointerSources {
+impl PointerSources<'_> {
     fn base(&self, term: &Expr) -> Option<Base> {
         match term {
             Expr::Reg { index, width: 64 }
@@ -960,9 +960,7 @@ impl PointerSources {
             {
                 Some(Base::Register(*index))
             }
-            Expr::Load { addr, width: 8, .. } if self.slots.contains(&format!("{addr:?}")) => {
-                Some(Base::Slot)
-            }
+            Expr::Load { addr, width: 8, .. } if self.slots.contains(&**addr) => Some(Base::Slot),
             _ => None,
         }
     }
@@ -1169,7 +1167,7 @@ fn repeated(value: &Expr) -> Option<(&Expr, u64)> {
 /// that add or scale a register `lookup` gives an index for.
 fn rewrite(
     expr: &mut Expr,
-    holders: &PointerSources,
+    holders: &PointerSources<'_>,
     lookup: &mut dyn FnMut(u16) -> Option<(Expr, u64)>,
 ) -> bool {
     let sum = matches!(
