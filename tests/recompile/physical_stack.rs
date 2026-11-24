@@ -265,6 +265,7 @@ pub(super) fn printed_stripped_stack_fixtures_preserve_all_physical_inputs() {
                 params: original.params.clone(),
                 inputs: original.inputs.clone(),
                 void: false,
+                member: 0,
             };
             candidate.inputs.push(vec![0; 10]);
             candidate.inputs.push(vec![u64::MAX; 10]);
@@ -921,6 +922,7 @@ pub(super) fn printed_stripped_x86_stack_fixtures_preserve_held_alias_inputs() {
                 params: original.params.clone(),
                 inputs: original.inputs.clone(),
                 void: false,
+                member: 0,
             };
             candidate.inputs.push(vec![0; words]);
             candidate.inputs.push(vec![u64::MAX; words]);

@@ -703,6 +703,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                     .map(|trial| ir.params.iter().map(|_| trial).collect())
                     .collect(),
                 void: false,
+                member: 0,
                 ir,
             }
         })
@@ -989,6 +990,7 @@ fn printed_members_preserve_declared_types_and_access_widths() {
                     .map(|trial| vec![REGION + 0x2000, REGION + 0x4000, eval::hash(trial, 0)])
                     .collect(),
                 void: false,
+                member: 0,
                 ir,
                 code,
             }
@@ -1291,6 +1293,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
             params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
             inputs: (0..trials::TRIALS).map(|_| vec![input, 0]).collect(),
             void: false,
+            member: 0,
             ir,
             code,
         });
@@ -4112,6 +4115,7 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
         params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
         inputs,
         void: ir.ret_type == CType::Void,
+        member: 0,
         ir,
     }
 }
@@ -5361,6 +5365,8 @@ struct Candidate {
     inputs: Vec<Vec<u64>>,
     /// It returns nothing, so only its effects compare.
     void: bool,
+    /// Which of the values it returns in a structure is compared.
+    member: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -5562,6 +5568,7 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             ),
             params,
             void: ir.ret_type == CType::Void,
+            member: 0,
             states: if rendered.segment_bases.is_empty() {
                 Vec::new()
             } else {
@@ -5572,6 +5579,41 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             code,
             inputs,
         });
+        // Each further value a structure of results holds compares as
+        // the value the function returns.
+        let first = candidates.last().expect("the candidate just added");
+        let mut further = Vec::new();
+        for member in 1..returned_members(&first.code) {
+            let mut ir = first.ir.clone();
+            let mut held = true;
+            for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+                if let Stmt::Ret { value, .. } = stmt {
+                    match value {
+                        Expr::Apply {
+                            op: Operation::Results,
+                            args,
+                        } if member < args.len() => *value = args[member].clone(),
+                        _ => held = false,
+                    }
+                }
+            }
+            if !held {
+                break;
+            }
+            further.push(Candidate {
+                label: format!("{} result {member}", first.label),
+                ir,
+                code: first.code.clone(),
+                segment_bases: first.segment_bases.clone(),
+                states: first.states.clone(),
+                marshalling: first.marshalling.clone(),
+                params: first.params.clone(),
+                inputs: first.inputs.clone(),
+                void: false,
+                member,
+            });
+        }
+        candidates.extend(further);
     }
     Fixture {
         name: fixture.to_owned(),
@@ -5612,6 +5654,17 @@ fn calls(image: &Image, function: &velk::loader::Function) -> bool {
 fn returns_several(code: &str) -> bool {
     code.lines()
         .any(|line| line.starts_with("struct velk_results") && line.ends_with(") {"))
+}
+
+/// How many values the structure the function `code` defines returns
+/// holds; none when it returns no such structure.
+fn returned_members(code: &str) -> usize {
+    code.lines()
+        .filter(|line| line.ends_with(") {"))
+        .find_map(|line| line.strip_prefix("struct velk_results"))
+        .and_then(|rest| rest.split(' ').next())
+        .and_then(|count| count.parse().ok())
+        .unwrap_or(0)
 }
 
 /// Why a function is outside what this test compares, if it is.
@@ -6325,6 +6378,7 @@ fn aggregate_candidates(
             params: vec!["uint64_t".to_owned(); words],
             inputs: inputs.clone(),
             void: false,
+            member: 0,
         });
     }
     assert!(!candidates.is_empty(), "the result needs defined bits");
@@ -7301,8 +7355,13 @@ fn program(
         if candidate.void {
             writeln!(text, "    case {index}: {call}; return 0;")
         } else if returns_several(&candidate.code) {
-            // The interpreter's value of several results is the first.
-            writeln!(text, "    case {index}: return (uint64_t){call}.r0;")
+            // The interpreter's value of several results is the first;
+            // the candidates for the others return each alone.
+            writeln!(
+                text,
+                "    case {index}: return (uint64_t){call}.r{};",
+                candidate.member
+            )
         } else {
             writeln!(text, "    case {index}: return (uint64_t){call};")
         }

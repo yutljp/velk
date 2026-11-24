@@ -111,11 +111,11 @@
 # flattened_stores_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # flattened_x86_64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # flattened_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
-# go_probe: 1287 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
-# go_probe_arm64: 1271 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
-# go_probe_arm64_1_27: 1447 functions, 16 qualify, 16 compile, 0 do not, 16 compared (192 runs), 0 differ
-# go_stripped: 1285 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
-# go_stripped_arm64: 1269 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
+# go_probe: 1287 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
+# go_probe_arm64: 1271 functions, 12 qualify, 12 compile, 0 do not, 12 compared (144 runs), 0 differ
+# go_probe_arm64_1_27: 1447 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# go_stripped: 1285 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
+# go_stripped_arm64: 1269 functions, 12 qualify, 12 compile, 0 do not, 12 compared (144 runs), 0 differ
 # l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l0_arith_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l1_branch_a64.o: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
