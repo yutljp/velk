@@ -1525,6 +1525,62 @@ fn several_results_of_a_call_are_members_of_what_it_returns() {
 }
 
 #[test]
+fn a_call_through_a_pointer_returns_as_many_values_as_are_read_after_it() {
+    let store = |register| Stmt::Store {
+        addr: Expr::Const(0x2000 + u64::from(register) * 8),
+        value: Expr::reg(register, 64),
+        width: 8,
+        at: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::Const(0),
+        at: None,
+    };
+    let through_pointer = |ir: &mut FunctionIr| {
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let Stmt::Call {
+                target, through, ..
+            } = stmt
+            {
+                *target = None;
+                *through = Some(Expr::Load {
+                    addr: Box::new(Expr::Const(0x3000)),
+                    width: 8,
+                    signed: false,
+                });
+            }
+        }
+    };
+    // rax and rbx, the first two result registers, are read.
+    let mut ir = after_go_call(vec![store(0), store(3), returned.clone()]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(
+        text.contains("struct velk_results2 { int64_t r0; int64_t r1; };")
+            && text.contains("struct velk_results2 results;")
+            && text.contains("results = ((struct velk_results2 (*)())")
+            && text.contains("= results.r0;")
+            && text.contains("= results.r1;"),
+        "{text}"
+    );
+    assert!(!text.contains("also returned by the call"), "{text}");
+    // One value read is the plain result of the call.
+    let mut ir = after_go_call(vec![store(0), returned.clone()]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(!text.contains("velk_results"), "{text}");
+    // A register read past one nothing reads is no result: rcx is the
+    // third, and the second is not read.
+    let mut ir = after_go_call(vec![store(0), store(1), returned]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(
+        !text.contains("velk_results") && text.contains("also returned by the call"),
+        "{text}"
+    );
+}
+
+#[test]
 fn results_passed_on_whole_return_the_call() {
     let passed = |ir: &mut FunctionIr| {
         ir.callee_results.insert(0x1000, 2);

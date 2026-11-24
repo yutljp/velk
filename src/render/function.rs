@@ -1270,13 +1270,20 @@ fn render_with(
     out.insert_str(prototypes_at, &tables);
     out.insert_str(
         prototypes_at,
-        &super::prelude::section(&super::results::definitions(ir, results, |address| {
-            let name = symbols
-                .functions
-                .get(&address)
-                .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
-            code_names.contains(name.as_str())
-        })),
+        &super::prelude::section(&super::results::definitions(
+            ir,
+            results,
+            |address| {
+                let name = symbols
+                    .functions
+                    .get(&address)
+                    .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
+                code_names.contains(name.as_str())
+            },
+            ctx.call_outputs
+                .site_results()
+                .filter(|count| body.contains(&super::results::type_name(*count))),
+        )),
     );
     let declarations::Declarations {
         text: mut declarations,

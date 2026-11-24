@@ -590,7 +590,8 @@ fn cast_scorers_preserve_distinct_recognition() {
 /// Calls through a pointer the analysis could not resolve, printed
 /// `((uint64_t (*)())address)(arguments)`.
 fn indirect_calls(code: &str) -> usize {
-    code.matches("((uint64_t (*)())").count()
+    // A callee returning several values returns a structure of them.
+    code.matches("((uint64_t (*)())").count() + code.matches("((struct velk_results").count()
 }
 
 /// A machine register name left in the output instead of a variable.

@@ -46,13 +46,19 @@ fn definition(count: usize) -> String {
 }
 
 /// The definitions of the structures of `own` values, when that is any,
-/// and of what the callees among `called` return.
-pub(super) fn definitions(ir: &FunctionIr, own: usize, called: impl Fn(u64) -> bool) -> String {
+/// of what the callees among `called` return, and of the `others`.
+pub(super) fn definitions(
+    ir: &FunctionIr,
+    own: usize,
+    called: impl Fn(u64) -> bool,
+    others: impl Iterator<Item = usize>,
+) -> String {
     let mut counts: std::collections::BTreeSet<usize> = ir
         .callee_results
         .iter()
         .filter(|(address, _)| called(**address))
         .map(|(_, count)| *count)
+        .chain(others)
         .collect();
     if own > 0 {
         counts.insert(own);

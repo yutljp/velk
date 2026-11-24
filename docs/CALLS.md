@@ -45,8 +45,11 @@ counts only if the function writes it on every path to a return or takes it as a
 argument. A method takes its number from the
 method table of its type instead, where every result fits the integer registers: a
 string counts two, a slice three, a structure its fields. Another function with no
-direct caller is printed with one result. A call through a pointer, and a register past
-the callee's number, keep the comment `/* also returned by the call */`. A function of
+direct caller is printed with one result. A call through a pointer has no callee
+to count for, and returns as many values as are read after it, each value past the first
+only when the one before it is read too; what a later call takes as arguments is not
+counted as read. A register past the number keeps the comment
+`/* also returned by the call */`. A function of
 Go's assembly convention returns on the stack and keeps `/* also returns ... */`.
 The summary's `return` stays the type of the first value.
 
