@@ -26,6 +26,22 @@ fn reads_runtime_types_in_both_go_fixtures() {
             types.names.keys().all(|address| address % 8 == 0),
             "{fixture}"
         );
+        // Each interface table joins a named interface and a named type.
+        let joined: BTreeSet<(&str, &str)> = types
+            .tables
+            .values()
+            .map(|(interface, ty)| (types.names[ty].as_str(), types.names[interface].as_str()))
+            .collect();
+        let expected = if fixture == "go_probe_arm64_1_27" {
+            ("maps.unhashableTypeError", "error")
+        } else {
+            ("runtime.errorString", "error")
+        };
+        assert!(joined.contains(&expected), "{fixture}: {joined:?}");
+        assert!(
+            types.tables.keys().all(|address| address % 8 == 0),
+            "{fixture}"
+        );
     }
 }
 

@@ -18,6 +18,8 @@ pub(super) struct Group {
 /// the type: `type_main_Rect` for `main.Rect`, `type_ptr_main_Rect` for a
 /// pointer to it, `type_slice_string` for `[]string`. A name another
 /// descriptor has, or a long one, ends with the descriptor's address.
+/// An interface table is named after its type and its interface:
+/// `itab_ptr_os_File_io_Writer`.
 pub(super) fn type_names(image: &crate::loader::Image) -> Vec<(u64, String)> {
     if !image.go {
         return Vec::new();
@@ -26,11 +28,24 @@ pub(super) fn type_names(image: &crate::loader::Image) -> Vec<(u64, String)> {
         .go_types
         .get_or_init(|| crate::loader::go::types::read(image));
     let mut taken = std::collections::HashSet::new();
-    types
+    let described = types
         .names
         .iter()
-        .map(|(address, name)| {
-            let mut identifier = type_identifier(name);
+        .map(|(address, name)| (*address, type_identifier(name)));
+    // An interface table reads as its type, then the interface.
+    let tables = types.tables.iter().map(|(address, (interface, ty))| {
+        let part = |descriptor: &u64| {
+            let identifier = type_identifier(&types.names[descriptor]);
+            identifier
+                .strip_prefix("type")
+                .unwrap_or(&identifier)
+                .to_owned()
+        };
+        (*address, format!("itab{}{}", part(ty), part(interface)))
+    });
+    described
+        .chain(tables)
+        .map(|(address, mut identifier)| {
             if identifier.len() > 48 {
                 identifier.truncate(48);
                 identifier = format!("{}_{address:x}", identifier.trim_end_matches('_'));
@@ -38,7 +53,7 @@ pub(super) fn type_names(image: &crate::loader::Image) -> Vec<(u64, String)> {
                 identifier = format!("{identifier}_{address:x}");
             }
             taken.insert(identifier.clone());
-            (*address, identifier)
+            (address, identifier)
         })
         .collect()
 }

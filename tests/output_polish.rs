@@ -274,4 +274,24 @@ fn go_results_types_and_returned_strings_read_by_name() {
             "{fixture}: {switched}"
         );
     }
+    // An interface table reads as its type and its interface.
+    for (fixture, function, table) in [
+        (
+            "go_probe_arm64",
+            "runtime.mapKeyError2",
+            "itab_runtime_errorString_error",
+        ),
+        (
+            "go_probe_arm64_1_27",
+            "internal/runtime/maps.mapKeyError2",
+            "itab_maps_unhashableTypeError_error",
+        ),
+    ] {
+        let code = go_function(fixture, function);
+        assert!(
+            code.contains(&format!("return (uintptr_t)(&{table});"))
+                && code.contains(&format!("extern uint8_t {table}; /* address: 0x")),
+            "{fixture}: {code}"
+        );
+    }
 }

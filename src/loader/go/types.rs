@@ -11,6 +11,9 @@ pub(crate) struct Types {
     /// The name of each type whose descriptor was reached, by the address
     /// of the descriptor, as Go writes the type.
     pub(crate) names: BTreeMap<u64, String>,
+    /// The interface and the type each interface table joins, by the
+    /// address of the table.
+    pub(crate) tables: BTreeMap<u64, (u64, u64)>,
     start: u64,
     end: u64,
 }
@@ -157,6 +160,37 @@ impl Reader<'_> {
             _ => {}
         }
         found.into_iter().flatten().collect()
+    }
+
+    /// The interface tables laid one after another in the `length` bytes
+    /// at `offset` of the region, as Go 1.27 keeps them: each is its
+    /// interface, its type, a hash and one function for each method of
+    /// the interface.
+    fn tables(&self, offset: u64, length: u64) -> Vec<(u64, u64, u64)> {
+        let mut found = Vec::new();
+        let Some(mut at) = self.start.checked_add(offset) else {
+            return found;
+        };
+        let Some(stop) = at.checked_add(length) else {
+            return found;
+        };
+        while at < stop && found.len() < 100_000 {
+            let (Some(interface), Some(ty)) = (self.word(at), self.word(at + 8)) else {
+                break;
+            };
+            let Some((_, _, 20)) = self.header(interface) else {
+                break;
+            };
+            let Some(methods) = self.word(interface + 64) else {
+                break;
+            };
+            if methods == 0 || methods > 4096 {
+                break;
+            }
+            found.push((at, interface, ty));
+            at += 24 + methods * 8;
+        }
+        found
     }
 
     /// The type descriptors laid one after another in the first `length`
@@ -472,19 +506,21 @@ pub(crate) fn read(image: &Image) -> Types {
             } else {
                 let addr = u64::from_le_bytes(bytes.try_into().expect("eight bytes"));
                 if let Some(bytes) = image.read_vaddr(addr, 16) {
-                    pending.extend(
-                        bytes
-                            .as_chunks::<8>()
-                            .0
-                            .iter()
-                            .map(|word| u64::from_le_bytes(*word)),
-                    );
+                    let (words, _) = bytes.as_chunks::<8>();
+                    let interface = u64::from_le_bytes(words[0]);
+                    let ty = u64::from_le_bytes(words[1]);
+                    types.tables.insert(addr, (interface, ty));
+                    pending.extend([interface, ty]);
                 }
             }
         }
     }
     if layout.links.is_none() {
         pending.extend(reader.descriptors(word(304)));
+        for (addr, interface, ty) in reader.tables(word(320), word(328)) {
+            types.tables.insert(addr, (interface, ty));
+            pending.extend([interface, ty]);
+        }
     }
     let mut visited = BTreeSet::new();
     while let Some(addr) = pending.pop() {
@@ -508,6 +544,9 @@ pub(crate) fn read(image: &Image) -> Types {
             types.layouts.insert(addr, layout);
         }
     }
+    types.tables.retain(|_, (interface, ty)| {
+        types.names.contains_key(interface) && types.names.contains_key(ty)
+    });
     types
 }
 

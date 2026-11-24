@@ -67,8 +67,11 @@ descriptor's address. A comparison with a descriptor, as a type switch makes, re
 The names come from the descriptors the module data lists: its type links and interface
 tables, or from Go 1.27 the descriptors in the order the type region holds them. From
 each one the reader follows the types of its elements, fields, parameters and interface
-methods, and the pointer to it. A descriptor that none of these reach stays a number, as
-do the interface tables themselves.
+methods, and the pointer to it. A descriptor that none of these reach stays a number.
+
+An interface table is printed as `&itab_<type>_<interface>`, such as
+`itab_ptr_os_File_io_Writer` for `*os.File` used as an `io.Writer`. The tables are those
+the module data lists, or from Go 1.27 those it places inside the type region.
 
 A string among the values a function returns, a constant pointer followed by a constant
 length from 2 to 256, is printed as its text.
