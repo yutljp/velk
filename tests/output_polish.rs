@@ -220,3 +220,58 @@ int main(void) {{
         );
     }
 }
+
+/// The code of the function `name` of the Go fixture `fixture`.
+fn go_function(fixture: &str, name: &str) -> String {
+    let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).expect("a Go fixture");
+    let address = binary
+        .image()
+        .functions
+        .values()
+        .find(|function| function.name.as_deref() == Some(name))
+        .expect("a named function")
+        .addr;
+    binary
+        .decompile(address, None, None)
+        .expect("the function's code")
+}
+
+#[test]
+fn go_results_types_and_returned_strings_read_by_name() {
+    for fixture in ["go_probe_arm64", "go_probe_arm64_1_27"] {
+        // Two values are members of one structure, on both sides.
+        let callee = go_function(fixture, "main.divmod");
+        assert!(
+            callee.contains("struct velk_results2 { int64_t r0; int64_t r1; };")
+                && callee.contains("struct velk_results2 main_divmod(int64_t a0, int64_t a1) {")
+                && callee.contains("return (struct velk_results2){ "),
+            "{fixture}: {callee}"
+        );
+        let caller = go_function(fixture, "main.main");
+        assert!(
+            caller.contains("struct velk_results2 main_divmod();")
+                && caller.contains("results = main_divmod(7, 3);")
+                && caller.contains("= results.r1;"),
+            "{fixture}: {caller}"
+        );
+        assert!(
+            !caller.contains("also returned by the call"),
+            "{fixture}: {caller}"
+        );
+        // A string returned as a pointer and a length reads as its text.
+        let returned = go_function(fixture, "runtime.debugCallCheck");
+        assert!(
+            returned.contains(
+                "return (struct velk_results2){ (uintptr_t)\"executing on Go runtime stack\", 29 };"
+            ),
+            "{fixture}: {returned}"
+        );
+        // A type switch compares with the descriptor of the type.
+        let switched = go_function(fixture, "runtime.preprintpanics.func1");
+        assert!(
+            switched.contains("== (uintptr_t)(&type_string)")
+                && switched.contains("extern uint8_t type_string; /* address: 0x"),
+            "{fixture}: {switched}"
+        );
+    }
+}

@@ -9,6 +9,23 @@ fn reads_runtime_types_in_both_go_fixtures() {
         let image = crate::loader::load(&path).unwrap();
         let types = read(&image);
         assert!(!types.layouts.is_empty(), "{fixture}");
+        // Types named only as a field, an element or a parameter are
+        // reached through the descriptors that name them.
+        let names: BTreeSet<&str> = types.names.values().map(String::as_str).collect();
+        for name in [
+            "string",
+            "*runtime.g",
+            "runtime.stack",
+            "[]uint8",
+            "error",
+            "func()",
+        ] {
+            assert!(names.contains(name), "{fixture}: {name}");
+        }
+        assert!(
+            types.names.keys().all(|address| address % 8 == 0),
+            "{fixture}"
+        );
     }
 }
 

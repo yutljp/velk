@@ -8,6 +8,9 @@ use crate::loader::{Image, Isa};
 #[derive(Debug, Default)]
 pub(crate) struct Types {
     pub(crate) layouts: BTreeMap<u64, Layout>,
+    /// The name of each type whose descriptor was reached, by the address
+    /// of the descriptor, as Go writes the type.
+    pub(crate) names: BTreeMap<u64, String>,
     start: u64,
     end: u64,
 }
@@ -77,6 +80,83 @@ impl Reader<'_> {
             return None;
         }
         Some((size, alignment, bytes[23] & 31))
+    }
+
+    /// The name the descriptor at `addr` gives its type.
+    fn type_name(&self, addr: u64) -> Option<String> {
+        let Some(header) = self.bytes(addr, 48) else {
+            return None;
+        };
+        let offset = i32::from_le_bytes(header[40..44].try_into().expect("four bytes"));
+        let Some(name) = self
+            .start
+            .checked_add_signed(i64::from(offset))
+            .and_then(|at| self.name(at))
+        else {
+            return None;
+        };
+        // The name of a pointer to the type is kept, for both.
+        if header[20] & 2 == 0 {
+            Some(name)
+        } else {
+            name.strip_prefix('*').map(str::to_owned)
+        }
+    }
+
+    /// The descriptors the one at `addr`, of `kind`, names: the types of
+    /// its elements, fields, parameters and methods, and the pointer to it.
+    fn referenced(&self, addr: u64, kind: u8) -> Vec<u64> {
+        let word = |at: u64| addr.checked_add(at).and_then(|at| self.word(at));
+        // A type named by its distance from the start of the region.
+        let offset = |at: Option<u64>| {
+            let Some(bytes) = at.and_then(|at| self.bytes(at, 4)) else {
+                return None;
+            };
+            let offset = i32::from_le_bytes(bytes.try_into().expect("four bytes"));
+            (offset > 0)
+                .then(|| self.start.checked_add_signed(i64::from(offset)))
+                .flatten()
+        };
+        let mut found: Vec<Option<u64>> = vec![offset(addr.checked_add(44))];
+        match kind {
+            17 => found.extend([word(48), word(56)]),
+            18 | 22 | 23 => found.push(word(48)),
+            21 => found.extend([word(48), word(56)]),
+            19 => {
+                let counts = self.bytes(addr + 48, 4).map(|bytes| {
+                    let inputs = u16::from_le_bytes([bytes[0], bytes[1]]);
+                    let outputs = u16::from_le_bytes([bytes[2], bytes[3]]) & 0x7fff;
+                    u64::from(inputs) + u64::from(outputs)
+                });
+                let methods = self
+                    .bytes(addr + 20, 1)
+                    .is_some_and(|flags| flags[0] & 1 != 0);
+                let first = if methods { 72 } else { 56 };
+                for index in 0..counts.unwrap_or(0).min(512) {
+                    found.push(word(first + index * 8));
+                }
+            }
+            20 => {
+                if let (Some(methods), Some(count)) = (word(56), word(64)) {
+                    for index in 0..count.min(4096) {
+                        found.push(offset(methods.checked_add(index * 8 + 4)));
+                    }
+                }
+            }
+            25 => {
+                if let (Some(fields), Some(count)) = (word(56), word(64)) {
+                    for index in 0..count.min(4096) {
+                        found.push(
+                            fields
+                                .checked_add(index * 24 + 8)
+                                .and_then(|at| self.word(at)),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+        found.into_iter().flatten().collect()
     }
 
     /// The type descriptors laid one after another in the first `length`
@@ -414,11 +494,15 @@ pub(crate) fn read(image: &Image) -> Types {
         let Some((_, _, kind)) = reader.header(addr) else {
             continue;
         };
-        if kind == 22 {
-            if let Some(element) = addr.checked_add(48).and_then(|at| reader.word(at)) {
-                pending.push(element);
-            }
-        } else if kind == 25
+        if !(1..=26).contains(&kind) {
+            continue;
+        }
+        let Some(name) = reader.type_name(addr) else {
+            continue;
+        };
+        types.names.insert(addr, name);
+        pending.extend(reader.referenced(addr, kind));
+        if kind == 25
             && let Some(layout) = reader.structure(addr)
         {
             types.layouts.insert(addr, layout);

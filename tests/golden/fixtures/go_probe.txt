@@ -1292,6 +1292,9 @@
 struct go_string { uint8_t * ptr; int64_t len; };
 struct velk_results2 { int64_t r0; int64_t r1; };
 
+extern uint8_t type_int; /* address: 0x46d400 */
+extern uint8_t type_string; /* address: 0x46d1c0 */
+
 struct velk_results2 main_divmod();
 uint64_t main_add();
 uint64_t main_kindName();
@@ -1431,12 +1434,12 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
     }
     int32_t v1 = a0[4];
     if (v1 != 0x778cdb8) {
-        if (v1 != 0xcb735792 || (uintptr_t)a0 != 0x46d400) {
+        if (v1 != 0xcb735792 || (uintptr_t)a0 != (uintptr_t)(&type_int)) {
             return 0;
         }
         return 1;
     }
-    if ((uintptr_t)a0 != 0x46d1c0) {
+    if ((uintptr_t)a0 != (uintptr_t)(&type_string)) {
         return 0;
     }
     return 2;
@@ -1500,7 +1503,7 @@ void main_main(void) {
     runtime_printint(local_1);
     runtime_printnl();
     runtime_printunlock();
-    local_3 = ((int64_t)(main_kindName(0x46d400, 0x4967e8)));
+    local_3 = ((int64_t)(main_kindName((&type_int), 0x4967e8)));
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printnl();

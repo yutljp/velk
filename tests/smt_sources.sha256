@@ -127,7 +127,7 @@ b00ae40caccfac18642500d008cbf19aafb732f15dcbc9c72d41ee9af1fb935b  src/render/exp
 94d70017f8b320948aa8a3f146a379ad44b08c7c6e0082263eaa12edb8273319  src/render/expr.rs	fn unfitted(
 02ea33969c543eeb26143fdb316a7e32d8a9bf55b6d14d00c060a47ef20b9003  src/render/expr.rs	pub(super) fn print_declared_value(
 4883fa4c92bccb350a54dd882053ad366297b400eed643fd2451f68d53aa5ffd  src/render/expr/condition.rs	fn compared(
-7638d3b4b055a843f6b577fbc6da54311870dbabb30aaa46d05022b958a2e96e  src/render/expr/condition.rs	pub(crate) fn condition(
+9db083575b24487b5ff4a5f77e8a4a0acf30520df8fa2d8dd3d9f394326101db  src/render/expr/condition.rs	pub(crate) fn condition(
 8ff487a64264bf0ce20c673a63e787dc912ca994daa50850e7264c2d77e4376f  src/render/expr/condition.rs	pub(super) fn logic(
 5f132c9a8f51d39925b03107e0a61d4ebbeb876297aac718672f209e6338f0fc  src/render/expr/memory.rs	pub(super) fn byte_sum(
 b0091cdf38df79b16172f7e8ea2a6eb01cc82212bfa7d7856019f8cf4f94e8b2  src/render/expr/memory.rs	pub(super) fn load(

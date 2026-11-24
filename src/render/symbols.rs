@@ -90,6 +90,9 @@ pub struct Symbols {
     pub cpp_classes: Vec<crate::loader::classes::Class>,
     /// Original runtime helper names that establish Go value shapes.
     pub go_value_shapes: HashMap<u64, String>,
+    /// The addresses of the type descriptors of a Go image, which `data`
+    /// names after their types.
+    pub go_types: HashSet<u64>,
     /// Original names of known allocators, before conversion to C identifiers.
     pub allocator_names: HashMap<u64, String>,
     pub import_slots: HashMap<u64, String>,

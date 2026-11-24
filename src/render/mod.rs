@@ -261,6 +261,10 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 Some((*addr, format!("{method}({tail}")))
             })
             .collect(),
+        go_types: go_values::type_names(image)
+            .into_iter()
+            .map(|(address, _)| address)
+            .collect(),
         go_value_shapes: image
             .functions
             .iter()
@@ -342,6 +346,11 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .data_symbols
             .iter()
             .map(|(address, name)| (*address, name.clone()))
+            .chain(
+                go_values::type_names(image)
+                    .into_iter()
+                    .filter(|(address, _)| !image.data_symbols.contains_key(address)),
+            )
             .collect(),
         ..Symbols::default()
     };
