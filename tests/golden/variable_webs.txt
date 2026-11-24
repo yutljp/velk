@@ -2,7 +2,7 @@
 C/C++ debug: 145 -> 0; 826; 1; 0
 C/C++ stripped: 97 -> 0; 761; 0; 0
 Go: 8074 -> 0; 36965; 649; 2
-Rust: 8190 -> 0; 51010; 706; 189
+Rust: 8316 -> 0; 51331; 711; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -516,12 +516,12 @@ Rust: 8190 -> 0; 51010; 706; 189
 # predicates_aarch64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # predicates_x86_64_O0.o | C/C++ stripped: 0 -> 0; 1; 0; 0
 # predicates_x86_64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
-# rust_demo | Rust: 1362 -> 0; 9553; 101; 0
-# rust_demo_arm64 | Rust: 1357 -> 0; 7426; 134; 63
-# rust_probe | Rust: 1362 -> 0; 9553; 101; 0
-# rust_probe_arm64 | Rust: 1357 -> 0; 7426; 134; 63
-# rust_probe_arm64_stripped | Rust: 1315 -> 0; 7409; 135; 63
-# rust_probe_stripped | Rust: 1437 -> 0; 9643; 101; 0
+# rust_demo | Rust: 1425 -> 0; 9678; 102; 0
+# rust_demo_arm64 | Rust: 1361 -> 0; 7439; 135; 63
+# rust_probe | Rust: 1425 -> 0; 9678; 102; 0
+# rust_probe_arm64 | Rust: 1361 -> 0; 7439; 135; 63
+# rust_probe_arm64_stripped | Rust: 1319 -> 0; 7419; 135; 63
+# rust_probe_stripped | Rust: 1425 -> 0; 9678; 102; 0
 # seh.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh.O2.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh_cpp.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0

@@ -1624,11 +1624,12 @@ fn returns_of_different_counts_keep_the_further_values_in_a_comment() {
     let text = rendered(&ir);
     assert!(text.contains("/* also returns 2, 3 */"), "{text}");
     assert!(!text.contains("velk_results"), "{text}");
-    // So does a function of another convention.
+    // So does a function of a convention that returns one register.
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,
         vec![results(&[Expr::Const(1), Expr::Const(2)])],
     );
+    ir.convention = crate::ir::Convention::Win64;
     let text = rendered(&ir);
     assert!(text.contains("return 1; /* also returns 2 */"), "{text}");
     ir.convention = convention;

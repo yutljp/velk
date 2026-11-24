@@ -53,6 +53,15 @@ counted as read. A register past the number keeps the comment
 Go's assembly convention returns on the stack and keeps `/* also returns ... */`.
 The summary's `return` stays the type of the first value.
 
+Under the System V and AArch64 conventions a value of two words, such as a Rust slice,
+comes back in two registers, and a function without a declared return type is printed
+the same way with `struct velk_results2`. The second register counts when a direct
+caller reads it after the call before anything writes it. A caller that returns with it
+unread passes on its own number only when the function sets the register on every path
+to a return. A function whose return type debug information or a library prototype
+gives keeps that type. Debug information made for line numbers alone holds no types, and
+a function it describes is not taken to return nothing.
+
 Pointer tracking follows stored function addresses and constant data words at the
 target's pointer width. Overlapping writes invalidate stored values. Unknown
 pointers and incompatible paths can prevent resolution.

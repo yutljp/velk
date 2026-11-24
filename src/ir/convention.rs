@@ -111,6 +111,14 @@ impl Convention {
         matches!(self, Self::GoAbi0 | Self::GoAbi0Arm64)
     }
 
+    /// Whether a function may return more than one integer in registers:
+    /// Go's register ABI returns each result in one, and the System V and
+    /// `AArch64` conventions return a value of two words in two.
+    #[must_use]
+    pub fn several_results(self) -> bool {
+        self.go_registers() || matches!(self, Self::SysV | Self::Aapcs64)
+    }
+
     /// Whether the convention is Go's register ABI, whose callee spills its
     /// register arguments to the area the caller reserves for them.
     #[must_use]

@@ -1,1 +1,5 @@
+rust_demo 0x40b90 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back: reads rdx without assigning it
+rust_demo 0x50c80 core::slice::sort::stable::drift::sqrt_approx: reads rcx without assigning it
+rust_probe 0x40b90 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back: reads rdx without assigning it
+rust_probe 0x50c80 core::slice::sort::stable::drift::sqrt_approx: reads rcx without assigning it
 rust_probe_stripped 0x50c80 -: reads rcx without assigning it

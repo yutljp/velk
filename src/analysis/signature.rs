@@ -1062,7 +1062,8 @@ fn register_inputs(
                     reads(value, &mut used)
                 }
                 // The first of several results may be the argument the
-                // function leaves alone; the others it returns are read.
+                // function leaves alone; the others it returns are read,
+                // where results come back in the registers of arguments.
                 Stmt::Ret {
                     value:
                         Expr::Apply {
@@ -1070,7 +1071,7 @@ fn register_inputs(
                             args,
                         },
                     ..
-                } => {
+                } if convention.go_registers() => {
                     for value in args.iter().skip(1) {
                         reads(value, &mut used);
                     }

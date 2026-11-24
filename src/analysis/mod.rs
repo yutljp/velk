@@ -1206,11 +1206,12 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // what the library function does, whatever these callers make of it.
     // So does one that returns on some path with the register unset.
     // A Go function returns as many values as its callers read.
-    let further = if image.go && float_return.is_none() && stack_results.is_empty() {
-        results::further_results(image, function.addr)
-    } else {
-        0
-    };
+    let further =
+        if (image.go || declared.is_none()) && float_return.is_none() && stack_results.is_empty() {
+            results::further_results(image, function.addr)
+        } else {
+            0
+        };
     // A Go method returns what the method table of its type says.
     let listed = if float_return.is_none() && stack_results.is_empty() {
         results::method_results(image, function.addr)

@@ -1720,7 +1720,8 @@ fn printed_real_segment_functions_use_controlled_state() {
             fixture.candidates[0].segment_bases[0].segment,
             SegmentBase::Fs
         );
-        assert_eq!(fixture.candidates[0].void, name != "rust_probe_stripped");
+        // Go's stores to the thread block; Rust's reads a flag from it.
+        assert_eq!(fixture.candidates[0].void, name.starts_with("go_"));
         fixtures.push(fixture);
     }
     let scratch = scratch_dir("real-segments");

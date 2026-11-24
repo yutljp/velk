@@ -8,7 +8,7 @@ use crate::ir::{CType, Expr, FunctionIr, Operation, Stmt};
 /// for Go's register convention, whose callers take the values from the
 /// call; those of its assembly one read them from their own frame.
 pub(super) fn count(ir: &FunctionIr) -> usize {
-    if !ir.convention.go_registers()
+    if !ir.convention.several_results()
         || ir.ret_type == CType::Void
         || ir.ret_type.precision().is_some()
         || ir.declared_signature.is_some()

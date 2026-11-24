@@ -6,12 +6,12 @@
 #   reads a register that is not a parameter: 157
 #   refers to data: 944
 #   requires an external machine-state source: 8
-#   returns no integer: 179
+#   returns no integer: 187
 #   takes an argument that is no integer: 100
 #   takes arguments on the stack: 96
 # runs left out:
-#   reaches memory no page can map: 509
-#   reads a register that is not a parameter: 1386
+#   reaches memory no page can map: 473
+#   reads a register that is not a parameter: 1326
 #   step limit: 1169
 #   switch without a matching case: 36
 #   takes a function's address: 108
@@ -248,9 +248,9 @@
 # objc_x86_64_O2_stripped: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # pe64.exe: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.obj: 10 functions, 2 qualify, 2 compile, 0 do not, 1 compared (12 runs), 0 differ
-# rust_demo: 545 functions, 37 qualify, 37 compile, 0 do not, 19 compared (175 runs), 0 differ
+# rust_demo: 545 functions, 33 qualify, 33 compile, 0 do not, 19 compared (175 runs), 0 differ
 # rust_demo_arm64: 670 functions, 32 qualify, 32 compile, 0 do not, 22 compared (186 runs), 0 differ
-# rust_probe: 545 functions, 37 qualify, 37 compile, 0 do not, 19 compared (175 runs), 0 differ
+# rust_probe: 545 functions, 33 qualify, 33 compile, 0 do not, 19 compared (175 runs), 0 differ
 # rust_probe_arm64: 670 functions, 32 qualify, 32 compile, 0 do not, 22 compared (186 runs), 0 differ
 # rust_probe_arm64_stripped: 670 functions, 32 qualify, 32 compile, 0 do not, 22 compared (186 runs), 0 differ
 # rust_probe_stripped: 545 functions, 33 qualify, 33 compile, 0 do not, 19 compared (175 runs), 0 differ

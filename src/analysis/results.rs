@@ -87,7 +87,7 @@ pub(crate) fn callee_results(
     ir: &crate::ir::FunctionIr,
 ) -> std::collections::BTreeMap<u64, usize> {
     let mut found = std::collections::BTreeMap::new();
-    if !image.go {
+    if !crate::ir::Convention::of(image.isa, image.format, image.go).several_results() {
         return found;
     }
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -178,12 +178,29 @@ fn assembly(image: &Image, addr: u64) -> bool {
         .is_some_and(|name| name.ends_with(".abi0"))
 }
 
+/// Whether what the function returns is known without its callers: from
+/// debug information that gives a type it can name, from the prototype of a library function it is
+/// named after, or because it only jumps on to such a function.
+fn declared(image: &Image, addr: u64) -> bool {
+    let Some(function) = image.functions.get(&addr) else {
+        return true;
+    };
+    function.sources.contains(&crate::loader::NameSource::Plt)
+        || crate::loader::dwarf::function_types(image, addr)
+            .is_some_and(|types| types.ret.is_some())
+        || function
+            .name
+            .as_deref()
+            .is_some_and(|name| super::prototypes::for_image(name, image).is_some())
+}
+
 /// The count, and whether some caller returns with results still unread.
 fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
     let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
-    if !convention.go_registers() {
+    if !convention.several_results() {
         return (0, false);
     }
+    let go = convention.go_registers();
     let summary = super::summary::summary(image, addr);
     if summary.noreturn || assembly(image, addr) {
         return (0, false);
@@ -200,7 +217,7 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
             summary
                 .clobbers
                 .is_none_or(|clobbers| clobbers.contains(*register))
-                || summary.arity.is_some_and(|arity| *position < arity)
+                || (go && summary.arity.is_some_and(|arity| *position < arity))
         })
         .map(|(_, register)| register)
         .skip(1)
@@ -214,8 +231,24 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
     let Some(own) = body(image, addr) else {
         return (0, false);
     };
-    let taken = summary.arity.map_or(0, |arity| arity.saturating_sub(1));
-    let results = &results[..set_before_returning(&own, &results, taken).min(results.len())];
+    // Elsewhere the second register is no argument register of the same
+    // position, and a function may leave it unset where the value it
+    // returns has no second word, as an absent slice has none: there a
+    // caller reading it tells enough.
+    let taken = if go {
+        summary.arity.map_or(0, |arity| arity.saturating_sub(1))
+    } else {
+        0
+    };
+    let set = set_before_returning(&own, &results, taken);
+    // A caller that returns without reading it tells less: there the
+    // function has to set the register itself, on every path.
+    let passed_on = go || set >= results.len();
+    let results = if go {
+        &results[..set.min(results.len())]
+    } else {
+        &results[..]
+    };
     if results.is_empty() {
         return (0, false);
     }
@@ -230,7 +263,7 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
         for (first, block) in blocks.iter().enumerate() {
             for (at, stmt) in block.stmts.iter().enumerate() {
                 if !matches!(stmt, Stmt::Call { target: Some(target), convention, .. }
-                    if *target == addr && convention.go_registers())
+                    if *target == addr && convention.several_results())
                 {
                     continue;
                 }
@@ -257,6 +290,7 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
                         let passed = match stmt {
                             Stmt::Call { .. } if barrier => None,
                             Stmt::Call { .. } | Stmt::Unsupported { .. } => Some(0),
+                            Stmt::Ret { .. } if !passed_on => Some(0),
                             Stmt::Ret { .. } => {
                                 returned = true;
                                 match passes.checked_sub(1) {
@@ -322,6 +356,10 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
                 }
             }
         }
+    }
+    // Looked up last: few functions get this far.
+    if furthest > 0 && !go && declared(image, addr) {
+        return (0, returned);
     }
     (furthest, returned)
 }
@@ -570,6 +608,27 @@ fn branches(image: &Image) -> HashMap<u64, Vec<u64>> {
         match image.isa {
             Isa::I386 | Isa::X86_64 => {
                 for at in 0..bytes.len().saturating_sub(4) {
+                    // A call or jump through a slot the linker fills
+                    // with the address of a function.
+                    if image.isa == Isa::X86_64
+                        && bytes[at] == 0xff
+                        && matches!(bytes[at + 1], 0x15 | 0x25)
+                        && let Some(displacement) = bytes.get(at + 2..at + 6)
+                    {
+                        let displacement =
+                            i32::from_le_bytes(displacement.try_into().expect("four bytes"));
+                        let site = section.vaddr + at as u64;
+                        let slot = site
+                            .wrapping_add(6)
+                            .wrapping_add(displacement as i64 as u64);
+                        if let Some(crate::loader::Pointer::Address(target)) =
+                            image.read_pointer(slot)
+                            && image.functions.contains_key(&target)
+                        {
+                            out.entry(target).or_default().push(site);
+                        }
+                        continue;
+                    }
                     if !matches!(bytes[at], 0xe8 | 0xe9) {
                         continue;
                     }
