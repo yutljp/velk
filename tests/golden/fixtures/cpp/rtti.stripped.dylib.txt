@@ -844,18 +844,16 @@ fn _dispatch_multiple @ 0x8a8 (size 12)
 -- decompile
 /* velk pseudo-C: _single @ 0x8b4 */
 int64_t single(int64_t a0) {
-    uint64_t v3;
-    int64_t local_0; /* [sp-8] */
-    _Alignas(16) uint8_t local_1[0x10]; /* [sp-30] */
+    uint64_t sp = velk_entry_stack_pointer();
+    _Alignas(16) uint8_t local_0[0x10]; /* [sp-30] */
 
-    local_0 = v3;
-    sub_6f4(local_1, a0);
-    int64_t v2 = dispatch(local_1);
-    sub_724(local_1);
+    sub_6f4(local_0, a0);
+    int64_t v2 = dispatch(local_0);
+    sub_724(local_0);
     return v2;
 /* landing pad: an exception thrown by a call at 0x8d0-0x8d8 arrives here */
 L_8f8:
-    sub_724((uint8_t *)&local_0 + 0x8);
+    sub_724(sp);
     _Unwind_Resume((void *)velk_exception_value());
 }
 -- signature
@@ -865,7 +863,6 @@ int64_t (int64_t a0)
 -- ir
 fn _single @ 0x8b4 (size 88)
   blk0 @ 0x8b4:
-    store64(x30, (sp + #0xfffffffffffffff8))
     call 0x6f4((sp + #0xffffffffffffffd0), x0)
     v2:x0, x1, d0, d1 = call 0x89c((sp + #0xffffffffffffffd0))
   blk1 @ 0x8d8:
@@ -882,14 +879,11 @@ fn _single @ 0x8b4 (size 88)
 -- decompile
 /* velk pseudo-C: _multiple @ 0x90c */
 int32_t multiple(int64_t a0) {
-    uint64_t v2;
-    int64_t local_0; /* [sp-8] */
-    _Alignas(16) uint8_t local_1[0x18]; /* [sp-38] */
+    _Alignas(16) uint8_t local_0[0x18]; /* [sp-38] */
 
-    local_0 = v2;
-    sub_7a8(local_1, a0);
-    uint32_t v3 = dispatch(local_1);
-    return ((uint32_t)(sub_7b8(local_1))) + v3;
+    sub_7a8(local_0, a0);
+    uint32_t v3 = dispatch(local_0);
+    return ((uint32_t)(sub_7b8(local_0))) + v3;
 }
 -- signature
 int32_t (int64_t a0)
@@ -898,7 +892,6 @@ int32_t (int64_t a0)
 -- ir
 fn _multiple @ 0x90c (size 68)
   blk0 @ 0x90c:
-    store64(x30, (sp + #0xfffffffffffffff8))
     call 0x7a8((sp + #0xffffffffffffffc8), x0)
     v3:x0, x1, d0, d1 = call 0x89c((sp + #0xffffffffffffffc8))
     v5:x0 = call 0x7b8((sp + #0xffffffffffffffc8))
@@ -910,13 +903,10 @@ fn _multiple @ 0x90c (size 68)
 -- decompile
 /* velk pseudo-C: _virtual_base @ 0x950 */
 int32_t virtual_base(int64_t a0) {
-    uint64_t v2;
-    int64_t local_0; /* [sp-8] */
-    _Alignas(16) uint8_t local_1[0x20]; /* [sp-40] */
+    _Alignas(16) uint8_t local_0[0x20]; /* [sp-40] */
 
-    local_0 = v2;
-    sub_808(local_1, a0);
-    return dispatch((uint8_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
+    sub_808(local_0, a0);
+    return dispatch((uint8_t *)((uintptr_t)(local_0) + *(uint64_t *)(*(uint64_t *)(local_0) - 0x18)));
 }
 -- signature
 int32_t (int64_t a0)
@@ -925,7 +915,6 @@ int32_t (int64_t a0)
 -- ir
 fn _virtual_base @ 0x950 (size 64)
   blk0 @ 0x950:
-    store64(x30, (sp + #0xfffffffffffffff8))
     call 0x808((sp + #0xffffffffffffffc0), x0)
     v4:x0, x1, d0, d1 = call 0x89c(((sp + #0xffffffffffffffc0) + load64((load64((sp + #0xffffffffffffffc0)) + #0xffffffffffffffe8))))
     ret v4

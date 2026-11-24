@@ -470,6 +470,28 @@ fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
         if !calls_growth {
             continue;
         }
+        // What the check compares is read for it alone: the stack limit,
+        // which AArch64 loads into a scratch register first, and for a
+        // large frame the stack pointer less the frame.
+        let Some(Stmt::Brif { lhs, rhs, .. }) = blocks[index].stmts.last() else {
+            continue;
+        };
+        let sp = crate::arch::stack_pointer(image.isa);
+        let mut compared = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(lhs, &mut compared);
+        crate::ir::visit::collect_reads(rhs, &mut compared);
+        compared.remove(&sp);
+        let stmts = &mut blocks[index].stmts;
+        let mut kept = stmts.len() - 1;
+        while kept > 0
+            && let Stmt::Assign { dest, value, .. } = &stmts[kept - 1]
+            && compared.contains(&dest.index)
+        {
+            crate::ir::visit::collect_reads(value, &mut compared);
+            compared.remove(&sp);
+            kept -= 1;
+        }
+        stmts.drain(kept..stmts.len() - 1);
         // The check falls through into the body.
         *blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br {
             target: Some(next),

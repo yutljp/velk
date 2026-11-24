@@ -1286,10 +1286,8 @@ void runtime_printunlock();
 -- decompile
 /* velk pseudo-C: runtime.printstring @ 0x40bd0 */
 void runtime_printstring(const void *a0, int64_t a1) {
-    uint64_t g;
     struct go_string string = { .ptr = (uint8_t *)(uintptr_t)a0, .len = (int64_t)a1 };
 
-    int32_t v1 = *(uint64_t *)(g + 0x10);
     runtime_gwrite(string.ptr, string.len, string.len);
 }
 -- signature
@@ -1299,7 +1297,6 @@ void (const void * a0, int64_t a1)
 -- ir
 fn runtime.printstring @ 0x40bd0 (size 128)
   blk0 @ 0x40bd0:
-    v1 = load64((x28 + #0x10))
     br 0x40bdc
   blk1 @ 0x40bdc:
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40420(x0, x1, x1)
@@ -1328,9 +1325,6 @@ fn main.add @ 0x77420 (size 16)
 -- decompile
 /* velk pseudo-C: main.twice @ 0x77430 */
 int64_t main_twice(int64_t a0) {
-    uint64_t g;
-
-    int32_t v1 = *(uint64_t *)(g + 0x10);
     return main_add(a0, a0);
 }
 -- signature
@@ -1340,11 +1334,10 @@ int64_t (int64_t a0)
 -- ir
 fn main.twice @ 0x77430 (size 64)
   blk0 @ 0x77430:
-    v1 = load64((x28 + #0x10))
     br 0x7743c
   blk1 @ 0x7743c:
-    v2:x0 = call 0x77420(x0, x0)
-    ret v2
+    v1:x0 = call 0x77420(x0, x0)
+    ret v1
 -- card
 {"addr":"0x77430","approxTokens":162,"blocks":2,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
 
@@ -1352,12 +1345,9 @@ fn main.twice @ 0x77430 (size 64)
 -- decompile
 /* velk pseudo-C: main.main @ 0x77470 */
 void main_main(void) {
-    uint64_t g;
-
-    int32_t v1 = *(uint64_t *)(g + 0x10);
-    int64_t v2 = main_twice(21);
+    int64_t v1 = main_twice(21);
     runtime_printlock();
-    runtime_printint(v2);
+    runtime_printint(v1);
     runtime_printnl();
     runtime_printunlock();
 }
@@ -1368,14 +1358,13 @@ void ()
 -- ir
 fn main.main @ 0x77470 (size 80)
   blk0 @ 0x77470:
-    v1 = load64((x28 + #0x10))
     br 0x7747c
   blk1 @ 0x7747c:
-    v2:x0, x1 = call 0x77430(#0x15)
+    v1:x0, x1 = call 0x77430(#0x15)
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40340()
-    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(v2)
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(v1)
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40570()
-    v2:x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
+    v1:x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
     ret #0x0
 -- card
 {"addr":"0x77470","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}

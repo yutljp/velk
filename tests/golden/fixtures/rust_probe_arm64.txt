@@ -681,15 +681,12 @@ void i32__fmt_10002ff74();
 /* velk pseudo-C: rust_probe::main @ 0x10000090c */
 /* ref: 0x100035d74 __cstring */
 int64_t rust_probe__main(void) {
-    uint64_t v3;
-    int64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-24] */
-    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; int64_t f_8; } local_2; /* [sp-20] */
+    uint32_t local_0; /* [sp-24] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; int64_t f_8; } local_1; /* [sp-20] */
 
-    local_0 = v3;
-    local_1 = 3;
-    local_2 = (__typeof__(local_2)){ &local_1, (uintptr_t)i32__fmt_10002ff74 };
-    return stdio___print(0x100035d74, &local_2.f_0);
+    local_0 = 3;
+    local_1 = (__typeof__(local_1)){ &local_0, (uintptr_t)i32__fmt_10002ff74 };
+    return stdio___print(0x100035d74, &local_1.f_0);
 }
 -- signature
 int64_t ()
@@ -698,7 +695,6 @@ int64_t ()
 -- ir
 fn rust_probe::main @ 0x10000090c (size 64)
   blk0 @ 0x10000090c:
-    store64(x30, (sp + #0xfffffffffffffff8))
     store32(#0x3, (sp + #0xffffffffffffffdc))
     store64((sp + #0xffffffffffffffdc), (sp + #0xffffffffffffffe0))
     store64(#0x10002ff74, (sp + #0xffffffffffffffe8))
