@@ -1451,6 +1451,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         entry_alignment: entry_alignment(image, function.addr),
         callee_signatures: Default::default(),
         callee_results: Default::default(),
+        listed_callees: Default::default(),
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,

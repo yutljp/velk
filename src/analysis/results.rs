@@ -285,8 +285,30 @@ fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
                         );
                         // Another call writes them all; a return passes
                         // on the ones the caller returns in turn. What a
-                        // callee takes as arguments is not counted: the
-                        // number it takes is itself an estimate.
+                        // callee without such a list takes as arguments
+                        // is not counted: the number is an estimate.
+                        // A callee whose arguments Go lists takes what it
+                        // is passed from these registers.
+                        if let Stmt::Call {
+                            target: Some(callee),
+                            through: None,
+                            convention,
+                            ..
+                        } = stmt
+                            && convention.go_registers()
+                            && crate::loader::go::argument_registers(image, *callee).is_some()
+                            && let Some(taken) = super::summary::summary(image, *callee).arity
+                        {
+                            for (position, register) in results.iter().enumerate() {
+                                if pending & (1 << position) != 0
+                                    && convention.arguments()
+                                        [..taken.min(convention.arguments().len())]
+                                        .contains(register)
+                                {
+                                    furthest = furthest.max(position + 1);
+                                }
+                            }
+                        }
                         let passed = match stmt {
                             Stmt::Call { .. } if barrier => None,
                             Stmt::Call { .. } | Stmt::Unsupported { .. } => Some(0),

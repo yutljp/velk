@@ -406,6 +406,22 @@ pub(super) fn optimize(
     simplification.add(changes);
     ir.callee_signatures = crate::analysis::calls::printable_signatures(image, &ir);
     ir.callee_results = crate::analysis::results::callee_results(image, &ir);
+    if image.go {
+        ir.listed_callees = ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .filter_map(|stmt| match stmt {
+                crate::ir::Stmt::Call {
+                    target: Some(target),
+                    through: None,
+                    ..
+                } => Some(*target),
+                _ => None,
+            })
+            .filter(|target| crate::loader::go::argument_registers(image, *target).is_some())
+            .collect();
+    }
     Ok(Analysis {
         callee_parameters: Default::default(),
         unused_parameters: Default::default(),

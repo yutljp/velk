@@ -160,7 +160,7 @@ frame_bounds_a64.o: 0
 frame_bounds_x64.o: 0
 go_probe: 865
 go_probe_arm64: 853
-go_probe_arm64_1_27: 1085
+go_probe_arm64_1_27: 1084
 go_stripped: 865
 go_stripped_arm64: 853
 i386_switch.elf: 0

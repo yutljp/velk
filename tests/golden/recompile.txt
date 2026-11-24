@@ -7,8 +7,8 @@
 #   refers to data: 398
 #   requires an external machine-state source: 7
 #   returns no integer: 320
-#   returns nothing: 649
-#   takes an argument that is no integer: 1120
+#   returns nothing: 645
+#   takes an argument that is no integer: 1124
 #   takes arguments on the stack: 74
 # runs left out:
 #   step limit: 50

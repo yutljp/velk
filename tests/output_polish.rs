@@ -309,8 +309,11 @@ fn go_results_types_and_returned_strings_read_by_name() {
     ] {
         let code = named_function(fixture, function);
         assert!(
-            code.contains(&format!("return (uintptr_t)(&{table});"))
-                && code.contains(&format!("extern uint8_t {table}; /* address: 0x")),
+            // The error it returns is the table and the value; the count
+            // comes from a caller that hands both on to another function.
+            code.contains(&format!(
+                "return (struct velk_results2){{ (uintptr_t)(&{table}), "
+            )) && code.contains(&format!("extern uint8_t {table}; /* address: 0x")),
             "{fixture}: {code}"
         );
     }

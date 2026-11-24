@@ -257,8 +257,8 @@ impl Outputs {
 
 /// Each call of Go's register convention through a pointer, with the
 /// registers some path reads after it before writing them. What a later
-/// call takes as arguments is not counted as read: the number it takes
-/// is itself an estimate.
+/// call takes as arguments is counted as read only where Go lists the
+/// arguments of the callee: elsewhere the number is itself an estimate.
 fn read_after_pointer_calls(ir: &FunctionIr) -> Vec<(&Stmt, HashSet<u16>)> {
     let through_pointer = |stmt: &Stmt| {
         matches!(stmt, Stmt::Call { target, through, convention, .. }
@@ -275,10 +275,22 @@ fn read_after_pointer_calls(ir: &FunctionIr) -> Vec<(&Stmt, HashSet<u16>)> {
     }
     let step = |stmt: &Stmt, live: &mut HashSet<u16>| {
         let (writes, mut reads) = crate::ir::visit::statement_registers(stmt);
-        if let Stmt::Call { through, .. } = stmt {
+        if let Stmt::Call {
+            target,
+            through,
+            args,
+            ..
+        } = stmt
+        {
             reads.clear();
             if let Some(through) = through {
                 crate::ir::visit::collect_reads(through, &mut reads);
+            }
+            if through.is_none() && target.is_some_and(|target| ir.listed_callees.contains(&target))
+            {
+                for value in args.iter().flatten() {
+                    crate::ir::visit::collect_reads(value, &mut reads);
+                }
             }
         }
         live.retain(|register| !writes.contains(register));
