@@ -39,8 +39,26 @@ pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
 /// of the one it calls.
 const PASSED_ON: u8 = 2;
 
+/// The integer registers the Go method at `addr` returns in, where the
+/// method table of its type tells.
+pub(crate) fn method_results(image: &Image, addr: u64) -> Option<usize> {
+    if !image.go {
+        return None;
+    }
+    image
+        .go_types
+        .get_or_init(|| crate::loader::go::types::read(image))
+        .methods
+        .get(&addr)
+        .copied()
+        .flatten()
+}
+
 /// `further_results`, following `passes` callers that return the results.
 fn further(image: &Image, addr: u64, passes: u8) -> usize {
+    if let Some(results) = method_results(image, addr) {
+        return results.saturating_sub(1);
+    }
     let known = image
         .further_results
         .lock()

@@ -274,6 +274,26 @@ fn go_results_types_and_returned_strings_read_by_name() {
             "{fixture}: {switched}"
         );
     }
+    // A method no call names returns what the method table of its type
+    // says: a string, in two registers.
+    for fixture in ["go_probe_arm64", "go_probe_arm64_1_27", "go_stripped"] {
+        let method = go_function(fixture, "runtime.errorString.Error");
+        assert!(
+            method.contains("struct velk_results2 runtime_errorString_Error("),
+            "{fixture}: {method}"
+        );
+    }
+    // A method that returns the string it is called on takes both of its
+    // words as parameters.
+    for fixture in ["go_probe_arm64", "go_probe_arm64_1_27"] {
+        let method = go_function(fixture, "runtime.plainError.Error");
+        assert!(
+            method.contains(
+                "struct velk_results2 runtime_plainError_Error(int64_t a0, int64_t a1) {"
+            ) && method.contains("return (struct velk_results2){ a0, a1 };"),
+            "{fixture}: {method}"
+        );
+    }
     // An interface table reads as its type and its interface.
     for (fixture, function, table) in [
         (

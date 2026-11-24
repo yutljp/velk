@@ -1061,6 +1061,20 @@ fn register_inputs(
                 {
                     reads(value, &mut used)
                 }
+                // The first of several results may be the argument the
+                // function leaves alone; the others it returns are read.
+                Stmt::Ret {
+                    value:
+                        Expr::Apply {
+                            op: crate::ir::Operation::Results,
+                            args,
+                        },
+                    ..
+                } => {
+                    for value in args.iter().skip(1) {
+                        reads(value, &mut used);
+                    }
+                }
                 Stmt::Ret { .. } => {}
                 Stmt::BrIndirect { target, .. } => reads(target, &mut used),
                 Stmt::Switch { index, .. } => reads(index, &mut used),

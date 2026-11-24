@@ -42,8 +42,10 @@ returns the call. The number of values is the furthest result register some path
 from a direct call reads before anything writes it. A caller that returns with such
 a register unread passes on its own number, through at most two callers. A register
 counts only if the function writes it on every path to a return or takes it as an
-argument. A function with no direct caller, such as a method called only through an
-interface, is printed with one result. A call through a pointer, and a register past
+argument. A method takes its number from the
+method table of its type instead, where every result fits the integer registers: a
+string counts two, a slice three, a structure its fields. Another function with no
+direct caller is printed with one result. A call through a pointer, and a register past
 the callee's number, keep the comment `/* also returned by the call */`. A function of
 Go's assembly convention returns on the stack and keeps `/* also returns ... */`.
 The summary's `return` stays the type of the first value.

@@ -42,6 +42,34 @@ fn reads_runtime_types_in_both_go_fixtures() {
             types.tables.keys().all(|address| address % 8 == 0),
             "{fixture}"
         );
+        // A method returning a string returns in two registers, through
+        // an interface and called directly; one returning nothing, in none.
+        let function = |name: &str| {
+            image
+                .functions
+                .values()
+                .find(|function| function.name.as_deref() == Some(name))
+                .map(|function| function.addr)
+                .expect(name)
+        };
+        for name in ["runtime.errorString.Error", "runtime.(*errorString).Error"] {
+            assert_eq!(
+                types.methods.get(&function(name)),
+                Some(&Some(2)),
+                "{fixture}: {name}"
+            );
+        }
+        assert!(
+            types.methods.values().any(|results| *results == Some(0)),
+            "{fixture}"
+        );
+        assert!(
+            types
+                .methods
+                .keys()
+                .all(|address| image.functions.contains_key(address)),
+            "{fixture}"
+        );
     }
 }
 

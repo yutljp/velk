@@ -6,8 +6,8 @@
 #   reads a register that is not a parameter: 60
 #   refers to data: 384
 #   requires an external machine-state source: 7
-#   returns no integer: 317
-#   returns nothing: 754
+#   returns no integer: 312
+#   returns nothing: 759
 #   takes an argument that is no integer: 1068
 #   takes arguments on the stack: 74
 # runs left out:

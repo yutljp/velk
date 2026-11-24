@@ -1211,13 +1211,24 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     } else {
         0
     };
+    // A Go method returns what the method table of its type says.
+    let listed = if float_return.is_none() && stack_results.is_empty() {
+        results::method_results(image, function.addr)
+    } else {
+        None
+    };
     let ignored = declared.is_none()
         && float_return.is_none()
         && stack_results.is_empty()
         && further == 0
         && !function.sources.contains(&crate::loader::NameSource::Plt)
-        && (results::ignored_by_callers(image, function.addr)
-            || results::returns_unset(&blocks, image.convention_of(function.addr)));
+        && match listed {
+            Some(results) => results == 0,
+            None => {
+                results::ignored_by_callers(image, function.addr)
+                    || results::returns_unset(&blocks, image.convention_of(function.addr))
+            }
+        };
     // A function the debug info says returns nothing returns no register.
     if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {

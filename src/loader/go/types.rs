@@ -14,6 +14,10 @@ pub(crate) struct Types {
     /// The interface and the type each interface table joins, by the
     /// address of the table.
     pub(crate) tables: BTreeMap<u64, (u64, u64)>,
+    /// The integer registers each function a method table holds returns
+    /// in, as the types of its results fill them, by the address of the
+    /// function. `None` where a result is a float or goes on the stack.
+    pub(crate) methods: BTreeMap<u64, Option<usize>>,
     start: u64,
     end: u64,
 }
@@ -160,6 +164,108 @@ impl Reader<'_> {
             _ => {}
         }
         found.into_iter().flatten().collect()
+    }
+
+    /// The integer registers a value of the type at `addr` fills when Go
+    /// passes it in registers: one for each word of a string, a slice or
+    /// an interface, and those of each field of a structure. `None` for
+    /// a type with a float in it and for an array of several elements,
+    /// which is passed on the stack.
+    fn registers(&self, addr: u64, depth: u8) -> Option<usize> {
+        let Some((size, _, kind)) = self.header(addr) else {
+            return None;
+        };
+        if size == 0 {
+            return Some(0);
+        }
+        match kind {
+            1..=12 | 18 | 19 | 21 | 22 | 26 => Some(1),
+            20 | 24 => Some(2),
+            23 => Some(3),
+            17 if depth < 8 && self.word(addr + 64) == Some(1) => self
+                .word(addr + 48)
+                .and_then(|element| self.registers(element, depth + 1)),
+            25 if depth < 8 => {
+                let (Some(fields), Some(count)) = (self.word(addr + 56), self.word(addr + 64))
+                else {
+                    return None;
+                };
+                let mut total = 0;
+                for index in 0..count.min(4096) {
+                    let Some(field) = fields
+                        .checked_add(index * 24 + 8)
+                        .and_then(|at| self.word(at))
+                        .and_then(|field| self.registers(field, depth + 1))
+                    else {
+                        return None;
+                    };
+                    total += field;
+                }
+                Some(total)
+            }
+            _ => None,
+        }
+    }
+
+    /// The methods the descriptor at `addr`, of `kind`, lists with their
+    /// functions: each function's offset in the text, and the integer
+    /// registers its results fill, no more than `limit`.
+    fn methods(&self, addr: u64, kind: u8, limit: usize) -> Vec<(u32, Option<usize>)> {
+        let mut found = Vec::new();
+        let base = match kind {
+            17 => 72,
+            18 => 64,
+            19 | 22 | 23 => 56,
+            20 | 25 => 80,
+            21 => 136,
+            _ => 48,
+        };
+        let Some(record) = self.bytes(addr + base, 16) else {
+            return found;
+        };
+        let count = u64::from(u16::from_le_bytes([record[4], record[5]]));
+        let first = u64::from(u32::from_le_bytes(
+            record[8..12].try_into().expect("four bytes"),
+        ));
+        for index in 0..count {
+            let Some(entry) = self.bytes(addr + base + first + index * 16, 16) else {
+                break;
+            };
+            let field = |at: usize| i32::from_le_bytes(entry[at..at + 4].try_into().expect("four"));
+            let Some(signature) = (field(4) > 0)
+                .then(|| self.start.checked_add_signed(i64::from(field(4))))
+                .flatten()
+            else {
+                continue;
+            };
+            let Some((_, _, 19)) = self.header(signature) else {
+                continue;
+            };
+            let Some(counts) = self.bytes(signature + 48, 4) else {
+                continue;
+            };
+            let inputs = u64::from(u16::from_le_bytes([counts[0], counts[1]]));
+            let outputs = u64::from(u16::from_le_bytes([counts[2], counts[3]]) & 0x7fff);
+            let listed = self
+                .bytes(signature + 20, 1)
+                .is_some_and(|flags| flags[0] & 1 != 0);
+            let types = signature + if listed { 72 } else { 56 };
+            let mut results = Some(0);
+            for index in inputs..inputs + outputs {
+                let filled = self
+                    .word(types + index * 8)
+                    .and_then(|ty| self.registers(ty, 0));
+                results = results.zip(filled).map(|(total, filled)| total + filled);
+            }
+            let results = results.filter(|total| *total <= limit);
+            // The function an interface reaches, and the one called directly.
+            for function in [field(8), field(12)] {
+                if function >= 0 {
+                    found.push((function as u32, results));
+                }
+            }
+        }
+        found
     }
 
     /// The interface tables laid one after another in the `length` bytes
@@ -522,6 +628,9 @@ pub(crate) fn read(image: &Image) -> Types {
             pending.extend([interface, ty]);
         }
     }
+    let text = word(super::MODULE_TEXT);
+    let registers = if image.isa == Isa::X86_64 { 9 } else { 16 };
+    let flags = |addr: u64| reader.bytes(addr + 20, 1).map_or(0, |flags| flags[0]);
     let mut visited = BTreeSet::new();
     while let Some(addr) = pending.pop() {
         if visited.len() >= 100_000 || !visited.insert(addr) {
@@ -537,6 +646,21 @@ pub(crate) fn read(image: &Image) -> Types {
             continue;
         };
         types.names.insert(addr, name);
+        if flags(addr) & 1 != 0 {
+            for (offset, results) in reader.methods(addr, kind, registers) {
+                let function = text.wrapping_add(u64::from(offset));
+                // A function two tables hold keeps what they agree on.
+                types
+                    .methods
+                    .entry(function)
+                    .and_modify(|known| {
+                        if *known != results {
+                            *known = None;
+                        }
+                    })
+                    .or_insert(results);
+            }
+        }
         pending.extend(reader.referenced(addr, kind));
         if kind == 25
             && let Some(layout) = reader.structure(addr)
