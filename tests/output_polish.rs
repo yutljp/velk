@@ -317,7 +317,7 @@ fn go_results_types_and_returned_strings_read_by_name() {
 }
 
 /// A value of two words comes back in two registers under the System V
-/// and AArch64 conventions, as a Rust slice does.
+/// and `AArch64` conventions, as a Rust slice does.
 #[test]
 fn a_value_returned_in_two_registers_is_a_structure_of_both() {
     for fixture in ["rust_demo", "rust_demo_arm64"] {
