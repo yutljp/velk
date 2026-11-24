@@ -985,13 +985,14 @@ fn compute(
         }
         _ => {
             let mut signature_blocks;
-            let signature_body = if convention == crate::ir::Convention::Aapcs64
-                && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-                    crate::ir::visit::statement_registers(stmt)
-                        .0
-                        .contains(&crate::arch::RETURN)
-                })
-                && super::results::ignored_by_callers(image, addr)
+            let signature_body = if matches!(
+                convention,
+                crate::ir::Convention::Aapcs64 | crate::ir::Convention::GoArm64
+            ) && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                crate::ir::visit::statement_registers(stmt)
+                    .0
+                    .contains(&crate::arch::RETURN)
+            }) && super::results::ignored_by_callers(image, addr)
             {
                 signature_blocks = blocks.as_ref().clone();
                 for stmt in signature_blocks

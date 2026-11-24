@@ -863,6 +863,18 @@ fn branch_target(instruction: &Instruction, pc: u64) -> Option<u64> {
     }
 }
 
+/// Gives a write to a system register the register its word names. The
+/// decoder reads four of the five bits, so `msr dit, xzr` came out as
+/// writing x15.
+pub(crate) fn written_register(word: &[u8], instruction: &mut Instruction) {
+    if instruction.opcode == a64::Opcode::MSR
+        && let Operand::Register(_, register) = &mut instruction.operands[1]
+        && let Some(first) = word.first()
+    {
+        *register = u16::from(first & 31);
+    }
+}
+
 /// The undefined instruction Go writes where control never arrives.
 const GO_UNDEFINED: u32 = 0xbea7_1700;
 
@@ -880,11 +892,16 @@ pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Opt
             );
         };
         match decoder.decode(&mut reader) {
-            Ok(instruction) => decoded.push(Decoded {
-                pc,
-                next,
-                instruction,
-            }),
+            Ok(mut instruction) => {
+                if let Some(word) = bytes.get((pc - addr) as usize..(next - addr) as usize) {
+                    written_register(word, &mut instruction);
+                }
+                decoded.push(Decoded {
+                    pc,
+                    next,
+                    instruction,
+                });
+            }
             // Go's assembler marks code that is never reached with this
             // word, which no processor decodes: it traps like `udf`.
             Err(_)
@@ -1273,6 +1290,32 @@ mod tests {
             }
         }
         assert_eq!(checked, 1044);
+    }
+
+    #[test]
+    fn a_system_register_write_reads_the_register_its_word_names() {
+        // msr dit, xzr; msr dit, x16; msr dit, x3
+        for (word, expected) in [
+            (0xd51b_42bfu32, crate::ir::Expr::constant(0)),
+            (0xd51b_42b0, crate::ir::Expr::reg(16, 64)),
+            (0xd51b_42a3, crate::ir::Expr::reg(3, 64)),
+        ] {
+            let ir = lifted(&[word, RET]);
+            let written: Vec<_> = ir
+                .blocks
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .filter_map(|stmt| match stmt {
+                    Stmt::Machine {
+                        instruction: crate::ir::MachineInstruction::ArmSystem { write: true, .. },
+                        inputs,
+                        ..
+                    } => Some(inputs.clone()),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(written, [vec![expected]], "word {word:#010x}");
+        }
     }
 
     #[test]

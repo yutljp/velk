@@ -1,4 +1,4 @@
-mod aarch64;
+pub(crate) mod aarch64;
 mod arm32;
 pub(crate) use arm32::disassembly as arm32_disassembly;
 pub(crate) use arm32::fold_literals;
