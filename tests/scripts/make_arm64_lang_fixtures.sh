@@ -13,6 +13,11 @@ for case in add probe; do
       go build -trimpath -ldflags "-s -w" -o "$ROOT/$OUT/$name" "$case.go" )
 done
 
+# The same probe from Go 1.27, which lays the module data out differently
+# from the Go 1.23 the fixtures above were built with.
+( cd tests/cases/go && GO111MODULE=off CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
+    go build -trimpath -ldflags "-s -w" -o "$ROOT/$OUT/go_probe_arm64_1_27" probe.go )
+
 RUSTC=(rustc "--remap-path-prefix=$ROOT=.")
 if command -v aarch64-linux-gnu-gcc >/dev/null; then
   RUSTC+=(--target aarch64-unknown-linux-gnu -C linker=aarch64-linux-gnu-gcc)

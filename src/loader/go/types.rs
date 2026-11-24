@@ -79,6 +79,84 @@ impl Reader<'_> {
         Some((size, alignment, bytes[23] & 31))
     }
 
+    /// The type descriptors laid one after another in the first `length`
+    /// bytes of the region, as Go 1.27 keeps them in place of a list of
+    /// links; those before the first that does not read as one.
+    fn descriptors(&self, length: u64) -> Vec<u64> {
+        let mut found = Vec::new();
+        let Some(stop) = self.start.checked_add(length) else {
+            return found;
+        };
+        // One word comes before the first descriptor.
+        let mut at = self.start.saturating_add(8);
+        while at < stop && found.len() < 100_000 {
+            let Some(size) = self.descriptor_size(at) else {
+                break;
+            };
+            found.push(at);
+            let Some(next) = at.checked_add(size) else {
+                break;
+            };
+            at = next.next_multiple_of(8);
+        }
+        found
+    }
+
+    /// The bytes the descriptor at `addr` takes: its own fields by kind,
+    /// the record of its methods when it has one, what its kind appends,
+    /// and the methods.
+    fn descriptor_size(&self, addr: u64) -> Option<u64> {
+        let Some((_, _, kind)) = self.header(addr) else {
+            return None;
+        };
+        let Some(flags) = self.bytes(addr + 20, 1) else {
+            return None;
+        };
+        let count = |at: u64, size: u64| {
+            self.bytes(addr + at, size).map(|bytes| {
+                let mut word = [0; 8];
+                word[..bytes.len()].copy_from_slice(bytes);
+                u64::from_le_bytes(word)
+            })
+        };
+        let (base, appended) = match kind {
+            1..=16 | 24 | 26 => (48, 0),
+            17 => (72, 0),
+            18 => (64, 0),
+            19 => {
+                let (Some(inputs), Some(outputs)) = (count(48, 2), count(50, 2)) else {
+                    return None;
+                };
+                (56, (inputs + (outputs & 0x7fff)) * 8)
+            }
+            20 => {
+                let Some(methods) = count(64, 8) else {
+                    return None;
+                };
+                (80, methods.saturating_mul(8))
+            }
+            21 => (136, 0),
+            22 | 23 => (56, 0),
+            25 => {
+                let Some(fields) = count(64, 8) else {
+                    return None;
+                };
+                (80, fields.saturating_mul(24))
+            }
+            _ => return None,
+        };
+        let methods = if flags[0] & 1 == 0 {
+            0
+        } else {
+            let Some(methods) = count(base + 4, 2) else {
+                return None;
+            };
+            16 + methods * 16
+        };
+        base.checked_add(appended)
+            .and_then(|size| size.checked_add(methods))
+    }
+
     fn scalar(&self, addr: u64) -> Option<(CType, u64, u8)> {
         let Some((size, align, kind)) = self.header(addr) else {
             return None;
@@ -273,15 +351,20 @@ pub(crate) fn read(image: &Image) -> Types {
     let Some(module) = super::moduledata(image, tab.vaddr) else {
         return types;
     };
-    let Some(data) = image.read_vaddr(module, super::MODULE_TYPE_DATA_SIZE) else {
+    let Some(layout) = super::module_layout(image, module, tab.vaddr) else {
         return types;
     };
-    let word = |at| u64::from_le_bytes(data[at..at + 8].try_into().expect("eight bytes"));
+    let word = |at: u64| {
+        module
+            .checked_add(at)
+            .and_then(|address| super::u64_at(image, address))
+            .unwrap_or(0)
+    };
     // Go 1.20 and later include coverage counters before the type region.
     let reader = Reader {
         image,
         start: word(super::MODULE_TYPES),
-        end: word(super::MODULE_TYPES_END),
+        end: word(layout.types_end),
     };
     if reader.start >= reader.end {
         return types;
@@ -289,10 +372,10 @@ pub(crate) fn read(image: &Image) -> Types {
     types.start = reader.start;
     types.end = reader.end;
     let mut pending = Vec::new();
-    for (at, width) in [
-        (super::MODULE_TYPE_LINKS, 4u64),
-        (super::MODULE_INTERFACE_LINKS, 8),
-    ] {
+    let links = layout
+        .links
+        .map(|(types, interfaces)| [(types, 4u64), (interfaces, 8)]);
+    for (at, width) in links.into_iter().flatten() {
         let count = word(at + 8);
         if count > 100_000 || count > word(at + 16) {
             continue;
@@ -319,6 +402,9 @@ pub(crate) fn read(image: &Image) -> Types {
                 }
             }
         }
+    }
+    if layout.links.is_none() {
+        pending.extend(reader.descriptors(word(304)));
     }
     let mut visited = BTreeSet::new();
     while let Some(addr) = pending.pop() {

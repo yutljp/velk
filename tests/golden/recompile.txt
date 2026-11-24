@@ -1,15 +1,15 @@
 # functions left out:
-#   accesses memory: 280
-#   calls: 8096
+#   accesses memory: 303
+#   calls: 9399
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 4
-#   reads a register that is not a parameter: 58
-#   refers to data: 366
-#   requires an external machine-state source: 4
-#   returns no integer: 311
-#   returns nothing: 742
-#   takes an argument that is no integer: 1000
-#   takes arguments on the stack: 73
+#   reads a register that is not a parameter: 59
+#   refers to data: 384
+#   requires an external machine-state source: 7
+#   returns no integer: 317
+#   returns nothing: 756
+#   takes an argument that is no integer: 1062
+#   takes arguments on the stack: 74
 # runs left out:
 #   step limit: 50
 #   takes a function's address: 24
@@ -113,6 +113,7 @@
 # flattened_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # go_probe: 1287 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
 # go_probe_arm64: 1271 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
+# go_probe_arm64_1_27: 1447 functions, 16 qualify, 16 compile, 0 do not, 16 compared (192 runs), 0 differ
 # go_stripped: 1285 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
 # go_stripped_arm64: 1269 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ

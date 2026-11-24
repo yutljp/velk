@@ -23,11 +23,77 @@ const MODULE_PC_TABLE: u64 = 104;
 const MODULE_FUNCTION_TABLE: u64 = 128;
 const MODULE_TEXT: u64 = 176;
 const MODULE_TEXT_END: u64 = 184;
-const MODULE_TYPES: usize = 296;
-const MODULE_TYPES_END: usize = 304;
-const MODULE_TYPE_LINKS: usize = 352;
-const MODULE_INTERFACE_LINKS: usize = 376;
-const MODULE_TYPE_DATA_SIZE: u64 = 456;
+const MODULE_TYPES: u64 = 296;
+
+/// Where the module data holds what Go releases have moved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct ModuleLayout {
+    /// The end of the type region.
+    pub(super) types_end: u64,
+    /// The base that function data offsets are from.
+    pub(super) function_data: u64,
+    /// The slice of type offsets and the slice of interface tables, in
+    /// the releases that keep them.
+    pub(super) links: Option<(u64, u64)>,
+}
+
+/// The layout of the module data at `module`, told by where the slice of
+/// text sections sits: its length is no more than its capacity, both
+/// small, and what precedes it is an address. Go 1.26 put the end of the
+/// function table before that slice; Go 1.27 also added the size of the
+/// type descriptors and the place of the interface tables before it and
+/// dropped the two slices of links after it. `None` when the words fit no
+/// known layout, or more than one.
+pub(super) fn module_layout(image: &Image, module: u64, pclntab: u64) -> Option<ModuleLayout> {
+    let word = |offset: u64| {
+        module
+            .checked_add(offset)
+            .and_then(|address| u64_at(image, address))
+    };
+    let mapped = |address: u64| image.section_at(address).is_some();
+    let sections = |offset: u64| {
+        matches!(
+            (word(offset), word(offset + 8), word(offset + 16)),
+            (Some(pointer), Some(length), Some(capacity))
+                if mapped(pointer) && length != 0 && length <= capacity && capacity < 0x1_0000
+        )
+    };
+    let after = |offset: u64, start: u64| matches!((word(offset), word(start)), (Some(end), Some(start)) if end >= start);
+    let table_end = |offset: u64| word(offset).is_some_and(|end| end > pclntab);
+    let mut found = Vec::new();
+    if sections(328) && after(304, MODULE_TYPES) && word(320).is_some_and(mapped) {
+        found.push(ModuleLayout {
+            types_end: 304,
+            function_data: 320,
+            links: Some((352, 376)),
+        });
+    }
+    if sections(336) && after(304, MODULE_TYPES) && table_end(328) {
+        found.push(ModuleLayout {
+            types_end: 304,
+            function_data: 320,
+            links: Some((360, 384)),
+        });
+    }
+    if sections(360)
+        && after(312, MODULE_TYPES)
+        && table_end(352)
+        && matches!(
+            (word(MODULE_TYPES), word(304), word(312)),
+            (Some(start), Some(length), Some(end)) if start.checked_add(length).is_some_and(|sum| sum <= end)
+        )
+    {
+        found.push(ModuleLayout {
+            types_end: 312,
+            function_data: 344,
+            links: None,
+        });
+    }
+    match found.as_slice() {
+        [layout] => Some(*layout),
+        _ => None,
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct GoFunction {

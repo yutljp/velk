@@ -1,5 +1,6 @@
 go_probe: chacha_salsa_constants 0x402b88 immediates ["0x402b80"]
 go_probe_arm64: chacha_salsa_constants 0xaf280 data ["0x12510"]
+go_probe_arm64_1_27: chacha_salsa_constants 0x98100 data ["0x1def0"]
 go_stripped: chacha_salsa_constants 0x402b88 immediates ["0x402b80"]
 go_stripped_arm64: chacha_salsa_constants 0xaf280 data ["0x12510"]
 rust_demo: deflate_distance_bases 0x90ec data ["0x4a7b1","0x4c141"]

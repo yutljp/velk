@@ -1,18 +1,18 @@
 # functions left out:
-#   calls: 8190
-#   computes on floats or vectors: 118
-#   computes on registers alone: 1817
+#   calls: 9493
+#   computes on floats or vectors: 129
+#   computes on registers alone: 1834
 #   has an unsupported instruction: 4
-#   reads a register that is not a parameter: 125
-#   refers to data: 907
-#   requires an external machine-state source: 4
-#   returns no integer: 177
-#   takes an argument that is no integer: 99
-#   takes arguments on the stack: 93
+#   reads a register that is not a parameter: 144
+#   refers to data: 944
+#   requires an external machine-state source: 8
+#   returns no integer: 179
+#   takes an argument that is no integer: 100
+#   takes arguments on the stack: 96
 # runs left out:
-#   reaches memory no page can map: 421
-#   reads a register that is not a parameter: 1320
-#   step limit: 1087
+#   reaches memory no page can map: 485
+#   reads a register that is not a parameter: 1386
+#   step limit: 1145
 #   switch without a matching case: 36
 #   takes a function's address: 108
 # arm32/arith_mixed.arm.O0.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
@@ -95,6 +95,7 @@
 # frame_bounds_x64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # go_probe: 1287 functions, 49 qualify, 49 compile, 0 do not, 41 compared (476 runs), 0 differ
 # go_probe_arm64: 1271 functions, 39 qualify, 39 compile, 0 do not, 29 compared (344 runs), 0 differ
+# go_probe_arm64_1_27: 1447 functions, 50 qualify, 50 compile, 0 do not, 36 compared (412 runs), 0 differ
 # go_stripped: 1285 functions, 48 qualify, 48 compile, 0 do not, 40 compared (468 runs), 0 differ
 # go_stripped_arm64: 1269 functions, 38 qualify, 38 compile, 0 do not, 28 compared (336 runs), 0 differ
 # l2_loop_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ

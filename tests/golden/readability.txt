@@ -160,6 +160,7 @@ frame_bounds_a64.o: 19 lines, 3 prelude lines, 4 variables, 4 casts, 0 registers
 frame_bounds_x64.o: 18 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 go_probe: 60652 lines, 6683 prelude lines, 13295 variables, 11331 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
 go_probe_arm64: 67008 lines, 7117 prelude lines, 15057 variables, 16156 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
+go_probe_arm64_1_27: 81193 lines, 9017 prelude lines, 18974 variables, 19330 casts, 791 registers, 0 unsigned, 21 traps, 79 gotos, 135 indirect calls
 go_stripped: 60584 lines, 6681 prelude lines, 13282 variables, 11324 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
 go_stripped_arm64: 66948 lines, 7115 prelude lines, 15048 variables, 16150 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
 i386_switch.elf: 68 lines, 13 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

@@ -21,12 +21,15 @@ pub(super) fn ranges(image: &Image) -> HashMap<u64, (i64, i64)> {
     let Some(module) = super::moduledata(image, table.vaddr) else {
         return ranges;
     };
+    let Some(layout) = super::module_layout(image, module, table.vaddr) else {
+        return ranges;
+    };
     let field = |offset| module.checked_add(offset);
     let (Some((table, length)), Some((entries, count)), Some(text), Some(data)) = (
         field(super::MODULE_PC_TABLE).and_then(|address| super::slice_at(image, address)),
         field(super::MODULE_FUNCTION_TABLE).and_then(|address| super::slice_at(image, address)),
         field(super::MODULE_TEXT).and_then(|address| super::u64_at(image, address)),
-        field(320).and_then(|address| super::u64_at(image, address)),
+        field(layout.function_data).and_then(|address| super::u64_at(image, address)),
     ) else {
         return ranges;
     };
@@ -119,13 +122,44 @@ mod tests {
 
     #[test]
     fn fixture_spills_follow_stack_arguments() {
-        for (file, address) in [("go_probe", 0x466d00), ("go_probe_arm64", 0x77490)] {
+        for (file, name) in [
+            ("go_probe", "main.sumSlice"),
+            ("go_probe_arm64", "main.sumSlice"),
+            ("go_probe_arm64_1_27", "main.sumSlice"),
+        ] {
             let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures")
                 .join(file);
             let image = crate::loader::load(&path).unwrap();
+            let address = image
+                .functions
+                .values()
+                .find(|function| function.name.as_deref() == Some(name))
+                .expect("named function")
+                .addr;
             let ranges = super::ranges(&image);
             assert_eq!(ranges.get(&address).copied(), Some((8, 32)), "{file}");
         }
+    }
+
+    #[test]
+    fn module_data_layout_follows_the_go_release() {
+        let layout = |file: &str| {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(file);
+            let image = crate::loader::load(&path).unwrap();
+            let table = crate::loader::go::pclntab(&image).unwrap().vaddr;
+            let module = crate::loader::go::moduledata(&image, table).unwrap();
+            crate::loader::go::module_layout(&image, module, table)
+        };
+        for file in ["go_probe", "go_probe_arm64"] {
+            let found = layout(file).expect("Go 1.23 layout");
+            assert_eq!((found.types_end, found.function_data), (304, 320), "{file}");
+            assert_eq!(found.links, Some((352, 376)), "{file}");
+        }
+        let found = layout("go_probe_arm64_1_27").expect("Go 1.27 layout");
+        assert_eq!((found.types_end, found.function_data), (312, 344));
+        assert_eq!(found.links, None);
     }
 }

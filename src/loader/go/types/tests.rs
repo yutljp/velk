@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn reads_runtime_types_in_both_go_fixtures() {
-    for fixture in ["go_probe", "go_stripped"] {
+    for fixture in ["go_probe", "go_stripped", "go_probe_arm64_1_27"] {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures")
             .join(fixture);
