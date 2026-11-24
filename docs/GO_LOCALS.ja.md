@@ -2,23 +2,23 @@
 
 `tests/scripts/local_usage.py` は CLI の関数全体の出力にある宣言を分類します。
 以下は `go_probe`、`go_stripped`、`go_probe_arm64`、`go_stripped_arm64` の
-ランタイムを含む 5,088 関数が対象です。構文上の分類では 69,293 宣言が見つかります。
+ランタイムを含む 5,112 関数が対象です。構文上の分類では 57,444 宣言が見つかります。
 レジスタの束縛や匿名の結果領域も含むため、名前付き変数の読みやすさ指標とは
 数え方が異なります。分類は出力された定義についてのものであり、Go のソース変数を
 復元して識別したものではありません。
 
 | 定義または領域 | 数 | `go_probe` の例 |
 | --- | ---: | --- |
-| 複数の定義、または認識できた定義なし | 18,330 | `internal/abi.Name.IsBlank`: `v1` |
-| その他の計算値 | 15,750 | `internal/abi.Kind.String`: `v1` |
-| メモリ読み出し | 13,732 | `internal/abi.Kind.String`: `v4` |
-| スタックスロットまたはオブジェクト | 9,985 | `internal/abi.(*Kind).String`: `local_0` |
-| 呼び出しを含む式 | 6,049 | `type:.eq.internal/abi.RegArgs`: `v1` |
-| 定数 | 2,531 | `runtime.memhashFallback`: `v3` |
-| 配列、集約値、または `&` の後のオペランド | 1,362 | `internal/cpu.doinit`: `call_values` |
-| 同じ型のレジスタコピー | 1,174 | `internal/cpu.processOptions`: `v56` |
-| 同じローカルからの繰り返しコピー | 326 | `runtime.chansend`: `v15` |
-| 型が判明している文字列、スライス、インターフェースのヘッダー | 54 | `runtime.(*mheap).sysAlloc`: `string` |
+| 複数の定義、または認識できた定義なし | 14,206 | `internal/abi.Name.IsBlank`: `v1` |
+| その他の計算値 | 13,941 | `internal/abi.Kind.String`: `v1` |
+| メモリ読み出し | 11,236 | `internal/abi.Kind.String`: `v4` |
+| スタックスロットまたはオブジェクト | 9,578 | `internal/abi.(*Kind).String`: `local_0` |
+| 呼び出しを含む式 | 4,992 | `type:.eq.internal/abi.RegArgs`: `v1` |
+| 配列、集約値、または `&` の後のオペランド | 1,276 | `internal/cpu.doinit`: `call_values` |
+| 同じ型のレジスタコピー | 946 | `internal/cpu.processOptions`: `v56` |
+| 定数 | 863 | `runtime.printpanicval`: `v5` |
+| 同じローカルからの繰り返しコピー | 308 | `runtime.chansend`: `v51` |
+| 型が判明している文字列、スライス、インターフェースのヘッダー | 98 | `runtime.typeBitsBulkBarrier`: `string` |
 
 `&` の分類は保守的で、ビット演算のオペランドも含む場合があります。
 コピー元が後続の読み出しまでに変化することもあるため、構文上のコピー数は

@@ -59,6 +59,9 @@ pub(crate) struct Ctx<'a> {
     pub(super) block_addresses: std::collections::HashSet<u64>,
     pub(super) jump_provider: String,
     pub(super) isa: Isa,
+    /// How many values the function returns in one structure, when more
+    /// than one.
+    pub(super) results: usize,
     /// The function returns nothing: a `return` carries no value.
     pub(super) void_return: bool,
     /// The precision of a float the function returns.

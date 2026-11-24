@@ -35,6 +35,19 @@ For AArch64 and Go, parameter recovery treats calls as writes to every register
 the convention allows them to change; save/restore reads can otherwise introduce
 extra parameters.
 
+A Go function that returns several values in registers is printed as returning
+`struct velk_resultsN`, with one `int64_t` member, `r0` onwards, for each value. A direct
+call reads the members it uses, and a function that returns what its callee returned
+returns the call. The number of values is the furthest result register some path
+from a direct call reads before anything writes it. A caller that returns with such
+a register unread passes on its own number, through at most two callers. A register
+counts only if the function writes it on every path to a return or takes it as an
+argument. A function with no direct caller, such as a method called only through an
+interface, is printed with one result. A call through a pointer, and a register past
+the callee's number, keep the comment `/* also returned by the call */`. A function of
+Go's assembly convention returns on the stack and keeps `/* also returns ... */`.
+The summary's `return` stays the type of the first value.
+
 Pointer tracking follows stored function addresses and constant data words at the
 target's pointer width. Overlapping writes invalidate stored values. Unknown
 pointers and incompatible paths can prevent resolution.

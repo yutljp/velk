@@ -1205,9 +1205,16 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // in the return register returns nothing either. A linkage stub returns
     // what the library function does, whatever these callers make of it.
     // So does one that returns on some path with the register unset.
+    // A Go function returns as many values as its callers read.
+    let further = if image.go && float_return.is_none() && stack_results.is_empty() {
+        results::further_results(image, function.addr)
+    } else {
+        0
+    };
     let ignored = declared.is_none()
         && float_return.is_none()
         && stack_results.is_empty()
+        && further == 0
         && !function.sources.contains(&crate::loader::NameSource::Plt)
         && (results::ignored_by_callers(image, function.addr)
             || results::returns_unset(&blocks, image.convention_of(function.addr)));
@@ -1226,12 +1233,6 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             }
         }
     }
-    // A Go function returns as many values as its callers read.
-    let further = if image.go && float_return.is_none() && !ignored && stack_results.is_empty() {
-        results::further_results(image, function.addr)
-    } else {
-        0
-    };
     if further > 0 {
         let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
         let returned: Vec<crate::ir::Expr> = convention.results()[..=further]
@@ -1425,6 +1426,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         frame_bottom: 0,
         entry_alignment: entry_alignment(image, function.addr),
         callee_signatures: Default::default(),
+        callee_results: Default::default(),
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,

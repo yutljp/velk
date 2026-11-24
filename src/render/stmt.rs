@@ -574,6 +574,24 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 format!("return {};", returned(&args[0], ctx))
             }
         }
+        Stmt::Ret {
+            value:
+                Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                },
+            ..
+        } if ctx.results > 0 && ctx.results == args.len() => {
+            let values: Vec<String> = args
+                .iter()
+                .map(|arg| conformed(arg, stored_value(arg, 64, ctx), None, ctx))
+                .collect();
+            format!(
+                "return ({}){{ {} }};",
+                super::results::type_name(ctx.results),
+                values.join(", ")
+            )
+        }
         // Several values, the further ones in a comment.
         Stmt::Ret {
             value:

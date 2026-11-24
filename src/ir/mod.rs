@@ -1036,6 +1036,9 @@ pub struct FunctionIr {
     /// their debug information, where every parameter and the result is an
     /// integer or a pointer passed whole as the convention orders.
     pub callee_signatures: std::collections::BTreeMap<u64, DeclaredSignature>,
+    /// How many values each Go function called directly returns in the
+    /// integer result registers, where its callers read more than one.
+    pub callee_results: std::collections::BTreeMap<u64, usize>,
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
@@ -1073,6 +1076,7 @@ impl FunctionIr {
             frame_bottom: 0,
             entry_alignment: None,
             callee_signatures: Default::default(),
+            callee_results: Default::default(),
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),
             addr: 0,

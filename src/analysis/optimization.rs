@@ -405,6 +405,7 @@ pub(super) fn optimize(
     }
     simplification.add(changes);
     ir.callee_signatures = crate::analysis::calls::printable_signatures(image, &ir);
+    ir.callee_results = crate::analysis::results::callee_results(image, &ir);
     Ok(Analysis {
         callee_parameters: Default::default(),
         unused_parameters: Default::default(),

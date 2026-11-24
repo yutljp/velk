@@ -4084,6 +4084,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         frame_bottom: 0,
         entry_alignment: None,
         callee_signatures: Default::default(),
+        callee_results: Default::default(),
         value_types: Default::default(),
         variable_registers: Default::default(),
         addr: 0,
@@ -5604,6 +5605,13 @@ fn calls(image: &Image, function: &velk::loader::Function) -> bool {
         })
 }
 
+/// Whether the function `code` defines returns a structure of several
+/// results.
+fn returns_several(code: &str) -> bool {
+    code.lines()
+        .any(|line| line.starts_with("struct velk_results") && line.ends_with(") {"))
+}
+
 /// Why a function is outside what this test compares, if it is.
 fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'static str> {
     let memory = mode == Mode::Memory;
@@ -5733,7 +5741,9 @@ fn pure(expr: &Expr, memory: bool) -> Result<(), &'static str> {
             | Operation::CountTrailingZeros(_)
             | Operation::PopCount(_)
             | Operation::ReverseBits(_)
-            | Operation::WideDivide { .. } => args.iter().try_for_each(|arg| pure(arg, memory)),
+            | Operation::WideDivide { .. }
+            // The values of a return; the first is what the run compares.
+            | Operation::Results => args.iter().try_for_each(|arg| pure(arg, memory)),
             _ => Err("computes on floats or vectors"),
         },
     }
@@ -7288,6 +7298,9 @@ fn program(
         let call = format!("velk_f{index}({})", arguments.join(", "));
         if candidate.void {
             writeln!(text, "    case {index}: {call}; return 0;")
+        } else if returns_several(&candidate.code) {
+            // The interpreter's value of several results is the first.
+            writeln!(text, "    case {index}: return (uint64_t){call}.r0;")
         } else {
             writeln!(text, "    case {index}: return (uint64_t){call};")
         }

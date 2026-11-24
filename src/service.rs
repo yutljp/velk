@@ -1624,6 +1624,7 @@ impl Binary {
         if changed {
             self.image.summaries = Default::default();
             self.image.returned_types = Default::default();
+            self.image.further_results = Default::default();
             self.navigation = None;
             self.similarity = None;
             self.symbols = render::callee_names(&self.image);

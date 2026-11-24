@@ -964,6 +964,7 @@ fn render_with(
         }
     }
     let caller_argument = locals.caller_argument;
+    let results = super::results::count(ir);
     let mut ctx = Ctx {
         inline_functions: Default::default(),
         ir,
@@ -984,6 +985,7 @@ fn render_with(
         block_addresses,
         jump_provider: vacant_name("velk_jump_target", &mut call_reserved),
         isa: ir.isa,
+        results,
         void_return: ir.ret_type == CType::Void,
         float_return,
         readonly_floats,
@@ -1063,7 +1065,11 @@ fn render_with(
         narrow_registers,
         floats,
         scaled,
-        returned: declared(&ir.ret_type, false),
+        returned: if results > 0 {
+            declared(&CType::I64, false)
+        } else {
+            declared(&ir.ret_type, false)
+        },
         declared: declared_registers,
         pointer_types: ir
             .params
@@ -1073,9 +1079,7 @@ fn render_with(
             .filter(|(_, ty)| ty.is_pointer())
             .map(|(index, ty)| (index, ty.to_string().trim_end().to_owned()))
             .collect(),
-        return_pointer_type: ir
-            .ret_type
-            .is_pointer()
+        return_pointer_type: (results == 0 && ir.ret_type.is_pointer())
             .then(|| ir.ret_type.to_string().trim_end().to_owned()),
         value_bits,
         read_once: Default::default(),
@@ -1170,7 +1174,11 @@ fn render_with(
     out.push_str(&format!(
         "{} {{\n",
         declaration(
-            &ir.ret_type,
+            &if results > 0 {
+                CType::Named(super::results::type_name(results))
+            } else {
+                ir.ret_type.clone()
+            },
             &format!(
                 "{}({})",
                 sanitize(&name),
@@ -1260,6 +1268,16 @@ fn render_with(
     out.insert_str(prototypes_at, &super::prelude::section(&prototypes));
     let tables = ctx.virtual_tables.declarations(&body);
     out.insert_str(prototypes_at, &tables);
+    out.insert_str(
+        prototypes_at,
+        &super::prelude::section(&super::results::definitions(ir, results, |address| {
+            let name = symbols
+                .functions
+                .get(&address)
+                .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
+            code_names.contains(name.as_str())
+        })),
+    );
     let declarations::Declarations {
         text: mut declarations,
         candidates,

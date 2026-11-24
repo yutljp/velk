@@ -307,6 +307,10 @@ pub struct Image {
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
+    /// How many integer results past the first the callers of each Go
+    /// function read, for each number of callers in a row that may pass
+    /// the results on by returning them; filled on demand.
+    pub(crate) further_results: std::sync::Mutex<HashMap<(u64, u8), usize>>,
     /// What each function returns as its own analysis decides, for the
     /// callers that return its result; filled on demand.
     pub(crate) returned_types: std::sync::Mutex<HashMap<u64, Option<crate::ir::CType>>>,
@@ -621,6 +625,7 @@ impl Image {
             exception_regions: Vec::new(),
             exception_handlers: Vec::new(),
             result_reads: Default::default(),
+            further_results: Default::default(),
             returned_types: Default::default(),
             lifts: Default::default(),
             word_pairs: Default::default(),
@@ -1525,6 +1530,7 @@ pub(crate) fn load_input_with_saved(
         stack_rows: Default::default(),
         landing_sites: Default::default(),
         result_reads: Default::default(),
+        further_results: Default::default(),
         returned_types: Default::default(),
         lifts: Default::default(),
         word_pairs: Default::default(),

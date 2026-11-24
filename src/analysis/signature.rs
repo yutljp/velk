@@ -90,6 +90,46 @@ fn partial_write_source(value: &Expr, dest: u16) -> &Expr {
     value
 }
 
+/// What a scan for the lowest or highest set bit of `x` computes, when
+/// `value` is `x == 0 ? register : f(scan(x))`: the scan leaves the
+/// register as it was only where the code makes no use of it.
+pub(super) fn scan_source(value: &Expr, register: u16) -> Option<&Expr> {
+    fn scans(expr: &Expr, of: &Expr) -> bool {
+        match expr {
+            Expr::Apply {
+                op:
+                    crate::ir::Operation::CountTrailingZeros(_)
+                    | crate::ir::Operation::CountLeadingZeros(_),
+                args,
+            } => args.first() == Some(of),
+            Expr::Bin { lhs, rhs, .. } => {
+                (scans(lhs, of) && matches!(rhs.as_ref(), Expr::Const(_)))
+                    || (scans(rhs, of) && matches!(lhs.as_ref(), Expr::Const(_)))
+            }
+            _ => false,
+        }
+    }
+    let Expr::Select {
+        cond: crate::ir::Cond::Eq,
+        lhs,
+        rhs,
+        then,
+        els,
+    } = value
+    else {
+        return None;
+    };
+    (matches!(rhs.as_ref(), Expr::Const(0))
+        && matches!(then.as_ref(), Expr::Reg { index, .. } if *index == register)
+        && scans(els, lhs))
+    .then_some(els.as_ref())
+}
+
+/// The part of `value` that an assignment of it to `dest` takes as input.
+fn assigned_source(value: &Expr, dest: u16) -> &Expr {
+    scan_source(value, dest).unwrap_or_else(|| partial_write_source(value, dest))
+}
+
 /// The condition kinds only a signed comparison produces.
 fn signed_cond(cond: crate::ir::Cond) -> bool {
     matches!(
@@ -1002,7 +1042,7 @@ fn register_inputs(
                 }
                 Stmt::Assign { dest, value, .. } => {
                     if needed[index][position] {
-                        reads(partial_write_source(value, dest.index), &mut used);
+                        reads(assigned_source(value, dest.index), &mut used);
                     }
                 }
                 Stmt::Store { addr, value, .. } => {
@@ -1054,7 +1094,7 @@ fn register_inputs(
                     // A write of the low bits keeps the rest without reading it.
                     let operands = match stmt {
                         Stmt::Assign { dest, value, .. } => {
-                            vec![partial_write_source(value, dest.index)]
+                            vec![assigned_source(value, dest.index)]
                         }
                         _ => stmt.operands(),
                     };

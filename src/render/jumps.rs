@@ -20,6 +20,11 @@ pub(super) fn indirect(target: &Expr, ctx: &Ctx<'_>) -> String {
     } else if let Some(precision) = ctx.float_return {
         let value = bits_to_float(Printed::new(call, Int::U64, ALL, 13), precision);
         format!("return {value};")
+    } else if ctx.results > 0 {
+        format!(
+            "return ({}){{ {call} }};",
+            super::results::type_name(ctx.results)
+        )
     } else if let Some(ty) = &ctx.return_pointer_type {
         format!("return ({ty})(uintptr_t){call};")
     } else {

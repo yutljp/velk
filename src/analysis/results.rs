@@ -27,68 +27,317 @@ pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
 }
 
 /// How many integer results past the first the function returns, as its
-/// callers read them: the furthest result register some caller reads within
-/// the few statements right after a call, before writing it, counts with
-/// every one before it. Only for Go, whose functions return several values
-/// in registers and whose callers take them at once.
+/// callers read them: the furthest result register some path from a call
+/// reads before writing it counts with every one before it. Only for Go,
+/// whose functions return several values in registers and whose callers
+/// take them at once.
 pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
+    further(image, addr, PASSED_ON)
+}
+
+/// How many callers in a row are followed where each returns the results
+/// of the one it calls.
+const PASSED_ON: u8 = 2;
+
+/// `further_results`, following `passes` callers that return the results.
+fn further(image: &Image, addr: u64, passes: u8) -> usize {
+    let known = image
+        .further_results
+        .lock()
+        .expect("result lock")
+        .get(&(addr, passes))
+        .copied();
+    if let Some(known) = known {
+        return known;
+    }
+    let (found, returned) = read_further_results(image, addr, passes);
+    let mut cache = image.further_results.lock().expect("result lock");
+    cache.insert((addr, passes), found);
+    // With no caller returning them, following more of them finds the same.
+    if !returned {
+        for passes in 0..=PASSED_ON {
+            cache.insert((addr, passes), found);
+        }
+    }
+    found
+}
+
+/// The values the Go functions `ir` calls directly return, for those that
+/// return more than one: a function returns as many as its callers read.
+pub(crate) fn callee_results(
+    image: &Image,
+    ir: &crate::ir::FunctionIr,
+) -> std::collections::BTreeMap<u64, usize> {
+    let mut found = std::collections::BTreeMap::new();
+    if !image.go {
+        return found;
+    }
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Call {
+            target: Some(target),
+            through: None,
+            ..
+        } = stmt
+            && !found.contains_key(target)
+        {
+            let further = further_results(image, *target);
+            if further > 0 {
+                found.insert(*target, further + 1);
+            }
+        }
+    }
+    found
+}
+
+/// How many of the first `results` every path from the entry of `blocks`
+/// writes before it returns, the first `taken` counting as written from
+/// the start. A call writes them all.
+fn set_before_returning(blocks: &[Block], results: &[u16], taken: usize) -> usize {
+    let all = (1u32 << results.len()) - 1;
+    let edges = crate::ir::cfg::all_edges(blocks, &[]);
+    // What each block writes, and what is written where it returns.
+    let mut written = vec![0u32; blocks.len()];
+    for (index, block) in blocks.iter().enumerate() {
+        for stmt in &block.stmts {
+            if matches!(stmt, Stmt::Ret { .. }) {
+                break;
+            }
+            if matches!(stmt, Stmt::Call { convention, .. }
+                if *convention != crate::ir::Convention::GoWriteBarrier)
+            {
+                written[index] = all;
+                continue;
+            }
+            let registers = crate::ir::visit::statement_registers(stmt).0;
+            for (position, register) in results.iter().enumerate() {
+                if registers.contains(register) {
+                    written[index] |= 1 << position;
+                }
+            }
+        }
+    }
+    // What is written on every path to the start of each block.
+    let mut entered = vec![all; blocks.len()];
+    if let Some(first) = entered.first_mut() {
+        *first = all & ((1u32 << taken.min(31)) - 1);
+    }
+    loop {
+        let mut changed = false;
+        for index in 0..blocks.len() {
+            let left = entered[index] | written[index];
+            for &next in &edges[index].normal {
+                let met = entered[next] & left;
+                if next != 0 && met != entered[next] {
+                    entered[next] = met;
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let mut set = all;
+    for (index, block) in blocks.iter().enumerate() {
+        if block
+            .stmts
+            .iter()
+            .any(|stmt| matches!(stmt, Stmt::Ret { .. }))
+        {
+            set &= entered[index] | written[index];
+        }
+    }
+    (!set).trailing_zeros() as usize
+}
+
+/// Whether the function is one the Go toolchain names as written for the
+/// assembly ABI, which passes nothing in registers.
+fn assembly(image: &Image, addr: u64) -> bool {
+    image
+        .functions
+        .get(&addr)
+        .and_then(|function| function.name.as_deref())
+        .is_some_and(|name| name.ends_with(".abi0"))
+}
+
+/// The count, and whether some caller returns with results still unread.
+fn read_further_results(image: &Image, addr: u64, passes: u8) -> (usize, bool) {
     let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
     if !convention.go_registers() {
-        return 0;
+        return (0, false);
     }
+    let summary = super::summary::summary(image, addr);
+    if summary.noreturn || assembly(image, addr) {
+        return (0, false);
+    }
+    // A register the function returns with unchanged is no result of it,
+    // unless it is an argument, which it may return as it got it.
     let results: Vec<u16> = convention
         .results()
         .iter()
         .copied()
         .take_while(|register| !convention.float_arguments().contains(register))
+        .enumerate()
+        .take_while(|(position, register)| {
+            summary
+                .clobbers
+                .is_none_or(|clobbers| clobbers.contains(*register))
+                || summary.arity.is_some_and(|arity| *position < arity)
+        })
+        .map(|(_, register)| register)
         .skip(1)
         .collect();
+    if results.is_empty() {
+        return (0, false);
+    }
+    // No more than it sets itself or takes as arguments, which it may
+    // return as it got them: what else it returns with as it was on entry
+    // is no result of its own.
+    let Some(own) = body(image, addr) else {
+        return (0, false);
+    };
+    let taken = summary.arity.map_or(0, |arity| arity.saturating_sub(1));
+    let results = &results[..set_before_returning(&own, &results, taken).min(results.len())];
+    if results.is_empty() {
+        return (0, false);
+    }
+    let all = (1u32 << results.len()) - 1;
     let mut furthest = 0;
+    let mut returned = false;
     for caller in callers(image, addr) {
         let Some(blocks) = body(image, caller) else {
             continue;
         };
-        for block in blocks.iter() {
-            let Some(at) = block.stmts.iter().position(
-                |stmt| matches!(stmt, Stmt::Call { target: Some(target), .. } if *target == addr),
-            ) else {
-                continue;
-            };
-            let mut pending: Vec<(usize, u16)> = results.iter().copied().enumerate().collect();
-            for stmt in block.stmts[at + 1..].iter().take(FURTHER_READS_WITHIN) {
-                // Another call writes them all.
-                if matches!(stmt, Stmt::Call { .. }) {
-                    break;
-                }
-                let mut read = HashSet::new();
-                for operand in stmt.operands() {
-                    crate::ir::visit::collect_reads(operand, &mut read);
-                }
-                // Writing part of a register keeps bits nobody reads.
-                if let Stmt::Assign { dest, value, .. } = stmt
-                    && partial_write_of(value, dest.index)
+        let edges = crate::ir::cfg::all_edges(&blocks, &[]);
+        for (first, block) in blocks.iter().enumerate() {
+            for (at, stmt) in block.stmts.iter().enumerate() {
+                if !matches!(stmt, Stmt::Call { target: Some(target), convention, .. }
+                    if *target == addr && convention.go_registers())
                 {
-                    read.remove(&dest.index);
+                    continue;
                 }
-                let written = crate::ir::visit::statement_registers(stmt).0;
-                pending.retain(|(position, register)| {
-                    if read.contains(register) {
-                        furthest = furthest.max(position + 1);
-                        return false;
+                // Go keeps no value in a register over a call, so what a
+                // path from this one reads before anything writes it is
+                // what the callee left there.
+                let mut reached: HashMap<usize, u32> = HashMap::new();
+                let mut work = vec![(first, at + 1, all)];
+                while let Some((index, from, mut pending)) = work.pop() {
+                    for stmt in &blocks[index].stmts[from..] {
+                        // A write barrier reads none of them and writes
+                        // only where it leaves its buffer.
+                        let barrier = matches!(
+                            stmt,
+                            Stmt::Call {
+                                convention: crate::ir::Convention::GoWriteBarrier,
+                                ..
+                            }
+                        );
+                        // Another call writes them all; a return passes
+                        // on the ones the caller returns in turn. What a
+                        // callee takes as arguments is not counted: the
+                        // number it takes is itself an estimate.
+                        let passed = match stmt {
+                            Stmt::Call { .. } if barrier => None,
+                            Stmt::Call { .. } | Stmt::Unsupported { .. } => Some(0),
+                            Stmt::Ret { .. } => {
+                                returned = true;
+                                match passes.checked_sub(1) {
+                                    Some(passes) => Some(further(image, caller, passes) + 1),
+                                    None => Some(0),
+                                }
+                            }
+                            _ => None,
+                        };
+                        if let Some(passed) = passed {
+                            for position in 0..results.len() {
+                                if pending & (1 << position) != 0 && position + 1 < passed {
+                                    furthest = furthest.max(position + 1);
+                                }
+                            }
+                            pending = 0;
+                            break;
+                        }
+                        let mut read = HashSet::new();
+                        if !barrier {
+                            for operand in stmt.operands() {
+                                value_reads(operand, &mut read);
+                            }
+                        }
+                        // Writing part of a register keeps bits nobody
+                        // reads; so does a bit scan, which leaves it as
+                        // it was only where the code makes no use of it.
+                        if let Stmt::Assign { dest, value, .. } = stmt
+                            && (partial_write_of(value, dest.index)
+                                || super::signature::scan_source(value, dest.index).is_some())
+                        {
+                            read.remove(&dest.index);
+                        }
+                        let written = crate::ir::visit::statement_registers(stmt).0;
+                        for (position, register) in results.iter().enumerate() {
+                            if pending & (1 << position) == 0 {
+                                continue;
+                            }
+                            if read.contains(register) {
+                                furthest = furthest.max(position + 1);
+                                pending &= !(1 << position);
+                            } else if written.contains(register) {
+                                pending &= !(1 << position);
+                            }
+                        }
+                        if pending == 0 {
+                            break;
+                        }
                     }
-                    !written.contains(register)
-                });
-                if pending.is_empty() {
-                    break;
+                    // The ones up to the furthest found add nothing.
+                    pending &= !((1u32 << furthest) - 1);
+                    if pending == 0 {
+                        continue;
+                    }
+                    for &next in &edges[index].normal {
+                        let seen = reached.entry(next).or_default();
+                        let fresh = pending & !*seen;
+                        if fresh != 0 {
+                            *seen |= fresh;
+                            work.push((next, 0, fresh));
+                        }
+                    }
                 }
             }
         }
     }
-    furthest
+    (furthest, returned)
 }
 
-/// How many statements after a call its further results are looked for.
-const FURTHER_READS_WITHIN: usize = 6;
+/// The registers whose values `expr` depends on: a register compared with
+/// or subtracted from itself, as `sbb` of a register and itself does to
+/// spread the carry, is none.
+fn value_reads(expr: &Expr, into: &mut HashSet<u16>) {
+    match expr {
+        Expr::Reg { index, .. } => {
+            into.insert(*index);
+        }
+        Expr::Select {
+            lhs,
+            rhs,
+            then,
+            els,
+            ..
+        } if lhs == rhs => {
+            value_reads(then, into);
+            value_reads(els, into);
+        }
+        Expr::Bin {
+            op: crate::ir::BinOp::Sub | crate::ir::BinOp::Xor,
+            lhs,
+            rhs,
+        } if lhs == rhs => {}
+        _ => {
+            for child in crate::ir::visit::children(expr) {
+                value_reads(child, into);
+            }
+        }
+    }
+}
 
 /// Whether `value` is `(register & mask) | x` with `x` free of the register:
 /// a write of part of it.
@@ -500,6 +749,96 @@ mod tests {
             value,
             at: None,
         }
+    }
+
+    #[test]
+    fn a_go_function_returns_as_many_values_as_its_callers_read() {
+        for file in ["go_probe", "go_probe_arm64", "go_probe_arm64_1_27"] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(file);
+            let image = crate::loader::load(&path).unwrap();
+            let further = |name: &str| {
+                let address = image
+                    .functions
+                    .values()
+                    .find(|function| function.name.as_deref() == Some(name))
+                    .expect("named function")
+                    .addr;
+                super::further_results(&image, address)
+            };
+            assert_eq!(further("main.divmod"), 1, "{file}");
+            assert_eq!(further("main.add"), 0, "{file}");
+            assert_eq!(further("main.sumSlice"), 0, "{file}");
+            // A slice: pointer, length and capacity.
+            assert_eq!(further("runtime.growslice"), 2, "{file}");
+            // The write barrier keeps every register but its own.
+            assert_eq!(further("runtime.gcWriteBarrier2"), 0, "{file}");
+        }
+    }
+
+    #[test]
+    fn a_register_compared_with_itself_is_not_read() {
+        let reads = |expr: &Expr| {
+            let mut found = std::collections::HashSet::new();
+            super::value_reads(expr, &mut found);
+            let mut found: Vec<u16> = found.into_iter().collect();
+            found.sort_unstable();
+            found
+        };
+        // carry ? 1 : 0 as `sbb` of a register and itself spreads it.
+        let spread = Expr::Select {
+            cond: crate::ir::Cond::Cc,
+            lhs: Box::new(Expr::reg(10, 64)),
+            rhs: Box::new(Expr::reg(10, 64)),
+            then: Box::new(Expr::reg(3, 64)),
+            els: Box::new(Expr::Const(0)),
+        };
+        assert_eq!(reads(&spread), [3]);
+        let cleared = Expr::bin(crate::ir::BinOp::Xor, Expr::reg(9, 64), Expr::reg(9, 64));
+        assert_eq!(reads(&cleared), [0u16; 0]);
+        let sum = Expr::bin(crate::ir::BinOp::Add, Expr::reg(9, 64), Expr::reg(8, 64));
+        assert_eq!(reads(&sum), [8, 9]);
+    }
+
+    #[test]
+    fn results_count_while_every_path_to_a_return_sets_them() {
+        let returns = || Stmt::Ret {
+            value: Expr::reg(0, 64),
+            at: None,
+        };
+        let branch = |target| Stmt::Brif {
+            cond: crate::ir::Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::Const(0),
+            target,
+            at: None,
+        };
+        // One path sets registers 1 and 2, the other only 1.
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![assign(1, Expr::Const(7)), branch(0x20)],
+            },
+            Block {
+                start: 0x10,
+                stmts: vec![assign(2, Expr::Const(8)), returns()],
+            },
+            Block {
+                start: 0x20,
+                stmts: vec![returns()],
+            },
+        ];
+        assert_eq!(super::set_before_returning(&blocks, &[1, 2, 3], 0), 1);
+        // An argument may be returned as it came.
+        assert_eq!(super::set_before_returning(&blocks, &[2, 1, 3], 1), 2);
+        assert_eq!(super::set_before_returning(&blocks, &[2, 1, 3], 0), 0);
+        // What is written after the return does not count.
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![returns(), assign(1, Expr::Const(7))],
+        }];
+        assert_eq!(super::set_before_returning(&blocks, &[1], 0), 0);
     }
 
     #[test]

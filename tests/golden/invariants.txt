@@ -1,0 +1,1 @@
+rust_probe_stripped 0x50c80 -: reads rcx without assigning it

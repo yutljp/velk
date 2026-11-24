@@ -38,6 +38,9 @@ pub(super) struct Outputs {
     pub(super) sources: HashMap<u16, String>,
     pub(super) declarations: Vec<String>,
     pub(super) temporary: String,
+    /// The variable that holds what a call returns in a structure of each
+    /// number of values.
+    pub(super) results: std::collections::BTreeMap<usize, String>,
     pub(super) dynamic_target: String,
     snapshot_sizes: std::cell::RefCell<HashSet<usize>>,
 }
@@ -124,6 +127,19 @@ impl Outputs {
             return outputs;
         }
         outputs.temporary = super::vacant_name("call_values", reserved);
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Call {
+                target: Some(target),
+                through: None,
+                ..
+            } = stmt
+                && let Some(count) = ir.callee_results.get(target)
+                && !outputs.results.contains_key(count)
+            {
+                let name = super::vacant_name("results", reserved);
+                outputs.results.insert(*count, name);
+            }
+        }
         if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
             matches!(
                 stmt,
@@ -251,6 +267,33 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
             }
         }
     }
+}
+
+/// How many values the callee returns in one structure, when it does.
+pub(super) fn results(call: &Stmt, ctx: &Ctx<'_>) -> Option<usize> {
+    let Stmt::Call {
+        target: Some(target),
+        through: None,
+        ..
+    } = call
+    else {
+        return None;
+    };
+    if *target == ctx.ir.addr {
+        return (ctx.results > 0).then_some(ctx.results);
+    }
+    ctx.ir.callee_results.get(target).copied()
+}
+
+/// Which of the values a callee returns `output` is.
+fn result_position(call: &Stmt, output: &CallOutput) -> Option<usize> {
+    let Stmt::Call { convention, .. } = call else {
+        return None;
+    };
+    convention
+        .results()
+        .iter()
+        .position(|register| *register == output.register)
 }
 
 pub(super) fn scalar_fusion(call: &Stmt, ctx: &Ctx<'_>) -> Option<crate::ir::RegRef> {

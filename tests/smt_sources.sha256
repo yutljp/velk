@@ -114,7 +114,7 @@ c542ea3ae09be21429b1ebec4e5855275cda0d16c7f5ac78b8c5a1da1f716c80  src/passes/sim
 bb6579a5fa30168d61c0fdf0fef1f7f5c0fd8f4db6bf2107387abfd890647fdc  src/passes/widths.rs	pub fn specialize_widths(
 cf000670e99aed0861b79b3b5ca9a8baec01ef2a7f1fced76d08f1af1ee2b06a  src/render/abi_objects.rs	fn rewrite_value(
 ee15b6a0d86466865436bf2ef93beb2060d0db199d469793c3ffeff03f9bc10b  src/render/calls.rs	fn return_type<'a>(
-20297bb00dadfbff5efadf981cd9305e5d2ed93961c16b4a4408fc6a5db82b1d  src/render/calls/outputs.rs	fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self
+3dce6246c9ef69a3913604c14c1a1e98e1f4f92ad8f66b8c266c4a22a6ff20df  src/render/calls/outputs.rs	fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self
 798ef6e453d9cd68735c5b8bf85876e5af02540ff60c16ab4fd13f8a53af88c5  src/render/com_calls.rs	pub(super) fn prepare(
 05d0feb7a50dc3bee4c032dcec12a89472d6afaaf1925511cda5a19d473666c3  src/render/expr.rs	fn arithmetic(
 1a7cd9cb6ff797e5d675c881fd0395bd98ec79d4bd70a9bbd4563e74e906ebb8  src/render/expr.rs	fn binary(
@@ -139,7 +139,7 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
 8d1e498c8b2aeb31240fbeb1272b7b38621495fa6d2c4864a22e14913636c55e  src/render/locals.rs	fn slot_types(
-44544146381519b7b4fa4fb4e5bfbc7ce3d43c05fd7e7afc6f537f16da919e21  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
+6be21c9feda6ad92b9f96489299e12292fd4d7017ce4979e0b6aa3fcff6b4dfa  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 efd49598d2f2a58dbde8597563ca3459d92dc41221597e7c853928187e640d99  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 384408574e799baa7becbf1adbc451411a8a91216564a79138825b6770c32c0c  src/render/locals/returns.rs	fn replace_returns(

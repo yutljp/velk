@@ -201,6 +201,7 @@ pub(super) fn stack_locals_with_roles(
         block_addresses: Default::default(),
         jump_provider: String::new(),
         isa: ir.isa,
+        results: 0,
         void_return: ir.ret_type == CType::Void,
         float_return: None,
         names: HashMap::new(),

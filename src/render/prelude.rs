@@ -128,7 +128,8 @@ impl Prelude {
                 .collect();
             let mut records = BTreeSet::new();
             for pair in words.windows(2) {
-                if matches!(pair[0], "struct" | "union") {
+                // The structures of several results are defined whole.
+                if matches!(pair[0], "struct" | "union") && !pair[1].starts_with("velk_results") {
                     records.insert(format!("{} {}; ", pair[0], pair[1]));
                 }
             }

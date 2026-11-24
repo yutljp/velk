@@ -2,23 +2,23 @@
 
 `tests/scripts/local_usage.py` classifies declarations in complete CLI output. The table
 below covers `go_probe`, `go_stripped`, `go_probe_arm64`, and
-`go_stripped_arm64`: 5,088 functions, including their runtimes. The screen finds
-69,293 declarations. Its syntactic counts include register bindings and anonymous
+`go_stripped_arm64`: 5,112 functions, including their runtimes. The screen finds
+57,444 declarations. Its syntactic counts include register bindings and anonymous
 result storage, so they differ from the named-variable readability counters.
 These categories describe printed definitions, not recovered Go source variables.
 
 | Definition or storage | Count | Example in `go_probe` |
 | --- | ---: | --- |
-| Multiple definitions or no recognized definition | 18,330 | `internal/abi.Name.IsBlank`: `v1` |
-| Other computed value | 15,750 | `internal/abi.Kind.String`: `v1` |
-| Memory read | 13,732 | `internal/abi.Kind.String`: `v4` |
-| Stack slot or object | 9,985 | `internal/abi.(*Kind).String`: `local_0` |
-| Call expression | 6,049 | `type:.eq.internal/abi.RegArgs`: `v1` |
-| Constant | 2,531 | `runtime.memhashFallback`: `v3` |
-| Array, aggregate, or operand following `&` | 1,362 | `internal/cpu.doinit`: `call_values` |
-| Same-type register copy | 1,174 | `internal/cpu.processOptions`: `v56` |
-| Repeated copy from the same local | 326 | `runtime.chansend`: `v15` |
-| Known string, slice, or interface header | 54 | `runtime.(*mheap).sysAlloc`: `string` |
+| Multiple definitions or no recognized definition | 14,206 | `internal/abi.Name.IsBlank`: `v1` |
+| Other computed value | 13,941 | `internal/abi.Kind.String`: `v1` |
+| Memory read | 11,236 | `internal/abi.Kind.String`: `v4` |
+| Stack slot or object | 9,578 | `internal/abi.(*Kind).String`: `local_0` |
+| Call expression | 4,992 | `type:.eq.internal/abi.RegArgs`: `v1` |
+| Array, aggregate, or operand following `&` | 1,276 | `internal/cpu.doinit`: `call_values` |
+| Same-type register copy | 946 | `internal/cpu.processOptions`: `v56` |
+| Constant | 863 | `runtime.printpanicval`: `v5` |
+| Repeated copy from the same local | 308 | `runtime.chansend`: `v51` |
+| Known string, slice, or interface header | 98 | `runtime.typeBitsBulkBarrier`: `string` |
 
 The `&` category is conservative and can include bitwise operands. A copy's
 source may change before a later read; the syntactic copy counts are not counts
