@@ -18,6 +18,19 @@ pub(crate) fn stack_spills(image: &Image, addr: u64) -> Option<(i64, i64)> {
         .copied()
 }
 
+/// How many registers pass the arguments of the Go function at `addr`,
+/// where its function data lists them all.
+pub(crate) fn argument_registers(image: &Image, addr: u64) -> Option<usize> {
+    if !image.go {
+        return None;
+    }
+    image
+        .go_argument_registers
+        .get_or_init(|| stack::argument_registers(image))
+        .get(&addr)
+        .copied()
+}
+
 const MODULE_NAMES: u64 = 8;
 const MODULE_PC_TABLE: u64 = 104;
 const MODULE_FUNCTION_TABLE: u64 = 128;

@@ -342,6 +342,7 @@ pub struct Image {
     pub go: bool,
     pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
     pub(crate) go_stack_spills: std::sync::OnceLock<HashMap<u64, (i64, i64)>>,
+    pub(crate) go_argument_registers: std::sync::OnceLock<HashMap<u64, usize>>,
     /// The stack argument byte sizes stored in Go's pclntab, by function entry.
     pub(crate) go_argument_sizes: std::sync::OnceLock<HashMap<u64, u32>>,
     /// The C++ virtual tables, by address point. Built on first use.
@@ -614,6 +615,7 @@ impl Image {
             addressed: Default::default(),
             go_types: Default::default(),
             go_stack_spills: Default::default(),
+            go_argument_registers: Default::default(),
             go_argument_sizes: Default::default(),
             go_abi0: Default::default(),
             stack_rows: Default::default(),
@@ -1525,6 +1527,7 @@ pub(crate) fn load_input_with_saved(
         addressed: Default::default(),
         go_types: Default::default(),
         go_stack_spills: Default::default(),
+        go_argument_registers: Default::default(),
         go_argument_sizes: Default::default(),
         go_abi0: Default::default(),
         stack_rows: Default::default(),

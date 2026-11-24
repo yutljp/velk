@@ -6,23 +6,78 @@ use crate::loader::{Image, Isa};
 
 pub(super) fn ranges(image: &Image) -> HashMap<u64, (i64, i64)> {
     let mut ranges = HashMap::new();
+    // FUNCDATA_ArgLiveInfo is entry six after the PCDATA offsets.
+    function_data(image, 6, |address, args, data| {
+        let Some(live) = crate::loader::image_reads::bounded_bytes(image, data, 1) else {
+            return;
+        };
+        let start = i64::from(live[0]);
+        let end = i64::from(args);
+        if start < end {
+            // Both supported Go ports reserve one word before argument storage.
+            ranges.insert(address, (start + 8, end + 8));
+        }
+    });
+    ranges
+}
+
+/// How many registers carry the arguments of each function, from the list
+/// Go keeps for printing them in a traceback: one offset and size for
+/// each word of an argument a register passes. A list cut short, as a
+/// long one is, tells nothing.
+pub(super) fn argument_registers(image: &Image) -> HashMap<u64, usize> {
+    let mut counts = HashMap::new();
+    // FUNCDATA_ArgInfo is entry five.
+    function_data(image, 5, |address, _, data| {
+        let mut count = 0;
+        let mut at = data;
+        loop {
+            let Some(byte) = crate::loader::image_reads::bounded_bytes(image, at, 1) else {
+                return;
+            };
+            at += 1;
+            match byte[0] {
+                // The end of the list.
+                0xff => break,
+                // The start and the end of a structure or an array.
+                0xfe | 0xfd => {}
+                // Arguments left out, or one too far to describe.
+                0xfc | 0xfb => return,
+                _ => {
+                    count += 1;
+                    at += 1;
+                }
+            }
+            if count > 64 {
+                return;
+            }
+        }
+        counts.insert(address, count);
+    });
+    counts
+}
+
+/// Calls `visit` for each function that has the entry `index` of Go's
+/// function data, with the function's address, the bytes of its
+/// arguments and the address of the entry's data.
+fn function_data(image: &Image, index: u8, mut visit: impl FnMut(u64, i32, u64)) {
     if !matches!(image.isa, Isa::X86_64 | Isa::AArch64) {
-        return ranges;
+        return;
     }
     let Some(table) = super::pclntab(image) else {
-        return ranges;
+        return;
     };
     let Some(header) = crate::loader::image_reads::bounded_bytes(image, table.vaddr, 8) else {
-        return ranges;
+        return;
     };
     if header[..4] != [0xf1, 0xff, 0xff, 0xff] || header[7] != 8 {
-        return ranges;
+        return;
     }
     let Some(module) = super::moduledata(image, table.vaddr) else {
-        return ranges;
+        return;
     };
     let Some(layout) = super::module_layout(image, module, table.vaddr) else {
-        return ranges;
+        return;
     };
     let field = |offset| module.checked_add(offset);
     let (Some((table, length)), Some((entries, count)), Some(text), Some(data)) = (
@@ -31,19 +86,19 @@ pub(super) fn ranges(image: &Image) -> HashMap<u64, (i64, i64)> {
         field(super::MODULE_TEXT).and_then(|address| super::u64_at(image, address)),
         field(layout.function_data).and_then(|address| super::u64_at(image, address)),
     ) else {
-        return ranges;
+        return;
     };
     if count > 200_001 {
-        return ranges;
+        return;
     }
     let Some(bytes) = count.checked_mul(8) else {
-        return ranges;
+        return;
     };
     let (Some(entries), Some(table)) = (
         crate::loader::image_reads::bounded_bytes(image, entries, bytes),
         crate::loader::image_reads::bounded_bytes(image, table, length),
     ) else {
-        return ranges;
+        return;
     };
     let entries = entries.as_chunks::<8>().0;
     let functions = entries.iter().take(count.saturating_sub(1) as usize);
@@ -56,14 +111,13 @@ pub(super) fn ranges(image: &Image) -> HashMap<u64, (i64, i64)> {
         let Some(header) = function.get(..44) else {
             continue;
         };
-        // FUNCDATA_ArgLiveInfo is entry six after the PCDATA offsets.
-        if header[43] <= 6 {
+        if header[43] <= index {
             continue;
         }
         let args = i32::from_le_bytes(header[8..12].try_into().expect("four bytes"));
         let count = u32::from_le_bytes(header[28..32].try_into().expect("four bytes"));
         let Some(offset) = u64::from(count)
-            .checked_add(6)
+            .checked_add(u64::from(index))
             .and_then(|count| count.checked_mul(4))
             .and_then(|offset| offset.checked_add(44))
         else {
@@ -78,23 +132,14 @@ pub(super) fn ranges(image: &Image) -> HashMap<u64, (i64, i64)> {
         if offset == u32::MAX || args <= 0 {
             continue;
         }
-        let Some(address) = data.checked_add(u64::from(offset)) else {
+        let (Some(data), Some(address)) = (
+            data.checked_add(u64::from(offset)),
+            text.checked_add(u64::from(pc)),
+        ) else {
             continue;
         };
-        let Some(live) = crate::loader::image_reads::bounded_bytes(image, address, 1) else {
-            continue;
-        };
-        let start = i64::from(live[0]);
-        let end = i64::from(args);
-        let Some(address) = text.checked_add(u64::from(pc)) else {
-            continue;
-        };
-        if start < end {
-            // Both supported Go ports reserve one word before argument storage.
-            ranges.insert(address, (start + 8, end + 8));
-        }
+        visit(address, args, data);
     }
-    ranges
 }
 
 #[cfg(test)]
@@ -139,6 +184,27 @@ mod tests {
                 .addr;
             let ranges = super::ranges(&image);
             assert_eq!(ranges.get(&address).copied(), Some((8, 32)), "{file}");
+        }
+    }
+
+    #[test]
+    fn argument_registers_follow_the_types_of_the_arguments() {
+        for file in ["go_probe", "go_probe_arm64", "go_probe_arm64_1_27"] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(file);
+            let image = crate::loader::load(&path).unwrap();
+            let counts = super::argument_registers(&image);
+            // A slice fills three registers, two integers two.
+            for (name, expected) in [("main.sumSlice", 3), ("main.divmod", 2)] {
+                let address = image
+                    .functions
+                    .values()
+                    .find(|function| function.name.as_deref() == Some(name))
+                    .expect("named function")
+                    .addr;
+                assert_eq!(counts.get(&address), Some(&expected), "{file}: {name}");
+            }
         }
     }
 

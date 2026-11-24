@@ -33,7 +33,9 @@ condition guards a register read. This analysis has a state budget; on exhaustio
 it retains the conservative parameter estimate.
 For AArch64 and Go, parameter recovery treats calls as writes to every register
 the convention allows them to change; save/restore reads can otherwise introduce
-extra parameters.
+extra parameters. Go lists, for printing a traceback, each register that passes an
+argument of a function; where the list is whole, a register past it is no parameter of
+the function and no argument of a call to it.
 
 A Go function that returns several values in registers is printed as returning
 `struct velk_resultsN`, with one `int64_t` member, `r0` onwards, for each value. A direct

@@ -1060,7 +1060,9 @@ fn compute(
         .get()
         .filter(|_| image.go)
         .and_then(|sizes| sizes.get(&addr))
-        .map_or(usize::MAX, |&bytes| bytes as usize);
+        .map_or(usize::MAX, |&bytes| bytes as usize)
+        // Its function data may list each register that passes one.
+        .min(crate::loader::go::argument_registers(image, addr).unwrap_or(usize::MAX));
     let summary = Summary {
         promoted_parameters: (!image.go).then(|| {
             signature.params.iter().any(|param| crate::render::promoted_parameter(&param.ty))

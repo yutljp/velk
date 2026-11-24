@@ -1328,6 +1328,18 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             image.convention_of(function.addr),
         );
     }
+    // Go lists the registers that pass a function's arguments: one read
+    // past them, as one handed on to a callee is, is no parameter.
+    if let Some(listed) = crate::loader::go::argument_registers(image, function.addr) {
+        let arguments = image.convention_of(function.addr).arguments();
+        signature.params.retain(|param| {
+            param.name == "closure"
+                || arguments
+                    .iter()
+                    .position(|register| *register == param.index)
+                    .is_none_or(|position| position < listed)
+        });
+    }
     // Read only now, the results are no arguments to the signature.
     if let Some(first) = stack_results.first() {
         let returned = match stack_results.as_slice() {
