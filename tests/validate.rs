@@ -5,6 +5,8 @@
 //! one of its comma-separated parts. `VELK_VALIDATE_APPLICATIONS`, a
 //! comma-separated list of application numbers, checks those applications
 //! whole and nothing else, for looking into one again.
+//! `VELK_VALIDATE_WORKERS` is how many checks run at once, as many as the
+//! machine has processors unless given.
 //! `VELK_VALIDATE_SECONDS` is the elapsed time one whole check may take,
 //! 60 unless given and unbounded when 0; an application it runs out on is
 //! listed undecided, to be checked again alone without the bound.
@@ -182,7 +184,10 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
             })
         })
         .collect();
-    let workers = std::thread::available_parallelism().map_or(4, |count| count.get());
+    let workers = std::env::var("VELK_VALIDATE_WORKERS").map_or_else(
+        |_| std::thread::available_parallelism().map_or(4, |count| count.get()),
+        |workers| workers.trim().parse().expect("a number of workers"),
+    );
     let directory = common::root().join("target/validate");
     let _ = std::fs::remove_dir_all(&directory);
     // Where the solver work went, one line per application checked whole.
