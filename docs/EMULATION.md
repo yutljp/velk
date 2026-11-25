@@ -54,7 +54,8 @@ function is an import the program resolved while it ran: consecutive words of on
 library become one entry of a new import table, placed with the imports the input
 lists in a section `.idata` of its own, so the recovered code calls its imports by
 name. When the headers have no room for another section the words are left as they
-are. Data after the last section of the input is not copied.
+are. Data after the last section of the input follows the sections of the rebuilt
+file, and a signature directory that pointed into it is cleared.
 
 A Windows program may copy the code restoring it into memory it allocates with
 `VirtualAlloc` and run it there. Such code runs like that of the image, read from

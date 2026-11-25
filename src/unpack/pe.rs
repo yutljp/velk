@@ -122,6 +122,8 @@ pub(super) fn rebuild(
     // Where each section's bytes are in memory and in the output.
     let mut placed: Vec<(u64, u64, usize)> = Vec::new();
     let mut image_end = 0u64;
+    // Where the data the sections do not cover begins in the input.
+    let mut covered = headers_size;
     for index in 0..count + extra.len() {
         let header = table + index * SECTION_HEADER;
         let (rva, size, initialized) = if index < count {
@@ -145,6 +147,9 @@ pub(super) fn rebuild(
             } else {
                 virtual_size
             };
+            if raw_size != 0 {
+                covered = covered.max(raw_offset.saturating_add(raw_size));
+            }
             let kept = raw_size.min(size) as usize;
             let initialized = if kept == 0 {
                 &[][..]
@@ -312,6 +317,30 @@ pub(super) fn rebuild(
     }
     if u32::try_from(image_end).is_err() {
         return failed("PE image size overflows");
+    }
+    // Data after the last section is no part of the loaded image; programs
+    // that keep some there find it after the sections of the file.
+    if let Some(rest) = input
+        .get(covered as usize..)
+        .filter(|rest| !rest.is_empty())
+    {
+        let offset = match align(output.len() as u64, file_alignment) {
+            Ok(offset) => offset as usize,
+            Err(error) => return Err(error),
+        };
+        if (offset + rest.len()) as u64 > (limit as u64).saturating_add(headers_size) {
+            return failed("PE output exceeds the unpacking memory limit");
+        }
+        output.resize(offset, 0);
+        output.extend_from_slice(rest);
+        // A signature there was over the file as it was.
+        let signed = match field(directory - 4, 4) {
+            Ok(count) => count >= 5,
+            Err(error) => return Err(error),
+        };
+        if signed && let Err(error) = put(&mut output, directory + 32, 0, 8) {
+            return Err(error);
+        }
     }
     let written = [
         put(&mut output, pe + 6, sections as u64, 2),
@@ -606,6 +635,33 @@ mod tests {
         assert_eq!(&bytes[..0x10], original);
         // With nothing resolved, no section is added.
         assert_eq!(file.sections().count(), image.sections.len());
+    }
+
+    #[test]
+    fn data_after_the_last_section_is_kept() {
+        let source =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pe64.exe");
+        let mut bytes = std::fs::read(source).expect("the fixture");
+        let plain = fixture("pe64.exe");
+        let base = 0x1_4000_0000u64;
+        let without = rebuild(&plain, &[], base + 0x1010, &[], &BTreeMap::new(), 1 << 20)
+            .expect("a rebuilt image");
+        let tail = b"data the program reads from its own file";
+        bytes.extend_from_slice(tail);
+        let directory =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/unpack-tests");
+        std::fs::create_dir_all(&directory).expect("a directory for the input");
+        let path = directory.join("pe64-with-trailing-data.exe");
+        std::fs::write(&path, &bytes).expect("writing the input");
+        let image = crate::loader::load(&path).expect("the input");
+        let rebuilt = rebuild(&image, &[], base + 0x1010, &[], &BTreeMap::new(), 1 << 20)
+            .expect("a rebuilt image");
+        assert!(rebuilt.ends_with(tail));
+        assert_eq!(rebuilt.len(), without.len() + tail.len());
+        let file = object::File::parse(rebuilt.as_slice()).expect("a PE file");
+        assert_eq!(file.entry(), base + 0x1010);
+        // A limit the data does not fit in stops the rebuild.
+        assert!(rebuild(&image, &[], base + 0x1010, &[], &BTreeMap::new(), 0).is_err());
     }
 
     #[test]
