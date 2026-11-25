@@ -54,6 +54,8 @@ struct Module {
     path: String,
     base: u64,
     size: u64,
+    /// Where its entry points begin, from the base: 16 bytes each.
+    entries: u64,
     exports: BTreeMap<String, (u64, u32)>,
 }
 

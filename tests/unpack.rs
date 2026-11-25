@@ -496,6 +496,56 @@ fn code_a_windows_program_runs_from_allocated_memory_is_followed() {
     }
 }
 
+#[test]
+fn a_function_found_by_a_hash_of_its_name_is_resolved() {
+    use object::Object as _;
+
+    let directory = directory("windows-hash");
+    for architecture in ["x86_64", "i386"] {
+        let input = packed_pe(&directory, architecture, "unpack_pe_hash.c");
+        let payload = Binary::open(&input)
+            .expect("opening the packed program")
+            .image()
+            .sections
+            .iter()
+            .find(|section| section.name == ".payload")
+            .expect("the packed section")
+            .vaddr;
+        let mut binary =
+            Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
+                .expect("unpacking the program");
+        let report = binary.image().unpacking.as_ref().expect("report");
+        assert_eq!(
+            report.stop_reason, "written code reached",
+            "{architecture}: {report:?}"
+        );
+        // The function has no model; it is known by name all the same.
+        let printed = binary
+            .decompile(payload, None, None)
+            .expect("decompiling the recovered function");
+        assert!(
+            printed.contains("GetLogicalDrives()"),
+            "{architecture}: {printed}"
+        );
+        let dumped = directory.join(format!("{architecture}-unpacked.exe"));
+        binary
+            .image()
+            .save_unpacked(&dumped)
+            .expect("saving the recovered program");
+        let recovered = fs::read(&dumped).expect("reading the saved program");
+        let file = object::File::parse(recovered.as_slice()).expect("parsing the rebuilt file");
+        let listed = file.imports().expect("reading the imports").any(|import| {
+            let import = import.expect("reading an import");
+            import.library() == b"kernel32.dll"
+                && matches!(
+                    import.name(),
+                    object::NameOrOrdinal::Name(name) if name == b"GetLogicalDrives"
+                )
+        });
+        assert!(listed, "{architecture}");
+    }
+}
+
 /// A program that carries `unpack_pe_inner.c`, linked on its own, in its
 /// data and maps it into memory it allocates; with it, that file.
 fn carrying_pe(directory: &Path, architecture: &str) -> (PathBuf, PathBuf) {

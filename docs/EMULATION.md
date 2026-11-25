@@ -69,8 +69,12 @@ Emulation stops when control reaches written code in an allocation that begins w
 the headers of a PE image, and the rebuilt file is that program alone, with the
 address it was mapped at as its image base and its imports listed once. Other code
 whose original entry point stays in allocated memory is not recovered: emulation
-runs until another limit stops it and reports no unpacking. A library found by walking the loader lists and hashing
-export names is resolved only among the functions the modeled image lists.
+runs until another limit stops it and reports no unpacking.
+
+A program that finds its imports by walking the loader lists and hashing the export
+names of a library finds them: while unpacking, a modeled library lists every function whose prototype is
+known, not only those emulation has a model of, and a call to one without a model
+returns zero.
 
 For a routine `decode(unsigned char *buffer, unsigned count, unsigned key)` that
 XORs each byte with the key, place an encoded buffer in the heap and pass its
