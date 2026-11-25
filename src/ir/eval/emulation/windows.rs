@@ -593,13 +593,21 @@ impl Runner<'_> {
                     Ok(text) => text,
                     Err(stop) => return Err(stop),
                 };
-                let name = module_name(&text);
+                let name_of_module = module_name(&text);
                 let path = text.replace('/', "\\");
                 match self.windows_state().modules.iter().find(|module| {
-                    module.name == name
+                    module.name == name_of_module
                         && (!path.contains('\\') || module.path.eq_ignore_ascii_case(&path))
                 }) {
                     Some(module) => Ok(module.base),
+                    // Run for what it leaves in memory, a program may
+                    // load any library: each gets a modeled image.
+                    None if self.options.skip_calls && name.starts_with("LoadLibrary") => {
+                        match self.load_library(&name_of_module) {
+                            Ok(base) => Ok(base),
+                            Err(error) => Err(Stop::Error(error)),
+                        }
+                    }
                     None => self.windows_failure(126),
                 }
             }
@@ -623,10 +631,14 @@ impl Runner<'_> {
                         Ok(text) => text,
                         Err(stop) => return Err(stop),
                     };
-                    self.windows_state().modules[index]
+                    let known = self.windows_state().modules[index]
                         .exports
                         .get(&text)
-                        .map(|(address, _)| *address)
+                        .map(|(address, _)| *address);
+                    match known {
+                        None if self.options.skip_calls => self.add_export(index, &text),
+                        known => known,
+                    }
                 };
                 match address {
                     Some(address) => Ok(address),

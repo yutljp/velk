@@ -92,8 +92,8 @@ Headerless code accepts an explicit instruction set, load address, and entries:
 The same mapping is available in scripts and MCP. UPX ELF and PE inputs are decoded
 by velk's built-in decoder, with `upx -d` used only for variants it does not support;
 `--save-unpacked FILE` saves a successful recovery.
-For other Linux ELF files, add `--unpack` to an analysis operation to run the
-entry point in bounded emulation. `--unpack-at ADDRESS` selects a stop address;
+For other Linux ELF files and for Windows PE files, add `--unpack` to an analysis
+operation to run the entry point in bounded emulation. `--unpack-at ADDRESS` selects a stop address;
 otherwise execution stops when it reaches bytes written during the run. For example,
 `velk --unpack -D packed.elf main` analyzes the recovered image, and
 `velk --unpack --save-unpacked recovered.elf --sections packed.elf` saves it.

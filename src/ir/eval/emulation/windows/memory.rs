@@ -166,6 +166,33 @@ impl Runner<'_> {
             return self.windows_failure(87);
         }
         let address = args[0];
+        // Run for what it leaves in memory, a program may write any of its
+        // sections: the change succeeds and reports what the section had.
+        if name == "VirtualProtect"
+            && self.options.skip_calls
+            && let Some(section) = self.image.section_at(address)
+        {
+            let old: u32 = if section.executable {
+                0x20
+            } else if section.read_only {
+                0x02
+            } else {
+                0x04
+            };
+            if args[3] == 0 {
+                return self.windows_failure(998);
+            }
+            if let Err(stop) = self.check_memory_range(args[3], 4, /* write */ true) {
+                return Err(Stop::Error(format!(
+                    "VirtualProtect: invalid output pointer 0x{:x}: {stop:?}",
+                    args[3]
+                )));
+            }
+            for (offset, byte) in old.to_le_bytes().into_iter().enumerate() {
+                self.machine.memory.insert(args[3] + offset as u64, byte);
+            }
+            return Ok(1);
+        }
         if name == "VirtualProtect"
             && (self.image.section_at(address).is_some()
                 || (self.heap_base..self.heap_base + HEAP_SIZE).contains(&address))

@@ -7,10 +7,10 @@ AArch64, x86-32 and little-endian ARM32 (A32/T32). The binary's code never execu
 on the host. Every run starts from a fresh image; it does not edit the file or the
 cached analysis.
 
-## Unpacking Linux ELF files
+## Unpacking Linux ELF and Windows PE files
 
-Add `--unpack` to an analysis operation to emulate a Linux ELF from its entry point
-and analyze the recovered image directly:
+Add `--unpack` to an analysis operation to emulate a Linux ELF or a Windows PE from
+its entry point and analyze the recovered image directly:
 
 ```sh
 velk --unpack -D packed.elf main
@@ -26,7 +26,7 @@ before its instruction executes. The report gives the entry, stop address, step
 count, stop reason, mapped regions, written regions, and mapped regions reached by
 execution. `newEntry` is set when execution reaches written code or a requested
 address. The CLI prints this report to standard error; `--save-unpacked` writes the
-rebuilt ELF to a path that does not already exist.
+rebuilt image, in the format of the input, to a path that does not already exist.
 
 The JSON report is available as `b.unpacking` from JavaScript, MCP, and `--serve`.
 
@@ -41,7 +41,26 @@ and applies the writes made by emulation. Written heap pages are added as execut
 load regions; stack and TLS data are not included in the saved ELF. During unpacking,
 writes to mapped image memory are allowed and `mprotect` is modeled without changing
 host memory protection. The image is interpreted; its instructions are never run on the host.
-This path currently supports Linux ELF files for x86-64, i386, and AArch64.
+This path supports Linux ELF files for x86-64, i386, and AArch64, and Windows PE files
+for x86-64 and i386.
+
+A Windows PE runs with the modeled Windows process described below and with calls
+skipped, so `LoadLibraryA/W` gives any library a modeled image, `GetProcAddress` gives
+any name an address of its own in it, and `VirtualProtect` on a section of the image
+succeeds and reports the protection the section had. The rebuilt PE keeps the input's
+headers and sections with the bytes memory held when emulation stopped, and the stop
+address as its entry point. A word of memory that holds the address of a modeled
+function is an import the program resolved while it ran: consecutive words of one
+library become one entry of a new import table, placed with the imports the input
+lists in a section `.idata` of its own, so the recovered code calls its imports by
+name. When the headers have no room for another section the words are left as they
+are. Data after the last section of the input is not copied.
+
+Emulation runs code in the executable sections of the image only. A program that
+copies the code restoring it into memory it allocates and runs it there stops with
+`reached code outside the image and bounded heap`; so does one whose original entry
+point is in such memory. A library found by walking the loader lists and hashing
+export names is resolved only among the functions the modeled image lists.
 
 For a routine `decode(unsigned char *buffer, unsigned count, unsigned key)` that
 XORs each byte with the key, place an encoded buffer in the heap and pass its
@@ -230,7 +249,10 @@ Internal calls execute lifted code. Writes to an import slot redirect its calls
 to the supplied address. Other imported calls stop with an error.
 `callReturns: {"external_name": 7}` or an address key supplies an explicit result;
 an explicit result takes precedence over a library hook and skips its effects.
-`skipCalls: true` returns zero for unhandled calls. These options model only the
+`skipCalls: true` returns zero for unhandled calls; on Windows it also lets
+`LoadLibraryA/W` load a library the program does not import, `GetProcAddress` resolve
+a name the modeled image does not list, and `VirtualProtect` change a section of the
+image. These options model only the
 integer result and do not supply a call's other effects. Registers the convention
 allows a modeled call to overwrite are reported as `"unknown"`, except its defined
 result. A later variadic function can stop when its prologue spills unused

@@ -17,6 +17,7 @@ API void CALL SetLastError(u32);
 API void CALL ExitProcess(u32);
 API handle CALL GetModuleHandleA(const char *);
 API void *CALL GetProcAddress(handle, const char *);
+API handle CALL LoadLibraryA(const char *);
 API int printf(const char *, ...);
 
 EXPORT u32 memory_results[4];
@@ -156,4 +157,17 @@ EXPORT void entry(void) {
     }
     printf("%u %u\n", virtual_boundaries(), dynamic_heap());
     ExitProcess(37);
+}
+// A library the program does not import and functions of it, by name, and
+// the protection of the program's own code.
+EXPORT unsigned load_by_name(void) {
+    handle module = LoadLibraryA("user32.dll");
+    if (!module) return GetLastError();
+    void *first = GetProcAddress(module, "MessageBoxA");
+    void *again = GetProcAddress(module, "MessageBoxA");
+    void *other = GetProcAddress(module, "GetDesktopWindow");
+    u32 previous = 0;
+    int changed = VirtualProtect((void *)load_by_name, 1, 0x40, &previous);
+    return 0x1000 | (first != 0 && first == again) | (other != 0 && other != first) << 1 |
+           (LoadLibraryA("user32.dll") == module) << 2 | (changed != 0) << 3 | (previous == 0x20) << 4;
 }

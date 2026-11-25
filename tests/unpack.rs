@@ -1,4 +1,4 @@
-//! Exercises bounded ELF unpacking through the CLI, script API, MCP, and serve API.
+//! Exercises bounded ELF and PE unpacking through the CLI, script API, MCP, and serve API.
 
 mod common;
 
@@ -254,6 +254,218 @@ fn rc4_lz_and_two_stage_stubs_are_recovered_for_each_linux_architecture() {
             );
         }
     }
+}
+
+/// A Windows program for `architecture` whose start is `start`, a fixture
+/// that restores the section `.payload` and runs it, with that section
+/// packed as its start restores it.
+fn packed_pe(directory: &Path, architecture: &str, start: &str) -> PathBuf {
+    let (machine, target) = match architecture {
+        "x86_64" => ("x64", "x86_64-pc-windows-msvc"),
+        _ => ("x86", "i686-pc-windows-msvc"),
+    };
+    let run = |command: &mut Command| {
+        let result = command.output().expect("running the Windows toolchain");
+        assert!(result.status.success(), "{command:?}: {result:?}");
+    };
+    // The functions the start imports; 32-bit names carry the bytes of
+    // their arguments.
+    let mut definition = String::from("LIBRARY kernel32.dll\nEXPORTS\n");
+    for (name, bytes) in [
+        ("LoadLibraryA", 4),
+        ("GetProcAddress", 8),
+        ("VirtualProtect", 16),
+        ("VirtualAlloc", 16),
+    ] {
+        if machine == "x86" {
+            definition.push_str(&format!("_{name}@{bytes} EXPORTAS {name}\n"));
+        } else {
+            definition.push_str(&format!("{name}\n"));
+        }
+    }
+    let file = |name: &str| directory.join(format!("{architecture}-{name}"));
+    fs::write(file("kernel32.def"), definition).expect("writing the import definitions");
+    run(Command::new("lld-link")
+        .arg("/lib")
+        .arg(format!("/def:{}", file("kernel32.def").display()))
+        .arg(format!("/machine:{machine}"))
+        .arg(format!("/out:{}", file("kernel32.lib").display())));
+    for (source, object) in [(start, "start.obj"), ("unpack_pe_payload.S", "payload.obj")] {
+        run(Command::new("clang")
+            .arg(format!("--target={target}"))
+            .args(["-O1", "-fno-builtin", "-fno-stack-protector", "-c"])
+            .arg(fixture(source))
+            .arg("-o")
+            .arg(file(object)));
+    }
+    let linked = file("linked.exe");
+    run(Command::new("lld-link")
+        .args([
+            "/entry:entry",
+            "/subsystem:console",
+            "/nodefaultlib",
+            "/fixed",
+            "/Brepro",
+            "/safeseh:no",
+        ])
+        .arg(format!("/out:{}", linked.display()))
+        .arg(file("start.obj"))
+        .arg(file("payload.obj"))
+        .arg(file("kernel32.lib")));
+    let mut bytes = fs::read(&linked).expect("reading the linked program");
+    let word = |bytes: &[u8], at: usize, width: usize| {
+        let mut value = [0u8; 8];
+        value[..width].copy_from_slice(&bytes[at..at + width]);
+        u64::from_le_bytes(value) as usize
+    };
+    let header = word(&bytes, 0x3c, 4);
+    let table = header + 24 + word(&bytes, header + 20, 2);
+    let mut packed = false;
+    for index in 0..word(&bytes, header + 6, 2) {
+        let section = table + index * 40;
+        if &bytes[section..section + 8] != b".payload" {
+            continue;
+        }
+        let size = word(&bytes, section + 8, 4).min(word(&bytes, section + 16, 4));
+        let offset = word(&bytes, section + 20, 4);
+        for byte in &mut bytes[offset..offset + size] {
+            *byte ^= 0x5a;
+        }
+        packed = true;
+    }
+    assert!(packed, "{architecture}: no section to pack");
+    let output = file("packed.exe");
+    fs::write(&output, bytes).expect("writing the packed program");
+    output
+}
+
+#[test]
+fn windows_programs_are_recovered_with_the_imports_they_resolve() {
+    use object::{Object as _, ObjectSection as _};
+
+    let directory = directory("windows");
+    for architecture in ["x86_64", "i386"] {
+        let input = packed_pe(&directory, architecture, "unpack_pe_stub.c");
+        let packed = Binary::open(&input).expect("opening the packed program");
+        let payload = packed
+            .image()
+            .sections
+            .iter()
+            .find(|section| section.name == ".payload")
+            .expect("the packed section")
+            .vaddr;
+        // Packed, the section does not read as the function it holds.
+        assert_ne!(
+            packed.image().read_vaddr(payload, 1),
+            Some(&[if architecture == "x86_64" { 0x48 } else { 0xff }][..]),
+            "{architecture}"
+        );
+
+        let mut binary =
+            Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
+                .expect("unpacking the program");
+        let report = binary.image().unpacking.as_ref().expect("unpack report");
+        assert_eq!(report.status, "unpacked", "{architecture}: {report:?}");
+        assert_eq!(report.stop_reason, "written code reached", "{architecture}");
+        assert_eq!(
+            report.new_entry.as_deref(),
+            Some(velk::addr::format(payload).as_str()),
+            "{architecture}"
+        );
+        assert!(
+            report
+                .written_regions
+                .iter()
+                .any(|region| region.address == velk::addr::format(payload)),
+            "{architecture}: {report:?}"
+        );
+        // The function the program resolved by name is called by name.
+        let printed = binary
+            .decompile(payload, None, None)
+            .expect("decompiling the recovered function");
+        assert!(
+            printed.contains("GetTickCount()") && printed.contains("+ 42"),
+            "{architecture}: {printed}"
+        );
+
+        let dumped = directory.join(format!("{architecture}-unpacked.exe"));
+        binary
+            .image()
+            .save_unpacked(&dumped)
+            .expect("saving the recovered program");
+        let dumped_bytes = fs::read(&dumped).expect("reading the saved program");
+        let file = object::File::parse(dumped_bytes.as_slice()).expect("parsing the saved program");
+        assert_eq!(file.entry(), payload, "{architecture}");
+        assert!(
+            file.sections()
+                .any(|section| section.name() == Ok(".idata")),
+            "{architecture}"
+        );
+        let imports: Vec<(String, String)> = file
+            .imports()
+            .expect("reading the saved imports")
+            .map(|import| {
+                let import = import.expect("reading a saved import");
+                let name = match import.name() {
+                    object::NameOrOrdinal::Name(name) => String::from_utf8_lossy(name).into_owned(),
+                    object::NameOrOrdinal::Ordinal(ordinal) => format!("#{ordinal}"),
+                };
+                (String::from_utf8_lossy(import.library()).into_owned(), name)
+            })
+            .collect();
+        // The imports of the start, then those it resolved, in the order
+        // of their slots.
+        let expected = [
+            ("kernel32.dll", "LoadLibraryA"),
+            ("kernel32.dll", "GetProcAddress"),
+            ("kernel32.dll", "VirtualProtect"),
+            ("user32.dll", "MessageBoxA"),
+            ("user32.dll", "GetDesktopWindow"),
+            ("kernel32.dll", "GetTickCount"),
+        ];
+        for (library, name) in expected {
+            assert!(
+                imports
+                    .iter()
+                    .any(|(found, function)| found == library && function == name),
+                "{architecture}: {library}!{name} in {imports:?}"
+            );
+        }
+        let resolved: Vec<&str> = imports
+            .iter()
+            .rev()
+            .take(3)
+            .rev()
+            .map(|(_, name)| name.as_str())
+            .collect();
+        assert_eq!(
+            resolved,
+            ["MessageBoxA", "GetDesktopWindow", "GetTickCount"],
+            "{architecture}"
+        );
+        let mut reopened = Binary::open(&dumped).expect("opening the saved program");
+        assert!(
+            reopened
+                .decompile(payload, None, None)
+                .expect("decompiling the saved function")
+                .contains("GetTickCount()"),
+            "{architecture}"
+        );
+    }
+}
+
+#[test]
+fn code_a_windows_program_runs_from_allocated_memory_is_not_followed() {
+    let directory = directory("windows-stage");
+    let input = packed_pe(&directory, "x86_64", "unpack_pe_stage.S");
+    let error = Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
+        .err()
+        .expect("the copied code is outside the image")
+        .to_string();
+    assert!(
+        error.contains("reached code outside the image and bounded heap"),
+        "{error}"
+    );
 }
 
 #[test]

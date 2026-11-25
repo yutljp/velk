@@ -827,6 +827,11 @@ impl Image {
         self.read(start, end - start)
     }
 
+    /// The bytes of the input the image was read from.
+    pub(crate) fn input(&self) -> &[u8] {
+        &self.bytes
+    }
+
     pub fn read(&self, offset: u64, len: u64) -> Option<&[u8]> {
         read_range(&self.bytes, self.slice_offset, offset, len)
     }
@@ -1636,8 +1641,8 @@ pub(crate) fn load_input_with_saved(
             Err(error) => return Err(error),
         };
         image.unpacking = Some(output.report.clone());
-        if let Some(elf) = output.elf {
-            let mut unpacked = match load_dumped_elf(&elf) {
+        if let Some(recovered) = output.image {
+            let mut unpacked = match load_dumped(&recovered) {
                 Ok(unpacked) => unpacked,
                 Err(error) => return Err(error),
             };
@@ -1645,20 +1650,20 @@ pub(crate) fn load_input_with_saved(
             unpacked.debug_path = image.debug_path.clone();
             unpacked.packing = image.packing.clone();
             unpacked.unpacking = Some(output.report);
-            unpacked.recovered = Some(elf);
+            unpacked.recovered = Some(recovered);
             return Ok(unpacked);
         }
     }
     Ok(image)
 }
 
-fn load_dumped_elf(bytes: &[u8]) -> Result<Image> {
+fn load_dumped(bytes: &[u8]) -> Result<Image> {
     use std::io::Write;
 
     for _ in 0..8 {
         let sequence = NEXT_UNPACKED_IMAGE.fetch_add(1, Ordering::Relaxed);
         let path =
-            std::env::temp_dir().join(format!("velk-image-{}-{sequence}.elf", std::process::id()));
+            std::env::temp_dir().join(format!("velk-image-{}-{sequence}.bin", std::process::id()));
         let mut file = match std::fs::OpenOptions::new()
             .write(true)
             .create_new(true)
