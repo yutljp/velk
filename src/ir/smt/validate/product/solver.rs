@@ -308,7 +308,7 @@ const EXPIRED: &str = "time limit";
 /// megabytes: z3 stops on a query that takes more, and the query is
 /// undecided. One query of the Rust fixtures took five gigabytes within
 /// its minute.
-const MEGABYTES: u32 = 2048;
+const MEGABYTES: u32 = 1024;
 
 /// What z3 is asked to print after each request, marking the end of its reply.
 const END: &str = "velk-end";

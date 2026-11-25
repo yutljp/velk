@@ -290,7 +290,7 @@ bound.
 Two bounds keep the memory of a run within that of an ordinary machine. An
 application whose candidate equations times its blocks exceed 300,000 is
 listed as not checked, since the check states every candidate in every block.
-The solver process of a time-bounded check may take 2 GB; a query that takes
+The solver process of a time-bounded check may take 1 GB; a query that takes
 more is undecided.
 
 With the feature, each step of the decompiling pipeline that changes a
