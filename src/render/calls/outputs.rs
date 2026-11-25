@@ -223,15 +223,21 @@ fn members(
     let Some(count) = super::results(call, ctx) else {
         return None;
     };
+    // A register past what the callee returns is no member: it keeps a
+    // line of its own.
     let mut positions = Vec::new();
+    let mut past = Vec::new();
     for (index, output) in used {
         if preserved.iter().any(|(at, _)| at == index) {
             return None;
         }
         match super::result_position(call, output) {
-            Some(position) if position < count => positions.push(position),
-            _ => return None,
+            Some(position) if position < count => positions.push((*output, position)),
+            _ => past.push(*output),
         }
+    }
+    if positions.is_empty() {
+        return None;
     }
     let word = ValueType::Integer {
         bits: 64,
@@ -239,24 +245,40 @@ fn members(
         zero_extended: false,
     };
     let text = expression(call, ctx);
-    if let ([(_, output)], [position]) = (used, positions.as_slice()) {
-        return Some(render_assignment(
+    let mut lines = Vec::new();
+    if let [(output, position)] = positions.as_slice() {
+        lines.push(render_assignment(
             output,
             format!("{text}.r{position}"),
             &word,
             ctx,
         ));
+    } else {
+        let Some(name) = ctx.call_outputs.results.get(&count) else {
+            return None;
+        };
+        lines.push(format!("{name} = {text};"));
+        for (output, position) in positions {
+            lines.push(render_assignment(
+                output,
+                format!("{name}.r{position}"),
+                &word,
+                ctx,
+            ));
+        }
     }
-    let Some(name) = ctx.call_outputs.results.get(&count) else {
-        return None;
-    };
-    let mut lines = vec![format!("{name} = {text};")];
-    for ((_, output), position) in used.iter().zip(positions) {
-        lines.push(render_assignment(
-            output,
-            format!("{name}.r{position}"),
-            &word,
-            ctx,
+    for output in past {
+        let Some(source) = ctx.call_outputs.sources.get(&output.register) else {
+            return None;
+        };
+        let ty = ValueType::Integer {
+            bits: 64,
+            signed: false,
+            zero_extended: false,
+        };
+        lines.push(format!(
+            "{} /* also returned by the call */",
+            render_assignment(output, source.clone(), &ty, ctx)
         ));
     }
     Some(lines.join("\n"))
