@@ -276,6 +276,7 @@ fn packed_pe(directory: &Path, architecture: &str, start: &str) -> PathBuf {
         ("GetProcAddress", 8),
         ("VirtualProtect", 16),
         ("VirtualAlloc", 16),
+        ("GetTickCount", 0),
     ] {
         if machine == "x86" {
             definition.push_str(&format!("_{name}@{bytes} EXPORTAS {name}\n"));
@@ -492,6 +493,150 @@ fn code_a_windows_program_runs_from_allocated_memory_is_followed() {
             .decompile(payload, None, None)
             .expect("decompiling the recovered function");
         assert!(printed.contains("+ 42"), "{architecture}: {printed}");
+    }
+}
+
+/// A program that carries `unpack_pe_inner.c`, linked on its own, in its
+/// data and maps it into memory it allocates; with it, that file.
+fn carrying_pe(directory: &Path, architecture: &str) -> (PathBuf, PathBuf) {
+    // The import library of the other fixtures serves both programs.
+    let _ = packed_pe(directory, architecture, "unpack_pe_stage.S");
+    let (target, prefix) = match architecture {
+        "x86_64" => ("x86_64-pc-windows-msvc", ""),
+        _ => ("i686-pc-windows-msvc", "_"),
+    };
+    let run = |command: &mut Command| {
+        let result = command.output().expect("running the Windows toolchain");
+        assert!(result.status.success(), "{command:?}: {result:?}");
+    };
+    let file = |name: &str| directory.join(format!("{architecture}-{name}"));
+    let compile = |source: &Path, object: &str| {
+        run(Command::new("clang")
+            .arg(format!("--target={target}"))
+            .args(["-O1", "-fno-builtin", "-fno-stack-protector", "-c"])
+            .arg(source)
+            .arg("-o")
+            .arg(file(object)));
+    };
+    let link = |entry: &str, objects: &[&str], output: &Path, fixed: bool| {
+        let mut command = Command::new("lld-link");
+        command.arg(format!("/entry:{entry}"));
+        command.args([
+            "/subsystem:console",
+            "/nodefaultlib",
+            "/Brepro",
+            "/safeseh:no",
+            if fixed { "/fixed" } else { "/dynamicbase" },
+        ]);
+        command.arg(format!("/out:{}", output.display()));
+        for object in objects {
+            command.arg(file(object));
+        }
+        run(command.arg(file("kernel32.lib")));
+    };
+    compile(&fixture("unpack_pe_inner.c"), "inner.obj");
+    let inner = file("inner.exe");
+    link("inner", &["inner.obj"], &inner, false);
+    let embedded = file("embedded.S");
+    fs::write(
+        &embedded,
+        format!(
+            ".section .rdata,\"dr\"\n.globl {prefix}inner_image\n{prefix}inner_image:\n.incbin \"{}\"\n",
+            inner.display()
+        ),
+    )
+    .expect("writing the carried program");
+    compile(&embedded, "embedded.obj");
+    compile(&fixture("unpack_pe_map.c"), "map.obj");
+    let output = file("carrying.exe");
+    link("entry", &["map.obj", "embedded.obj"], &output, true);
+    (output, inner)
+}
+
+#[test]
+fn a_program_mapped_into_allocated_memory_is_recovered() {
+    use object::{Object as _, ObjectSection as _};
+
+    let directory = directory("windows-mapped");
+    for architecture in ["x86_64", "i386"] {
+        let (input, inner) = carrying_pe(&directory, architecture);
+        let inner_bytes = fs::read(&inner).expect("reading the carried program");
+        let carried = object::File::parse(inner_bytes.as_slice()).expect("the carried program");
+        let entry = carried.entry() - carried.relative_address_base();
+
+        let mut binary =
+            Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
+                .expect("unpacking the carried program");
+        let report = binary.image().unpacking.clone().expect("report");
+        assert_eq!(report.status, "unpacked", "{architecture}: {report:?}");
+        assert_eq!(report.stop_reason, "written code reached", "{architecture}");
+        let reached = report
+            .new_entry
+            .as_deref()
+            .and_then(velk::addr::parse)
+            .expect("the entry reached");
+        // One region: the program where it was mapped, away from where
+        // its file asks to be loaded.
+        let [region] = report.mapped_regions.as_slice() else {
+            panic!("{architecture}: {report:?}");
+        };
+        let base = velk::addr::parse(&region.address).expect("the base");
+        assert_ne!(base, carried.relative_address_base(), "{architecture}");
+        assert_eq!(reached, base + entry, "{architecture}: {report:?}");
+        let printed = binary
+            .decompile(reached, None, None)
+            .expect("decompiling the recovered function");
+        assert!(
+            printed.contains("GetTickCount()"),
+            "{architecture}: {printed}"
+        );
+
+        let dumped = directory.join(format!("{architecture}-recovered.exe"));
+        binary
+            .image()
+            .save_unpacked(&dumped)
+            .expect("saving the recovered program");
+        let dumped_bytes = fs::read(&dumped).expect("reading the saved program");
+        let file = object::File::parse(dumped_bytes.as_slice()).expect("parsing the saved program");
+        assert_eq!(file.entry(), reached, "{architecture}");
+        assert_eq!(file.relative_address_base(), base, "{architecture}");
+        let names: Vec<String> = carried
+            .sections()
+            .map(|section| section.name().expect("a name").to_owned())
+            .collect();
+        for name in &names {
+            assert!(
+                file.section_by_name(name).is_some(),
+                "{architecture}: {name}"
+            );
+        }
+        // The import the carrying program resolved is the one the file
+        // lists, once.
+        let imports: Vec<(String, String)> = file
+            .imports()
+            .expect("reading the saved imports")
+            .map(|import| {
+                let import = import.expect("reading a saved import");
+                let name = match import.name() {
+                    object::NameOrOrdinal::Name(name) => String::from_utf8_lossy(name).into_owned(),
+                    object::NameOrOrdinal::Ordinal(ordinal) => format!("#{ordinal}"),
+                };
+                (String::from_utf8_lossy(import.library()).into_owned(), name)
+            })
+            .collect();
+        assert_eq!(
+            imports,
+            [("kernel32.dll".to_owned(), "GetTickCount".to_owned())],
+            "{architecture}"
+        );
+        let mut reopened = Binary::open(&dumped).expect("opening the saved program");
+        assert!(
+            reopened
+                .decompile(reached, None, None)
+                .expect("decompiling the saved function")
+                .contains("GetTickCount()"),
+            "{architecture}"
+        );
     }
 }
 

@@ -360,6 +360,10 @@ pub struct Report {
     pub(crate) executed_addresses: Vec<u64>,
     #[serde(skip)]
     pub(crate) windows_exports: BTreeMap<u64, String>,
+    /// Where the program the run stopped in was mapped, when it is one a
+    /// Windows program mapped into memory it allocated.
+    #[serde(skip)]
+    pub(crate) mapped_program: Option<u64>,
 }
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {

@@ -533,7 +533,7 @@ impl Runner<'_> {
 
     /// Whether `address` is in memory the program mapped while it ran: code
     /// it wrote there runs on the way to the code it restores, which is in
-    /// the image or the heap.
+    /// the image, the heap or a program it mapped.
     fn passing_code(&self, address: u64) -> bool {
         (self.stop_on_write || self.stop_address.is_some())
             && !crate::unpack::mapped(self.image)
@@ -544,6 +544,7 @@ impl Runner<'_> {
                 .strict_memory
                 .as_ref()
                 .is_some_and(|memory| !memory.in_heap(address))
+            && self.windows_mapped_program(address).is_none()
     }
 
     /// The bytes the program wrote from `address` on, at most `limit`.
@@ -691,6 +692,7 @@ impl Runner<'_> {
             }
         }
         let windows_exports = self.windows_exports();
+        let mapped_program = self.windows_mapped_program(self.address);
         let report = Report {
             files,
             stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
@@ -716,6 +718,7 @@ impl Runner<'_> {
             written_regions,
             executed_addresses,
             windows_exports,
+            mapped_program,
         };
         (report, self.recovery)
     }

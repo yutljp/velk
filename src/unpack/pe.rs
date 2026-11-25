@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::error::{Error, Result};
-use crate::loader::{Image, Section};
+use crate::loader::Section;
 
 const SECTION_HEADER: usize = 40;
 /// Code that is read, written and executed.
@@ -46,21 +46,20 @@ fn align(value: u64, alignment: u64) -> Result<u64> {
     }
 }
 
-/// The input's headers and sections with the bytes memory held when
+/// The headers and sections of `input` with the bytes memory held when
 /// emulation stopped, `entry` as the entry point, and one further section
 /// for each of `extra`, the regions written outside the image. A word of
 /// memory that holds the address of one of `exports`, each named
 /// `dll!function`, is an import the program resolved while it ran: these
 /// become an import table in a section of their own.
 pub(super) fn rebuild(
-    image: &Image,
+    input: &[u8],
     changes: &[crate::emulation::MemoryChange],
     entry: u64,
     extra: &[Section],
     exports: &BTreeMap<u64, String>,
     limit: usize,
 ) -> Result<Vec<u8>> {
-    let input = image.input();
     let pe = match word(input, 0x3c, 4) {
         Ok(offset) => offset as usize,
         Err(error) => return Err(error),
@@ -270,6 +269,15 @@ pub(super) fn rebuild(
             Ok(rva) => original_imports(&output, &placed, base, rva, width),
             Err(error) => return Err(error),
         };
+        // What the program resolved into the slots of a listed import is
+        // that import.
+        resolved.retain(|run| {
+            let end = run.address + (run.functions.len() * width) as u64;
+            !imports.iter().any(|listed| {
+                run.address < listed.address + (listed.functions.len() * width) as u64
+                    && listed.address < end
+            })
+        });
         imports.append(&mut resolved);
         let resolved = imports;
         let rva = image_end;
@@ -351,6 +359,93 @@ pub(super) fn rebuild(
     ];
     if let Some(Err(error)) = written.into_iter().find(Result::is_err) {
         return Err(error);
+    }
+    Ok(output)
+}
+
+/// The program at `base` in memory, which another program mapped there
+/// from the headers and sections of a file, as a file whose sections are
+/// where memory has them: the form `rebuild` reads.
+pub(super) fn mapped(
+    changes: &[crate::emulation::MemoryChange],
+    base: u64,
+    limit: usize,
+) -> Result<Vec<u8>> {
+    let held = |size: usize| {
+        let mut bytes = vec![0u8; size];
+        for change in changes {
+            let Some(address) = crate::addr::parse(&change.address) else {
+                continue;
+            };
+            for (index, byte) in change.bytes.iter().enumerate() {
+                let slot = address
+                    .checked_add(index as u64)
+                    .and_then(|at| at.checked_sub(base))
+                    .and_then(|at| bytes.get_mut(at as usize));
+                if let Some(slot) = slot {
+                    *slot = *byte;
+                }
+            }
+        }
+        bytes
+    };
+    let start = held(0x1000);
+    let pe = match word(&start, 0x3c, 4) {
+        Ok(offset) => offset as usize,
+        Err(error) => return Err(error),
+    };
+    if start.get(pe..pe.saturating_add(4)) != Some(b"PE\0\0") {
+        return failed("mapped program has no PE signature");
+    }
+    let optional = pe + 24;
+    let size = match word(&start, optional + 56, 4) {
+        Ok(size) => size as usize,
+        Err(error) => return Err(error),
+    };
+    if size > limit {
+        return failed("mapped program exceeds the unpacking memory limit");
+    }
+    let mut output = held(size);
+    let field = |offset: usize, width: usize| word(&start, offset, width);
+    let (count, optional_size, wide) =
+        match (field(pe + 6, 2), field(pe + 20, 2), field(optional, 2)) {
+            (Ok(count), Ok(size), Ok(0x20b)) => (count as usize, size as usize, true),
+            (Ok(count), Ok(size), Ok(0x10b)) => (count as usize, size as usize, false),
+            (Ok(_), Ok(_), Ok(_)) => return failed("PE optional header has an unknown format"),
+            (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => return Err(error),
+        };
+    let placed = if wide {
+        put(&mut output, optional + 24, base, 8)
+    } else {
+        put(&mut output, optional + 28, base, 4)
+    };
+    if let Err(error) = placed {
+        return Err(error);
+    }
+    let table = optional + optional_size;
+    for index in 0..count.min(96) {
+        let header = table + index * SECTION_HEADER;
+        let (virtual_size, rva, raw_size) = match (
+            word(&output, header + 8, 4),
+            word(&output, header + 12, 4),
+            word(&output, header + 16, 4),
+        ) {
+            (Ok(virtual_size), Ok(rva), Ok(raw_size)) => (virtual_size, rva, raw_size),
+            (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => return Err(error),
+        };
+        let wanted = if virtual_size == 0 {
+            raw_size
+        } else {
+            virtual_size
+        };
+        let kept = wanted.min((size as u64).saturating_sub(rva));
+        let written = [
+            put(&mut output, header + 16, kept, 4),
+            put(&mut output, header + 20, rva, 4),
+        ];
+        if let Some(Err(error)) = written.into_iter().find(Result::is_err) {
+            return Err(error);
+        }
     }
     Ok(output)
 }
@@ -583,7 +678,7 @@ mod tests {
 
     use super::*;
 
-    fn fixture(name: &str) -> Image {
+    fn fixture(name: &str) -> crate::loader::Image {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures")
             .join(name);
@@ -617,7 +712,7 @@ mod tests {
         let image = fixture("pe64.exe");
         let base = 0x1_4000_0000u64;
         let rebuilt = rebuild(
-            &image,
+            image.input(),
             &[change(base + 0x1010, &[0xb8, 42, 0, 0, 0, 0xc3])],
             base + 0x1010,
             &[],
@@ -638,14 +733,38 @@ mod tests {
     }
 
     #[test]
+    fn a_mapped_program_needs_its_headers_and_the_room() {
+        let image = fixture("pe64.exe");
+        let base = 0x3000_0000u64;
+        let headers = change(base, &image.input()[..0x400]);
+        let file = mapped(std::slice::from_ref(&headers), base, 1 << 20).expect("a file");
+        let parsed = object::File::parse(file.as_slice()).expect("a PE file");
+        assert_eq!(parsed.relative_address_base(), base);
+        // Each section is where memory has it.
+        for section in parsed.sections() {
+            let (offset, _) = section.file_range().expect("its place in the file");
+            assert_eq!(offset, section.address() - base);
+        }
+        assert!(mapped(std::slice::from_ref(&headers), base, 0x400).is_err());
+        assert!(mapped(&[change(base, b"MZ")], base, 1 << 20).is_err());
+    }
+
+    #[test]
     fn data_after_the_last_section_is_kept() {
         let source =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pe64.exe");
         let mut bytes = std::fs::read(source).expect("the fixture");
         let plain = fixture("pe64.exe");
         let base = 0x1_4000_0000u64;
-        let without = rebuild(&plain, &[], base + 0x1010, &[], &BTreeMap::new(), 1 << 20)
-            .expect("a rebuilt image");
+        let without = rebuild(
+            plain.input(),
+            &[],
+            base + 0x1010,
+            &[],
+            &BTreeMap::new(),
+            1 << 20,
+        )
+        .expect("a rebuilt image");
         let tail = b"data the program reads from its own file";
         bytes.extend_from_slice(tail);
         let directory =
@@ -654,14 +773,21 @@ mod tests {
         let path = directory.join("pe64-with-trailing-data.exe");
         std::fs::write(&path, &bytes).expect("writing the input");
         let image = crate::loader::load(&path).expect("the input");
-        let rebuilt = rebuild(&image, &[], base + 0x1010, &[], &BTreeMap::new(), 1 << 20)
-            .expect("a rebuilt image");
+        let rebuilt = rebuild(
+            image.input(),
+            &[],
+            base + 0x1010,
+            &[],
+            &BTreeMap::new(),
+            1 << 20,
+        )
+        .expect("a rebuilt image");
         assert!(rebuilt.ends_with(tail));
         assert_eq!(rebuilt.len(), without.len() + tail.len());
         let file = object::File::parse(rebuilt.as_slice()).expect("a PE file");
         assert_eq!(file.entry(), base + 0x1010);
         // A limit the data does not fit in stops the rebuild.
-        assert!(rebuild(&image, &[], base + 0x1010, &[], &BTreeMap::new(), 0).is_err());
+        assert!(rebuild(image.input(), &[], base + 0x1010, &[], &BTreeMap::new(), 0).is_err());
     }
 
     #[test]
@@ -686,7 +812,7 @@ mod tests {
                 written.extend_from_slice(&address.to_le_bytes()[..width]);
             }
             let rebuilt = rebuild(
-                &image,
+                image.input(),
                 &[change(base + slots, &written)],
                 base + 0x1000,
                 &[],
@@ -740,20 +866,20 @@ mod tests {
         let image = fixture("pe64.exe");
         let base = 0x1_4000_0000u64;
         let none = BTreeMap::new();
-        let below = rebuild(&image, &[], base - 0x1000, &[], &none, 1 << 20);
+        let below = rebuild(image.input(), &[], base - 0x1000, &[], &none, 1 << 20);
         assert!(below.is_err());
         let region = Section {
             vaddr: 0x3000_0000,
             size: 0x1000,
             ..image.sections[0].clone()
         };
-        let outside = rebuild(&image, &[], base + 0x1000, &[region], &none, 1 << 20);
+        let outside = rebuild(image.input(), &[], base + 0x1000, &[region], &none, 1 << 20);
         assert!(
             outside
                 .err()
                 .is_some_and(|error| error.to_string().contains("outside what the PE image")),
         );
         // A limit below the size of the sections stops the rebuild.
-        assert!(rebuild(&image, &[], base + 0x1000, &[], &none, 0x100).is_err());
+        assert!(rebuild(image.input(), &[], base + 0x1000, &[], &none, 0x100).is_err());
     }
 }

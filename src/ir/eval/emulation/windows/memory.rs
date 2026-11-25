@@ -36,6 +36,40 @@ fn access(protection: u32) -> Result<Access, Stop> {
 }
 
 impl Runner<'_> {
+    /// The base of the program mapped around `address`: an allocation the
+    /// Windows program filled with the headers and sections of a PE file,
+    /// whose image covers the address.
+    pub(in crate::ir::eval::emulation) fn windows_mapped_program(
+        &self,
+        address: u64,
+    ) -> Option<u64> {
+        let Some(state) = &self.windows else {
+            return None;
+        };
+        let Some((&base, allocation)) = state.virtual_allocations.range(..=address).next_back()
+        else {
+            return None;
+        };
+        if address - base >= allocation.size {
+            return None;
+        }
+        let word = |at: u64, width: u64| {
+            (0..width).fold(0u64, |value, index| {
+                value
+                    | u64::from(self.machine.memory.get(&(at + index)).copied().unwrap_or(0))
+                        << (index * 8)
+            })
+        };
+        if word(base, 2) != 0x5a4d {
+            return None;
+        }
+        let header = base + word(base + 0x3c, 4);
+        if header - base > 0x1000 || word(header, 4) != 0x4550 {
+            return None;
+        }
+        (address - base < word(header + 24 + 56, 4)).then_some(base)
+    }
+
     pub(super) fn windows_heap(&mut self, name: &str, args: &[u64]) -> Result<u64, Stop> {
         if args[0] != self.windows_state().heap {
             return Err(Stop::Error(format!(
