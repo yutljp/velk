@@ -1522,16 +1522,27 @@ fn rewrite(expr: &mut Expr, ranges: &Ranges, block: usize, sensitive: bool, chan
             }
         }
         Expr::Select {
+            cond,
             lhs,
             rhs,
             then,
             els,
-            ..
         } => {
             rewrite(lhs, ranges, block, true, changes);
             rewrite(rhs, ranges, block, true, changes);
             rewrite(then, ranges, block, sensitive, changes);
             rewrite(els, ranges, block, sensitive, changes);
+            // A choice the facts decide is the value chosen, as a branch
+            // they decide is a jump.
+            if let (Some(a), Some(b)) = (
+                ranges.eval(lhs, block, MAX_GUARD_DEPTH),
+                ranges.eval(rhs, block, MAX_GUARD_DEPTH),
+            ) && let Some(holds) = decide(*cond, a, b, operand_width(lhs, rhs))
+            {
+                let chosen = if holds { then } else { els };
+                *expr = (**chosen).clone();
+                changes.branches += 1;
+            }
         }
         Expr::Apply { args, .. } => {
             for arg in args {
