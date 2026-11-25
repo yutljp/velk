@@ -455,17 +455,44 @@ fn windows_programs_are_recovered_with_the_imports_they_resolve() {
 }
 
 #[test]
-fn code_a_windows_program_runs_from_allocated_memory_is_not_followed() {
+fn code_a_windows_program_runs_from_allocated_memory_is_followed() {
     let directory = directory("windows-stage");
-    let input = packed_pe(&directory, "x86_64", "unpack_pe_stage.S");
-    let error = Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
-        .err()
-        .expect("the copied code is outside the image")
-        .to_string();
-    assert!(
-        error.contains("reached code outside the image and bounded heap"),
-        "{error}"
-    );
+    for architecture in ["x86_64", "i386"] {
+        let input = packed_pe(&directory, architecture, "unpack_pe_stage.S");
+        let payload = Binary::open(&input)
+            .expect("opening the packed program")
+            .image()
+            .sections
+            .iter()
+            .find(|section| section.name == ".payload")
+            .expect("the packed section")
+            .vaddr;
+        let mut binary =
+            Binary::open_input(&input, None, &unpack_options(unpack::Options::default()))
+                .expect("unpacking through the copied code");
+        let report = binary.image().unpacking.as_ref().expect("report");
+        assert_eq!(
+            report.stop_reason, "written code reached",
+            "{architecture}: {report:?}"
+        );
+        assert_eq!(
+            report.new_entry.as_deref(),
+            Some(velk::addr::format(payload).as_str()),
+            "{architecture}: {report:?}"
+        );
+        // The copy in allocated memory is no part of the recovered program.
+        assert!(
+            report.mapped_regions.iter().all(|region| {
+                velk::addr::parse(&region.address)
+                    .is_some_and(|address| binary.image().section_at(address).is_some())
+            }),
+            "{architecture}: {report:?}"
+        );
+        let printed = binary
+            .decompile(payload, None, None)
+            .expect("decompiling the recovered function");
+        assert!(printed.contains("+ 42"), "{architecture}: {printed}");
+    }
 }
 
 #[test]

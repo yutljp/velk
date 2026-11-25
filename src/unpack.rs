@@ -83,7 +83,7 @@ pub(crate) struct Output {
 
 /// The regions the loader maps: the load segments of an ELF file, the
 /// sections of a PE file.
-fn mapped(image: &Image) -> &[Section] {
+pub(crate) fn mapped(image: &Image) -> &[Section] {
     if image.load_segments.is_empty() {
         &image.sections
     } else {

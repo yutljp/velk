@@ -56,10 +56,13 @@ lists in a section `.idata` of its own, so the recovered code calls its imports 
 name. When the headers have no room for another section the words are left as they
 are. Data after the last section of the input is not copied.
 
-Emulation runs code in the executable sections of the image only. A program that
-copies the code restoring it into memory it allocates and runs it there stops with
-`reached code outside the image and bounded heap`; so does one whose original entry
-point is in such memory. A library found by walking the loader lists and hashing
+A Windows program may copy the code restoring it into memory it allocates with
+`VirtualAlloc` and run it there. Such code runs like that of the image, read from
+what memory holds when it is reached, and emulation stops at the first written
+address reached in the image itself; the allocated memory is no part of the rebuilt
+file. A program whose original entry point stays in allocated memory is not
+recovered: emulation runs until another limit stops it and reports no unpacking. A
+library found by walking the loader lists and hashing
 export names is resolved only among the functions the modeled image lists.
 
 For a routine `decode(unsigned char *buffer, unsigned count, unsigned key)` that
