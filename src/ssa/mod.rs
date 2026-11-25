@@ -339,7 +339,9 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
 /// Makes each read of what a call leaves in a register it changes, but
 /// returns nothing in, read the undefined value: the register's earlier
 /// value is gone, and the code cannot rely on what is there instead. A
-/// value a φ joins with others is left as it is.
+/// value a φ joins with others is left as it is. So is read what a result
+/// register past the first holds on entry when it is no parameter: a
+/// function that returns a byte in it writes that byte alone.
 pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
     crate::passes::checked(
         "ssa::undefine_clobbered_reads",
@@ -349,18 +351,47 @@ pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
 }
 
 fn undefine_clobbered_reads_unchecked(ir: &mut FunctionIr) {
-    if !ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::Call { .. }))
+    // The registers of further results that arrive holding nothing. Go
+    // returns in the registers of its arguments and is left alone.
+    let mut unset: HashSet<u16> = HashSet::new();
+    if !ir.convention.go_registers() {
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Ret {
+                value:
+                    Expr::Apply {
+                        op: crate::ir::Operation::Results,
+                        args,
+                    },
+                ..
+            } = stmt
+            {
+                unset.extend(args.iter().skip(1).filter_map(|value| match value {
+                    Expr::Reg { index, .. }
+                        if !ir.params.iter().any(|param| param.index == *index) =>
+                    {
+                        Some(*index)
+                    }
+                    _ => None,
+                }));
+            }
+        }
+    }
+    if unset.is_empty()
+        && !ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| matches!(stmt, Stmt::Call { .. }))
     {
         return;
     }
     let Some(ssa) = build(ir) else {
         return;
     };
-    let mut undefined: HashSet<u16> = HashSet::new();
+    let mut undefined: HashSet<u16> = unset
+        .iter()
+        .filter_map(|register| ssa.entry.get(register).copied())
+        .collect();
     for (&(block, position), defined) in &ssa.implicit_writes {
         let stmt = &ssa.ir.blocks[block].stmts[position];
         let Stmt::Call { .. } = stmt else {

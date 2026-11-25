@@ -512,12 +512,12 @@ predicates_aarch64_O0.o: 46 lines, 3 prelude lines, 5 variables, 0 casts, 0 regi
 predicates_aarch64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 predicates_x86_64_O0.o: 47 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 predicates_x86_64_O2.o: 32 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 52992 lines, 2555 prelude lines, 10609 variables, 11035 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
+rust_demo: 52991 lines, 2555 prelude lines, 10609 variables, 11035 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
 rust_demo_arm64: 49658 lines, 2822 prelude lines, 9954 variables, 9780 casts, 24 registers, 0 unsigned, 32 traps, 1236 gotos, 154 indirect calls
-rust_probe: 52992 lines, 2555 prelude lines, 10609 variables, 11035 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
+rust_probe: 52991 lines, 2555 prelude lines, 10609 variables, 11035 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
 rust_probe_arm64: 49658 lines, 2822 prelude lines, 9954 variables, 9780 casts, 24 registers, 0 unsigned, 32 traps, 1236 gotos, 154 indirect calls
 rust_probe_arm64_stripped: 50205 lines, 2829 prelude lines, 10274 variables, 9745 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
-rust_probe_stripped: 52945 lines, 2452 prelude lines, 10587 variables, 10903 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
+rust_probe_stripped: 52944 lines, 2452 prelude lines, 10587 variables, 10903 casts, 11 registers, 0 unsigned, 30 traps, 1319 gotos, 124 indirect calls
 seh.O0.dll: 95 lines, 8 prelude lines, 14 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh.O2.dll: 73 lines, 8 prelude lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh_cpp.O0.dll: 27 lines, 5 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

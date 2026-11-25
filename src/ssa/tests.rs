@@ -1691,3 +1691,65 @@ fn declared_calls_do_not_reconstruct_variadic_fallback_arguments() {
         matches!(&ir.blocks[0].stmts[2], Stmt::Call { args: Some(args), .. } if args.len() == 2)
     );
 }
+
+/// A function that returns `rax` and `rdx`, having written the low byte of
+/// `rdx` alone; `rdx` is a parameter when `taken`.
+fn byte_in_a_second_result(taken: bool, convention: crate::ir::Convention) -> FunctionIr {
+    const RDX: u16 = 2;
+    let mut ir = FunctionIr::single_block(
+        crate::loader::Isa::X86_64,
+        vec![
+            assign(
+                RDX,
+                Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(BinOp::And, Expr::reg(RDX, 64), Expr::Const(!0xff)),
+                    Expr::Const(1),
+                ),
+            ),
+            Stmt::Ret {
+                value: Expr::apply(
+                    crate::ir::Operation::Results,
+                    vec![Expr::reg(0, 64), Expr::reg(RDX, 64)],
+                ),
+                at: None,
+            },
+        ],
+    );
+    ir.convention = convention;
+    if taken {
+        ir.params.push(crate::ir::Param {
+            index: RDX,
+            name: "a2".to_owned(),
+            ty: crate::ir::CType::U64,
+        });
+    }
+    super::undefine_clobbered_reads(&mut ir);
+    crate::passes::simplify::simplify(&mut ir);
+    ir
+}
+
+#[test]
+fn a_partial_write_of_a_second_result_that_is_no_parameter_is_the_new_bits() {
+    let ir = byte_in_a_second_result(false, crate::ir::Convention::SysV);
+    assert!(matches!(
+        &ir.blocks[0].stmts[0],
+        Stmt::Assign {
+            value: Expr::Const(1),
+            ..
+        }
+    ));
+    // A parameter holds what the caller passed, and Go returns in the
+    // registers of its arguments: both keep the read.
+    for ir in [
+        byte_in_a_second_result(true, crate::ir::Convention::SysV),
+        byte_in_a_second_result(false, crate::ir::Convention::GoAmd64),
+    ] {
+        let Stmt::Assign { value, .. } = &ir.blocks[0].stmts[0] else {
+            panic!("an assignment");
+        };
+        let mut read = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(value, &mut read);
+        assert!(read.contains(&2));
+    }
+}

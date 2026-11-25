@@ -1,2 +1,0 @@
-rust_demo 0x40b90 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back: reads rdx without assigning it
-rust_probe 0x40b90 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back: reads rdx without assigning it
