@@ -32,6 +32,20 @@ stage_end:
 #else
 .globl _entry
 _entry:
+    // A function with no model, found by name, pops its four arguments.
+    pushl $library
+    calll *__imp__LoadLibraryA@4
+    pushl $function
+    pushl %eax
+    calll *__imp__GetProcAddress@8
+    movl %esp, %ebp
+    pushl $0
+    pushl $0
+    pushl $0
+    pushl $0
+    calll *%eax
+    cmpl %esp, %ebp
+    jne unbalanced
     pushl $0x40
     pushl $0x3000
     pushl $4096
@@ -53,4 +67,10 @@ stage:
     jne stage
     ret
 stage_end:
+unbalanced:
+    ud2
+library:
+    .asciz "user32.dll"
+function:
+    .asciz "MessageBoxA"
 #endif
