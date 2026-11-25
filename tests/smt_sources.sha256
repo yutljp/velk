@@ -99,7 +99,7 @@ a441886a6bf5b3877d91ab02e8bd7735a82e9b485297044ada18b6da1b03f44a  src/passes/mem
 534a95756fc30892ed8b0c01421be1f601d26291431ecff12fad1343cabcaeaa  src/passes/read_once.rs	fn substitute_masked(
 1160180c855fdf4935e375750b2eeec1c62376f2e5a47c1316bee43759ce364a  src/passes/read_once.rs	fn substitute_tested(
 1d6e7f2048d790f911b4cd152463d5518e112f564ec50296fdf16b4c44f75ed2  src/passes/read_once.rs	pub(crate) fn substitute(
-9a458e849bb099e039ec101d30123155ab9d086d47d40f02d5b5afc53f3c2549  src/passes/simplify.rs	fn algebraic(
+a077480f355671477d9aa3e5e5bdde0fc3e00394695b2cdf4b16c6ffd461d249  src/passes/simplify.rs	fn algebraic(
 41e906bb6303fae6ac302e9466aadcd70390e98ad2b9b801626ed13c455007f4  src/passes/simplify.rs	fn cancel_round_trip(
 7354505c2c69e08efd4a8bf8633a78455d33d9bf7752c0753143e5229b5f053c  src/passes/simplify.rs	fn counted_bits(
 053a3eae1c860f38b76b25ece224da18c96a651bcfc0ca05810a993a7f557fa2  src/passes/simplify.rs	fn fold_offsets(

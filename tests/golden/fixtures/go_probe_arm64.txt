@@ -1338,7 +1338,7 @@ struct velk_results2 main_divmod(int64_t a0, int64_t a1) {
     if (a1 == 0) {
         runtime_panicdivide();
     }
-    return (struct velk_results2){ (int64_t)((__int128)a0 / a1), (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)((__int128)a0 / a1) * a1)) };
+    return (struct velk_results2){ (int64_t)((__int128)a0 / a1), (int64_t)((__int128)a0 % a1) };
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -1351,7 +1351,7 @@ fn main.divmod @ 0x77430 (size 96)
   blk1 @ 0x7743c:
     brif eq x1, #0x0 -> 0x77468
   blk2 @ 0x7744c:
-    ret results((x0 / x1), (x0 - ((x0 / x1) * x1)))
+    ret results((x0 / x1), (x0 % x1))
   blk3 @ 0x77468:
     call 0x3cc80()
     trap

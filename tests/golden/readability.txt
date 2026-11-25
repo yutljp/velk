@@ -159,10 +159,10 @@ flattened_x86_64_O2.o: 86 lines, 3 prelude lines, 13 variables, 2 casts, 0 regis
 frame_bounds_a64.o: 19 lines, 3 prelude lines, 4 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 frame_bounds_x64.o: 18 lines, 3 prelude lines, 3 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 go_probe: 60503 lines, 6767 prelude lines, 13122 variables, 11382 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
-go_probe_arm64: 66940 lines, 7201 prelude lines, 14843 variables, 16233 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
-go_probe_arm64_1_27: 80940 lines, 9111 prelude lines, 18591 variables, 19399 casts, 791 registers, 0 unsigned, 21 traps, 79 gotos, 135 indirect calls
+go_probe_arm64: 66938 lines, 7201 prelude lines, 14841 variables, 16222 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
+go_probe_arm64_1_27: 80940 lines, 9111 prelude lines, 18591 variables, 19396 casts, 791 registers, 0 unsigned, 21 traps, 79 gotos, 135 indirect calls
 go_stripped: 60434 lines, 6765 prelude lines, 13109 variables, 11373 casts, 149 registers, 0 unsigned, 18 traps, 56 gotos, 121 indirect calls
-go_stripped_arm64: 66879 lines, 7199 prelude lines, 14834 variables, 16220 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
+go_stripped_arm64: 66877 lines, 7199 prelude lines, 14832 variables, 16212 casts, 693 registers, 0 unsigned, 20 traps, 70 gotos, 124 indirect calls
 i386_switch.elf: 68 lines, 13 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_a64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -242,8 +242,8 @@ metrics/conventions.win32.O0.debug.dll: 29 lines, 8 prelude lines, 6 variables, 
 metrics/conventions.win32.O0.stripped.dll: 29 lines, 8 prelude lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/conventions.win32.O2.debug.dll: 24 lines, 8 prelude lines, 4 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/conventions.win32.O2.stripped.dll: 24 lines, 8 prelude lines, 4 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/divmod_a64.aarch64.O0.debug.elf: 100 lines, 3 prelude lines, 0 variables, 14 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/divmod_a64.aarch64.O0.stripped.elf: 100 lines, 3 prelude lines, 0 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O0.debug.elf: 100 lines, 3 prelude lines, 0 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O0.stripped.elf: 100 lines, 3 prelude lines, 0 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_a64.aarch64.O2.debug.elf: 100 lines, 3 prelude lines, 0 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_a64.aarch64.O2.stripped.elf: 100 lines, 3 prelude lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_a64.win64.O0.debug.dll: 100 lines, 3 prelude lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -254,8 +254,8 @@ metrics/divmod_a64.x86_64.O0.debug.elf: 100 lines, 3 prelude lines, 0 variables,
 metrics/divmod_a64.x86_64.O0.stripped.elf: 100 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_a64.x86_64.O2.debug.elf: 100 lines, 3 prelude lines, 0 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_a64.x86_64.O2.stripped.elf: 100 lines, 3 prelude lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/divmod_x64.aarch64.O0.debug.elf: 72 lines, 3 prelude lines, 0 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/divmod_x64.aarch64.O0.stripped.elf: 72 lines, 3 prelude lines, 0 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O0.debug.elf: 72 lines, 3 prelude lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O0.stripped.elf: 72 lines, 3 prelude lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_x64.aarch64.O2.debug.elf: 72 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_x64.aarch64.O2.stripped.elf: 72 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/divmod_x64.win64.O0.debug.dll: 72 lines, 3 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

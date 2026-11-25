@@ -212,7 +212,7 @@ fn <unnamed> @ 0x21041c (size 36)
 -- decompile
 /* velk pseudo-C: sub_210440 @ 0x210440 */
 int64_t sub_210440(int64_t a0) {
-    return (uint64_t)a0 - (int64_t)((uint64_t)(a0 / 16) * 16);
+    return a0 % 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -221,7 +221,7 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x210440 (size 36)
   blk0 @ 0x210440:
-    ret (x0 - ((x0 / #0x10) * #0x10))
+    ret (x0 % #0x10)
 -- card
 {"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
@@ -246,7 +246,7 @@ fn <unnamed> @ 0x210464 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210480 @ 0x210480 */
 int64_t sub_210480(int64_t a0) {
-    return (uint64_t)a0 - (int64_t)((uint64_t)(a0 / 10) * 10);
+    return a0 % 10;
 }
 -- signature
 int64_t (int64_t a0)
@@ -255,7 +255,7 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x210480 (size 36)
   blk0 @ 0x210480:
-    ret (x0 - ((x0 / #0xa) * #0xa))
+    ret (x0 % #0xa)
 -- card
 {"addr":"0x210480","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
