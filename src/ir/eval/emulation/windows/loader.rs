@@ -131,14 +131,57 @@ fn put(bytes: &mut [u8], offset: usize, value: u64, width: usize) {
     bytes[offset..offset + width].copy_from_slice(&value.to_le_bytes()[..width]);
 }
 
-fn synthetic_image(dll: &str, names: &BTreeSet<String>, width: usize) -> Result<Vec<u8>, String> {
-    if names.len() > 512 {
-        return Err("modeled DLL has more than 512 exports".to_owned());
+/// Where a modeled image has its parts, each from its base.
+struct Layout {
+    size: usize,
+    /// The entry points, 16 bytes each.
+    entries: usize,
+    addresses: usize,
+    names: usize,
+    ordinals: usize,
+    library: usize,
+    strings: usize,
+}
+
+/// The layout for `names`: a small one, or a larger one for a library
+/// listed with every function known of it.
+fn layout(names: &BTreeSet<String>) -> Layout {
+    let text: usize = names.iter().map(|name| name.len() + 1).sum();
+    if names.len() <= 512 && text <= 0x8000 - 0x2500 {
+        return Layout {
+            size: 0x10000,
+            entries: 0x8000,
+            addresses: 0x1100,
+            names: 0x1900,
+            ordinals: 0x2100,
+            library: 0x2400,
+            strings: 0x2500,
+        };
+    }
+    Layout {
+        size: 0x40000,
+        entries: 0x20000,
+        addresses: 0x1100,
+        names: 0x5100,
+        ordinals: 0x9100,
+        library: 0xb100,
+        strings: 0xb200,
+    }
+}
+
+fn synthetic_image(
+    dll: &str,
+    names: &BTreeSet<String>,
+    width: usize,
+) -> Result<(Vec<u8>, Layout), String> {
+    if names.len() > 4096 {
+        return Err("modeled DLL has more than 4096 exports".to_owned());
     }
     if dll.len() > 255 {
         return Err("modeled DLL name exceeds 255 bytes".to_owned());
     }
-    let mut bytes = vec![0; 0x10000];
+    let layout = layout(names);
+    let mut bytes = vec![0; layout.size];
     bytes[..2].copy_from_slice(b"MZ");
     put(&mut bytes, 0x3c, 0x80, 4);
     bytes[0x80..0x84].copy_from_slice(b"PE\0\0");
@@ -156,47 +199,52 @@ fn synthetic_image(dll: &str, names: &BTreeSet<String>, width: usize) -> Result<
     );
     put(&mut bytes, optional + 32, 0x1000, 4);
     put(&mut bytes, optional + 36, 0x200, 4);
-    put(&mut bytes, optional + 56, 0x10000, 4);
+    put(&mut bytes, optional + 56, layout.size as u64, 4);
     put(&mut bytes, optional + 60, 0x400, 4);
     put(&mut bytes, optional + 68, 3, 2);
     let directories = optional + if width == 8 { 112 } else { 96 };
     put(&mut bytes, directories - 4, 16, 4);
     put(&mut bytes, directories, 0x1000, 4);
-    put(&mut bytes, directories + 4, 0x7000, 4);
+    put(
+        &mut bytes,
+        directories + 4,
+        (layout.entries - 0x1000) as u64,
+        4,
+    );
     let section = optional + optional_size as usize;
     bytes[section..section + 5].copy_from_slice(b".text");
-    put(&mut bytes, section + 8, 0xf000, 4);
+    put(&mut bytes, section + 8, (layout.size - 0x1000) as u64, 4);
     put(&mut bytes, section + 12, 0x1000, 4);
     put(&mut bytes, section + 36, 0x6000_0020, 4);
     put(&mut bytes, 0x1010, 1, 4);
-    put(&mut bytes, 0x100c, 0x2400, 4);
-    bytes[0x2400..0x2400 + dll.len()].copy_from_slice(dll.as_bytes());
+    put(&mut bytes, 0x100c, layout.library as u64, 4);
+    bytes[layout.library..layout.library + dll.len()].copy_from_slice(dll.as_bytes());
     put(&mut bytes, 0x1014, names.len() as u64, 4);
     put(&mut bytes, 0x1018, names.len() as u64, 4);
-    put(&mut bytes, 0x101c, 0x1100, 4);
-    put(&mut bytes, 0x1020, 0x1900, 4);
-    put(&mut bytes, 0x1024, 0x2100, 4);
-    let mut string = 0x2500usize;
+    put(&mut bytes, 0x101c, layout.addresses as u64, 4);
+    put(&mut bytes, 0x1020, layout.names as u64, 4);
+    put(&mut bytes, 0x1024, layout.ordinals as u64, 4);
+    let mut string = layout.strings;
     for (index, name) in names.iter().enumerate() {
         let Some(end) = string
             .checked_add(name.len() + 1)
-            .filter(|end| *end <= 0x8000)
+            .filter(|end| *end <= layout.entries)
         else {
-            return Err("modeled DLL export names exceed 23 KiB".to_owned());
+            return Err("modeled DLL export names exceed the room for them".to_owned());
         };
         put(
             &mut bytes,
-            0x1100 + index * 4,
-            (0x8000 + index * 16) as u64,
+            layout.addresses + index * 4,
+            (layout.entries + index * 16) as u64,
             4,
         );
-        put(&mut bytes, 0x1900 + index * 4, string as u64, 4);
-        put(&mut bytes, 0x2100 + index * 2, index as u64, 2);
+        put(&mut bytes, layout.names + index * 4, string as u64, 4);
+        put(&mut bytes, layout.ordinals + index * 2, index as u64, 2);
         bytes[string..end - 1].copy_from_slice(name.as_bytes());
-        bytes[0x8000 + index * 16] = 0xc3;
+        bytes[layout.entries + index * 16] = 0xc3;
         string = end;
     }
-    Ok(bytes)
+    Ok((bytes, layout))
 }
 
 impl Runner<'_> {
@@ -250,6 +298,18 @@ impl Runner<'_> {
         Ok(pointer)
     }
 
+    /// Adds every function known of `dll` when calls without a model are
+    /// passed over: a program that finds its imports by walking the export
+    /// names of a library then finds each of them.
+    fn list_known_functions(&self, dll: &str, functions: &mut BTreeSet<String>) {
+        if !self.options.skip_calls {
+            return;
+        }
+        for name in crate::analysis::prototypes::library_functions(self.image, dll) {
+            functions.insert(name.to_owned());
+        }
+    }
+
     /// Maps a modeled image of `dll` exporting `functions`.
     fn map_module(
         &mut self,
@@ -257,7 +317,7 @@ impl Runner<'_> {
         functions: BTreeSet<String>,
         width: u8,
     ) -> Result<Module, String> {
-        let mut bytes = match synthetic_image(dll, &functions, width as usize) {
+        let (mut bytes, layout) = match synthetic_image(dll, &functions, width as usize) {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
@@ -286,11 +346,12 @@ impl Runner<'_> {
             name: dll.to_owned(),
             path: format!("C:\\Windows\\System32\\{dll}"),
             base,
-            size: 0x10000,
+            size: layout.size as u64,
+            entries: layout.entries as u64,
             exports: BTreeMap::new(),
         };
         for (index, name) in functions.into_iter().enumerate() {
-            let address = base + 0x8000 + index as u64 * 16;
+            let address = base + module.entries + index as u64 * 16;
             module.exports.insert(name, (address, index as u32 + 1));
         }
         Ok(module)
@@ -302,10 +363,11 @@ impl Runner<'_> {
         if self.windows_state().modules.len() >= 64 {
             return Err("more than 64 DLLs are loaded".to_owned());
         }
-        let functions = apis(dll)
+        let mut functions = apis(dll)
             .iter()
             .map(|(name, _)| (*name).to_owned())
             .collect();
+        self.list_known_functions(dll, &mut functions);
         let width = crate::arch::pointer_bytes(self.machine.isa);
         let module = match self.map_module(dll, functions, width) {
             Ok(module) => module,
@@ -339,10 +401,10 @@ impl Runner<'_> {
             .expect("Windows setup precedes API calls");
         let module = &mut process.modules[index];
         let position = module.exports.len() as u64;
-        if position >= 0x800 || name.is_empty() || name.len() > 255 {
+        if position >= (module.size - module.entries) / 16 || name.is_empty() || name.len() > 255 {
             return None;
         }
-        let address = module.base + 0x8000 + position * 16;
+        let address = module.base + module.entries + position * 16;
         module
             .exports
             .insert(name.to_owned(), (address, position as u32 + 1));
@@ -393,6 +455,8 @@ impl Runner<'_> {
             path: self.options.windows.image_path.clone(),
             base: header.base,
             size: header.size,
+            // The program is no modeled image with entry points to add.
+            entries: header.size,
             exports: BTreeMap::new(),
         }];
         let mut names: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
@@ -439,6 +503,7 @@ impl Runner<'_> {
             for &(name, _) in table {
                 functions.insert(name.to_owned());
             }
+            self.list_known_functions(&dll, &mut functions);
             let module = match self.map_module(&dll, functions, width) {
                 Ok(module) => module,
                 Err(error) => return Err(error),

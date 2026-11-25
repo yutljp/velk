@@ -104,7 +104,8 @@ pub fn record(name: &str, image: &Image) -> Option<LibraryRecord> {
 }
 
 pub(crate) use generated::{
-    apply_records, i386_import, is_i386_com_interface, is_library_record, record_name,
+    apply_records, i386_import, is_i386_com_interface, is_library_record, library_functions,
+    record_name,
 };
 
 /// What a function takes and returns.

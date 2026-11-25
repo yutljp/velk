@@ -465,6 +465,10 @@ impl<'a> Memory<'a> {
         self.written_count.set(0);
     }
 
+    pub(crate) fn in_heap(&self, address: u64) -> bool {
+        (self.heap_base..self.heap_end).contains(&address)
+    }
+
     pub(crate) fn was_written(&self, address: u64) -> bool {
         let page = address & !(PAGE_SIZE - 1);
         let bit = (address - page) as usize;

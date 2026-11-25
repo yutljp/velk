@@ -345,11 +345,39 @@ fn lift_in_mode(
     summaries: Summaries<'_>,
     mode: execution::Mode,
 ) -> Result<Vec<Block>, LiftError> {
-    let summaries: Summaries<'_> = &|target| call_summary(summaries(target));
     let addr = image.code_address(addr);
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);
     };
+    lift_bytes(image, addr, bytes, extra_targets, summaries, mode)
+}
+
+/// The blocks of code a running program holds at `addr` in memory it
+/// wrote, which the file does not have.
+pub(crate) fn lift_written_for_execution(
+    image: &Image,
+    addr: u64,
+    bytes: &[u8],
+) -> Result<Vec<Block>, LiftError> {
+    lift_bytes(
+        image,
+        addr,
+        bytes,
+        &HashSet::new(),
+        &|_| Summary::default(),
+        execution::Mode::Execution,
+    )
+}
+
+fn lift_bytes(
+    image: &Image,
+    addr: u64,
+    bytes: &[u8],
+    extra_targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+    mode: execution::Mode,
+) -> Result<Vec<Block>, LiftError> {
+    let summaries: Summaries<'_> = &|target| call_summary(summaries(target));
     match image.isa {
         Isa::Arm32 => match mode {
             execution::Mode::Analysis => arm32::lift(image, addr, bytes, extra_targets, summaries),

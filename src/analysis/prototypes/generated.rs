@@ -495,6 +495,20 @@ fn qualified_name<'a>(name: &'a str, image: &'a Image) -> Option<&'a str> {
     qualified
 }
 
+/// The names of the functions known of the Windows library `dll`.
+pub(crate) fn library_functions(image: &Image, dll: &str) -> Vec<&'static str> {
+    let Some(target) = target_library(image).filter(|_| image.format == Format::Pe) else {
+        return Vec::new();
+    };
+    target
+        .imports
+        .keys()
+        .filter_map(|qualified| qualified.split_once('!'))
+        .filter(|(library, _)| library.eq_ignore_ascii_case(dll))
+        .map(|(_, name)| name)
+        .collect()
+}
+
 pub(crate) fn i386_import(image: &Image, name: &str) -> Option<(crate::ir::Convention, u16)> {
     if image.isa != Isa::I386 {
         return None;

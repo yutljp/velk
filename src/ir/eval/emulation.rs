@@ -58,6 +58,8 @@ struct Runner<'a> {
     socket_position: usize,
     sockets: HashMap<u64, SocketState>,
     code: HashMap<u64, Vec<Block>>,
+    /// Code lifted from memory the program wrote, with the bytes it had.
+    written_code: HashMap<u64, (Vec<u8>, Vec<Block>)>,
     recovery: Option<strings::Recovery>,
     windows: Option<windows::Process>,
     api_calls: Vec<crate::emulation::ApiCall>,
@@ -296,6 +298,7 @@ fn run_with_recovery(
         socket_position: 0,
         sockets: HashMap::new(),
         code: HashMap::new(),
+        written_code: HashMap::new(),
         recovery,
         windows: None,
         api_calls: Vec::new(),
@@ -512,19 +515,65 @@ impl Runner<'_> {
         if self.stop_address == Some(address) {
             return Some(Stop::UnpackAddress);
         }
-        if self.stop_on_write
-            && self
-                .machine
-                .strict_memory
-                .as_ref()
-                .is_some_and(|memory| memory.was_written(address))
-        {
+        if self.stop_on_write && self.written(address) && !self.passing_code(address) {
             return Some(Stop::WrittenCode);
         }
         if self.stop_on_write || self.stop_address.is_some() {
             self.executed_addresses.insert(address);
         }
         None
+    }
+
+    fn written(&self, address: u64) -> bool {
+        self.machine
+            .strict_memory
+            .as_ref()
+            .is_some_and(|memory| memory.was_written(address))
+    }
+
+    /// Whether `address` is in memory the program mapped while it ran: code
+    /// it wrote there runs on the way to the code it restores, which is in
+    /// the image, the heap or a program it mapped.
+    fn passing_code(&self, address: u64) -> bool {
+        (self.stop_on_write || self.stop_address.is_some())
+            && !crate::unpack::mapped(self.image)
+                .iter()
+                .any(|section| section.vaddr <= address && address - section.vaddr < section.size)
+            && self
+                .machine
+                .strict_memory
+                .as_ref()
+                .is_some_and(|memory| !memory.in_heap(address))
+            && self.windows_mapped_program(address).is_none()
+    }
+
+    /// The bytes the program wrote from `address` on, at most `limit`.
+    fn written_bytes(&self, address: u64, limit: u64) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        let mut at = address;
+        while (bytes.len() as u64) < limit && self.written(at) {
+            bytes.push(self.machine.memory.get(&at).copied().unwrap_or(0));
+            let Some(next) = at.checked_add(1) else {
+                break;
+            };
+            at = next;
+        }
+        bytes
+    }
+
+    fn lift_written(&mut self, address: u64) -> std::result::Result<Vec<Block>, Stop> {
+        let bytes = self.written_bytes(address, MAX_CODE_SIZE);
+        if let Some((known, blocks)) = self.written_code.get(&address)
+            && *known == bytes
+        {
+            return Ok(blocks.clone());
+        }
+        let blocks = match crate::lift::lift_written_for_execution(self.image, address, &bytes) {
+            Ok(blocks) => blocks,
+            Err(error) => return Err(Stop::Error(error.to_string())),
+        };
+        self.written_code.insert(address, (bytes, blocks.clone()));
+        Ok(blocks)
     }
 
     fn report(
@@ -643,6 +692,7 @@ impl Runner<'_> {
             }
         }
         let windows_exports = self.windows_exports();
+        let mapped_program = self.windows_mapped_program(self.address);
         let report = Report {
             files,
             stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
@@ -668,6 +718,7 @@ impl Runner<'_> {
             written_regions,
             executed_addresses,
             windows_exports,
+            mapped_program,
         };
         (report, self.recovery)
     }
@@ -730,6 +781,9 @@ impl Runner<'_> {
     fn lift(&mut self, address: u64) -> std::result::Result<Vec<Block>, Stop> {
         if let Some(blocks) = self.code.get(&address) {
             return Ok(blocks.clone());
+        }
+        if self.written(address) && self.passing_code(address) {
+            return self.lift_written(address);
         }
         let Some(section) = self.image.section_at(address) else {
             return Err(Stop::Error(format!("unmapped code at 0x{address:x}")));
@@ -954,6 +1008,21 @@ impl Runner<'_> {
     }
 
     fn x86_instruction(&self) -> std::result::Result<iced_x86::Instruction, Stop> {
+        if self.written(self.address) && self.passing_code(self.address) {
+            let bytes = self.written_bytes(self.address, 15);
+            let bits = if self.image.isa == Isa::I386 { 32 } else { 64 };
+            let instruction = iced_x86::Decoder::with_ip(
+                bits,
+                &bytes,
+                self.address,
+                iced_x86::DecoderOptions::NONE,
+            )
+            .decode();
+            if instruction.is_invalid() {
+                return Err(Stop::Error("invalid x86 instruction".to_owned()));
+            }
+            return Ok(instruction);
+        }
         x86_instruction_at(self.image, self.address).map_err(Stop::Error)
     }
 
@@ -1831,8 +1900,10 @@ impl Runner<'_> {
             if let Some(stop) = self.unpack_stop(target) {
                 return Err(stop);
             }
-            self.external_result(convention, Some(0));
-            return Ok(());
+            if !(self.written(target) && self.passing_code(target)) {
+                self.external_result(convention, Some(0));
+                return Ok(());
+            }
         }
         let sp = crate::arch::stack_pointer(self.image.isa);
         let old_sp = match self.eval(&Expr::reg(

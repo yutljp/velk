@@ -54,13 +54,27 @@ function is an import the program resolved while it ran: consecutive words of on
 library become one entry of a new import table, placed with the imports the input
 lists in a section `.idata` of its own, so the recovered code calls its imports by
 name. When the headers have no room for another section the words are left as they
-are. Data after the last section of the input is not copied.
+are. Data after the last section of the input follows the sections of the rebuilt
+file, and a signature directory that pointed into it is cleared.
 
-Emulation runs code in the executable sections of the image only. A program that
-copies the code restoring it into memory it allocates and runs it there stops with
-`reached code outside the image and bounded heap`; so does one whose original entry
-point is in such memory. A library found by walking the loader lists and hashing
-export names is resolved only among the functions the modeled image lists.
+A Windows program may copy the code restoring it into memory it allocates with
+`VirtualAlloc` and run it there. Such code runs like that of the image, read from
+what memory holds when it is reached, and emulation stops at the first written
+address reached in the image itself; the allocated memory is no part of the rebuilt
+file.
+
+A program may instead carry another one and map it into allocated memory: copy its
+headers and sections there, move its addresses, resolve its imports and run it.
+Emulation stops when control reaches written code in an allocation that begins with
+the headers of a PE image, and the rebuilt file is that program alone, with the
+address it was mapped at as its image base and its imports listed once. Other code
+whose original entry point stays in allocated memory is not recovered: emulation
+runs until another limit stops it and reports no unpacking.
+
+A program that finds its imports by walking the loader lists and hashing the export
+names of a library finds them: while unpacking, a modeled library lists every function whose prototype is
+known, not only those emulation has a model of, and a call to one without a model
+returns zero.
 
 For a routine `decode(unsigned char *buffer, unsigned count, unsigned key)` that
 XORs each byte with the key, place an encoded buffer in the heap and pass its

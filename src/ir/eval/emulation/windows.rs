@@ -54,6 +54,8 @@ struct Module {
     path: String,
     base: u64,
     size: u64,
+    /// Where its entry points begin, from the base: 16 bytes each.
+    entries: u64,
     exports: BTreeMap<String, (u64, u32)>,
 }
 
@@ -525,7 +527,14 @@ impl Runner<'_> {
                 );
             }
             if convention == Convention::Stdcall {
-                let cleanup = arguments.len() as u64 * 4;
+                // A function with no model here pops what its prototype
+                // says it takes.
+                let cleanup = if signature(&export).is_some() {
+                    arguments.len() as u64 * 4
+                } else {
+                    crate::analysis::prototypes::i386_import(self.image, &qualified)
+                        .map_or(0, |(_, bytes)| u64::from(bytes))
+                };
                 self.return_cleanup = cleanup;
                 // Known imported calls already have a stack adjustment in their lifted IR.
                 let lifted_cleanup = original

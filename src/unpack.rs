@@ -83,7 +83,7 @@ pub(crate) struct Output {
 
 /// The regions the loader maps: the load segments of an ELF file, the
 /// sections of a PE file.
-fn mapped(image: &Image) -> &[Section] {
+pub(crate) fn mapped(image: &Image) -> &[Section] {
     if image.load_segments.is_empty() {
         &image.sections
     } else {
@@ -184,6 +184,32 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         "requested address" | "written code reached"
     );
     let stop_address = crate::addr::parse(&run.address);
+    // A program mapped into allocated memory is recovered alone.
+    let program = match run.mapped_program.filter(|_| windows && unpacked) {
+        Some(base) => match pe::mapped(&run.memory, base, options.memory_limit) {
+            Ok(file) => Some((base, file)),
+            Err(error) => return Err(error),
+        },
+        None => None,
+    };
+    let program_regions: Vec<Section> = program
+        .iter()
+        .map(|(base, file)| Section {
+            name: "unpacked".to_owned(),
+            vaddr: *base,
+            size: file.len() as u64,
+            file_offset: None,
+            file_size: 0,
+            executable: true,
+            loaded: true,
+            read_only: false,
+        })
+        .collect();
+    let regions = if program.is_some() {
+        &program_regions[..]
+    } else {
+        regions
+    };
     if unpacked
         && stop_address.is_none_or(|address| {
             !in_regions(address, regions) && !(address >= heap_start && address < heap_end)
@@ -194,12 +220,16 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
             run.address
         )));
     }
-    let extra_segments = heap_segments(
-        &run.written_regions,
-        heap_start,
-        heap_end,
-        stop_address.filter(|_| unpacked),
-    );
+    let extra_segments = if program.is_some() {
+        Vec::new()
+    } else {
+        heap_segments(
+            &run.written_regions,
+            heap_start,
+            heap_end,
+            stop_address.filter(|_| unpacked),
+        )
+    };
     let mut mapped = regions
         .iter()
         .filter(|section| section.loaded && section.size != 0)
@@ -272,9 +302,18 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
                 run.address
             )));
         };
-        let rebuilt = if windows {
+        let rebuilt = if let Some((_, file)) = &program {
             pe::rebuild(
-                image,
+                file,
+                &[],
+                entry,
+                &[],
+                &run.windows_exports,
+                options.memory_limit,
+            )
+        } else if windows {
+            pe::rebuild(
+                image.input(),
                 &run.memory,
                 entry,
                 &extra_segments,
