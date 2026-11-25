@@ -1,6 +1,6 @@
 //! Shared support definitions for one or more printed functions.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 mod calls;
 mod structures;
@@ -18,10 +18,16 @@ pub struct Prelude {
 impl Prelude {
     /// Remove marked support sections, retaining their unique definitions.
     pub fn extract(&mut self, code: &str) -> String {
-        let code = self.structures.resolve(code);
-        let code = code.as_str();
+        self.extract_from(code)
+    }
+
+    /// The same; text passed as a `String` is freed as soon as it is read.
+    fn extract_from(&mut self, code: impl AsRef<str>) -> String {
+        let resolved = self.structures.resolve(code.as_ref());
+        drop(code);
+        let code = resolved.as_str();
         let mut rest = code;
-        let mut body = String::new();
+        let mut body = String::with_capacity(code.len());
         while let Some((before, after)) = rest.split_once(START) {
             let Some((definitions, remaining)) = after.split_once(END) else {
                 break;
@@ -67,6 +73,28 @@ impl Prelude {
     }
 
     fn bind_definitions(&mut self, body: &str) {
+        /// The function a prototype among the definitions declares.
+        fn declared(definition: &str) -> Option<&str> {
+            if !definition.ends_with(';') || definition.starts_with('#') || definition.contains('{')
+            {
+                return None;
+            }
+            let Some((before, _)) = definition.split_once('(') else {
+                return None;
+            };
+            before
+                .rsplit(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .next()
+        }
+        let mut prototypes = HashMap::<String, Vec<String>>::new();
+        for definition in &self.definitions {
+            if let Some(name) = declared(definition) {
+                prototypes
+                    .entry(name.to_owned())
+                    .or_default()
+                    .push(definition.clone());
+            }
+        }
         for line in body.lines() {
             if line.starts_with(char::is_whitespace) {
                 continue;
@@ -88,24 +116,11 @@ impl Prelude {
             if name.is_empty() || name == "__attribute__" {
                 continue;
             }
-            let old = self.definitions.len();
-            self.definitions.retain(|definition| {
-                if !definition.ends_with(';')
-                    || definition.starts_with('#')
-                    || definition.contains('{')
-                {
-                    return true;
-                }
-                let Some((before, _)) = definition.split_once('(') else {
-                    return true;
-                };
-                let declared = before
-                    .rsplit(|c: char| !c.is_ascii_alphanumeric() && c != '_')
-                    .next();
-                declared != Some(name)
-            });
-            if self.definitions.len() == old {
+            let Some(replaced) = prototypes.remove(name) else {
                 continue;
+            };
+            for definition in &replaced {
+                self.definitions.remove(definition);
             }
             let words: Vec<_> = signature
                 .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
@@ -113,12 +128,19 @@ impl Prelude {
                 .collect();
             let mut records = BTreeSet::new();
             for pair in words.windows(2) {
-                if matches!(pair[0], "struct" | "union") {
+                // The structures of several results are defined whole.
+                if matches!(pair[0], "struct" | "union") && !pair[1].starts_with("velk_results") {
                     records.insert(format!("{} {}; ", pair[0], pair[1]));
                 }
             }
-            let declaration = format!("{}{signature}", records.into_iter().collect::<String>());
-            self.definitions.insert(format!("{declaration};"));
+            let declaration = format!("{}{signature};", records.into_iter().collect::<String>());
+            if let Some(name) = declared(&declaration) {
+                prototypes
+                    .entry(name.to_owned())
+                    .or_default()
+                    .push(declaration.clone());
+            }
+            self.definitions.insert(declaration);
         }
     }
 
@@ -280,20 +302,26 @@ pub(crate) fn project_section(declarations: &str) -> String {
 /// Combine standalone outputs with their support definitions printed once.
 #[must_use]
 pub fn combine(code: &str) -> String {
+    combine_from(code)
+}
+
+/// The same, freeing the outputs as soon as they are read.
+#[must_use]
+pub fn combine_owned(code: String) -> String {
+    combine_from(code)
+}
+
+fn combine_from(code: impl AsRef<str>) -> String {
     // Each step's text is dropped once the next is made: the output of
     // every function of a large binary is combined in one piece.
-    let named = structures::StructureTagNames::default().resolve(code);
+    let named = structures::StructureTagNames::default().resolve(code.as_ref());
+    drop(code);
     let resolved = super::globals::resolve(&named);
     drop(named);
     let mut prelude = Prelude::default();
-    let body = prelude.extract(&resolved);
-    drop(resolved);
+    let body = prelude.extract_from(resolved);
     prelude.bind_definitions(&body);
-    let conformed = calls::conform(&body);
-    drop(body);
-    let mut combined = prelude.render();
-    combined.push_str(&conformed);
-    combined
+    calls::conform_after(&prelude.render(), &body)
 }
 
 #[cfg(test)]

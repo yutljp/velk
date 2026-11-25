@@ -2,13 +2,74 @@ use super::*;
 
 #[test]
 fn reads_runtime_types_in_both_go_fixtures() {
-    for fixture in ["go_probe", "go_stripped"] {
+    for fixture in ["go_probe", "go_stripped", "go_probe_arm64_1_27"] {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests/fixtures")
             .join(fixture);
         let image = crate::loader::load(&path).unwrap();
         let types = read(&image);
         assert!(!types.layouts.is_empty(), "{fixture}");
+        // Types named only as a field, an element or a parameter are
+        // reached through the descriptors that name them.
+        let names: BTreeSet<&str> = types.names.values().map(String::as_str).collect();
+        for name in [
+            "string",
+            "*runtime.g",
+            "runtime.stack",
+            "[]uint8",
+            "error",
+            "func()",
+        ] {
+            assert!(names.contains(name), "{fixture}: {name}");
+        }
+        assert!(
+            types.names.keys().all(|address| address % 8 == 0),
+            "{fixture}"
+        );
+        // Each interface table joins a named interface and a named type.
+        let joined: BTreeSet<(&str, &str)> = types
+            .tables
+            .values()
+            .map(|(interface, ty)| (types.names[ty].as_str(), types.names[interface].as_str()))
+            .collect();
+        let expected = if fixture == "go_probe_arm64_1_27" {
+            ("maps.unhashableTypeError", "error")
+        } else {
+            ("runtime.errorString", "error")
+        };
+        assert!(joined.contains(&expected), "{fixture}: {joined:?}");
+        assert!(
+            types.tables.keys().all(|address| address % 8 == 0),
+            "{fixture}"
+        );
+        // A method returning a string returns in two registers, through
+        // an interface and called directly; one returning nothing, in none.
+        let function = |name: &str| {
+            image
+                .functions
+                .values()
+                .find(|function| function.name.as_deref() == Some(name))
+                .map(|function| function.addr)
+                .expect(name)
+        };
+        for name in ["runtime.errorString.Error", "runtime.(*errorString).Error"] {
+            assert_eq!(
+                types.methods.get(&function(name)),
+                Some(&Some(2)),
+                "{fixture}: {name}"
+            );
+        }
+        assert!(
+            types.methods.values().any(|results| *results == Some(0)),
+            "{fixture}"
+        );
+        assert!(
+            types
+                .methods
+                .keys()
+                .all(|address| image.functions.contains_key(address)),
+            "{fixture}"
+        );
     }
 }
 

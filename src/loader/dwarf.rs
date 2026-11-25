@@ -197,6 +197,20 @@ fn aggregate_size(
     }
 }
 
+/// Whether the unit holds any type at all.
+fn describes_types(unit: &Unit<EndianSlice<'_, LittleEndian>>) -> bool {
+    let mut entries = unit.entries();
+    while let Ok(Some(entry)) = entries.next_dfs() {
+        if matches!(
+            entry.tag(),
+            gimli::DW_TAG_base_type | gimli::DW_TAG_pointer_type | gimli::DW_TAG_structure_type
+        ) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
     read_function_types(image, addr, TypeDetails::Complete)
 }
@@ -240,6 +254,11 @@ fn read_function_types(image: &Image, addr: u64, details: TypeDetails) -> Option
             }
             if resolve_low(&dwarf, &unit, entry) != Some(addr) {
                 continue;
+            }
+            // A unit made for line numbers alone describes no type: there
+            // a subprogram without one says nothing of what it returns.
+            if attribute(entry, gimli::DW_AT_type).is_none() && !describes_types(&unit) {
+                return None;
             }
             let ret_aggregate_size = match attribute(entry, gimli::DW_AT_type) {
                 Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),

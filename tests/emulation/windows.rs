@@ -1233,6 +1233,32 @@ fn windows_unknown_apis_stop_by_name() {
 }
 
 #[test]
+fn windows_libraries_and_functions_resolve_by_name_when_calls_are_skipped() {
+    let mut interfaces = matrix::Interfaces::new();
+    for architecture in ["x86_64", "i386"] {
+        for optimization in ["O0", "O2"] {
+            let path = fixtures().join(format!("{architecture}.memory.{optimization}.exe"));
+            let binary = Binary::open(&path).unwrap();
+            // The program imports nothing of the library: loading fails
+            // with the error for a module that is not found.
+            let report = interfaces.check(&path, &binary, "load_by_name", options());
+            assert_eq!(report["returnValue"], "0x7e", "{report}");
+            // With calls skipped the library gets a modeled image, each
+            // name an address of its own, and the code section reports
+            // the protection it had.
+            let mut settings = options();
+            settings["skipCalls"] = json!(true);
+            let report = interfaces.check(&path, &binary, "load_by_name", settings.clone());
+            assert_eq!(
+                report["returnValue"], "0x101f",
+                "{architecture} {optimization}: {report}"
+            );
+            assert_eq!(serve(&path, "load_by_name", &settings), report);
+        }
+    }
+}
+
+#[test]
 fn windows_documented_command() {
     let output = Command::new("sh")
         .arg("tests/scripts/make_windows_emulation_fixtures.sh")

@@ -354,13 +354,16 @@ pub(super) fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Ori
                     true
                 }
                 Some(previous) => {
-                    let keys: BTreeSet<_> = previous.keys().chain(state.keys()).copied().collect();
                     let mut changed = false;
-                    for register in keys {
-                        if previous.get(&register) != state.get(&register)
-                            && previous.get(&register) != Some(&None)
-                        {
-                            previous.insert(register, None);
+                    for (register, origin) in previous.iter_mut() {
+                        if origin.is_some() && state.get(register) != Some(origin) {
+                            *origin = None;
+                            changed = true;
+                        }
+                    }
+                    for register in state.keys() {
+                        if !previous.contains_key(register) {
+                            previous.insert(*register, None);
                             changed = true;
                         }
                     }

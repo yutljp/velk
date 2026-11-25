@@ -157,6 +157,15 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             out.push_str(&format!("uint64_t {name};\n"));
         }
     }
+    for (count, name) in &ctx.call_outputs.results {
+        if mentions.contains(name) {
+            indent(1, &mut out);
+            out.push_str(&format!(
+                "{} {name};\n",
+                crate::render::results::type_name(*count)
+            ));
+        }
+    }
     for group in go_groups {
         indent(1, &mut out);
         if group.initial.is_empty() {

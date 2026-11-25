@@ -291,7 +291,10 @@ fn aarch64(bytes: &[u8], addr: u64, max_lines: usize, extent: Extent) -> Vec<Raw
             break;
         };
         match decoder.decode(&mut reader) {
-            Ok(instruction) => {
+            Ok(mut instruction) => {
+                if let Some(word) = bytes.get(index * 4..index * 4 + 4) {
+                    crate::lift::aarch64::written_register(word, &mut instruction);
+                }
                 let reference = aarch64_reference(&instruction, pc, &mut page_register);
                 lines.push(RawInstruction {
                     addr: pc,

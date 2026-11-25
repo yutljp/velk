@@ -240,7 +240,7 @@ fn implicit_pointer_qualification(target: &CType, parameter: &str) -> bool {
         .eq(parameter.split_whitespace().filter(unqualified))
 }
 
-fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {
+pub(super) fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {
     match value {
         Expr::Apply { op, .. } => op.result_precision(),
         Expr::Reg { index, .. } => ctx.floats.get(index).copied(),
@@ -573,6 +573,24 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             } else {
                 format!("return {};", returned(&args[0], ctx))
             }
+        }
+        Stmt::Ret {
+            value:
+                Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                },
+            ..
+        } if ctx.results > 0 && ctx.results == args.len() => {
+            let values: Vec<String> = args
+                .iter()
+                .map(|arg| conformed(arg, stored_value(arg, 64, ctx), None, ctx))
+                .collect();
+            format!(
+                "return ({}){{ {} }};",
+                super::results::type_name(ctx.results),
+                values.join(", ")
+            )
         }
         // Several values, the further ones in a comment.
         Stmt::Ret {

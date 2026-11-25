@@ -35,7 +35,7 @@ pub enum BinaryRef {
         raw: Option<crate::loader::RawOptions>,
         /// Persistent cache path or false to disable it.
         cache: Option<crate::service::CacheLocation>,
-        /// Optional bounded Linux ELF unpacking request.
+        /// Optional bounded unpacking request, for a Linux ELF or a Windows PE.
         unpack: Option<crate::unpack::Options>,
     },
 }
@@ -197,7 +197,7 @@ pub enum Request {
         raw: Option<crate::loader::RawOptions>,
         /// Persistent cache path or false to disable it.
         cache: Option<crate::service::CacheLocation>,
-        /// Optional bounded Linux ELF unpacking request.
+        /// Optional bounded unpacking request, for a Linux ELF or a Windows PE.
         #[serde(default)]
         unpack: Option<crate::unpack::Options>,
     },

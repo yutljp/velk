@@ -118,7 +118,7 @@ pub(super) struct Cli {
     /// Save a successfully unpacked executable to a new file before analysis.
     #[arg(long, conflicts_with_all = ["run", "mcp", "serve", "compare"])]
     pub(super) save_unpacked: Option<PathBuf>,
-    /// Run bounded Linux ELF unpacking before the selected analysis operation.
+    /// Run bounded unpacking of a Linux ELF or a Windows PE before the selected analysis operation.
     #[arg(long, conflicts_with_all = ["run", "mcp", "serve", "compare"])]
     pub(super) unpack: bool,
     /// Stop unpacking before this virtual address; requires --unpack.

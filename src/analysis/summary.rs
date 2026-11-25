@@ -130,7 +130,7 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
 fn summarize(image: &Image, roots: &[u64], cache: &mut HashMap<u64, Summary>, bodies: Bodies) {
     let known_runtime = image.go && image.isa == crate::loader::Isa::X86_64;
     let mut runtime = HashMap::new();
-    let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime);
+    let (edges, recursive) = call_graph(image, roots, cache, &mut runtime, known_runtime, bodies);
     let parts = strongly_connected_components(roots, &edges);
     let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime, bodies);
     cache.extend(runtime);
@@ -382,13 +382,27 @@ fn call_graph(
     known: &HashMap<u64, Summary>,
     runtime: &mut HashMap<u64, Summary>,
     use_runtime: bool,
+    bodies: Bodies,
 ) -> (HashMap<u64, Vec<u64>>, HashSet<u64>) {
     crate::timing::scope!("summary::call_graph");
     let mut edges = HashMap::new();
     let mut recursive = HashSet::new();
     let mut round = roots.to_vec();
     while !round.is_empty() {
-        let found = crate::parallel::map(&round, |addr| callees(image, *addr));
+        let found = crate::parallel::map(&round, |addr| {
+            let found = callees(image, *addr);
+            // A function that calls another is lifted again once its
+            // callees are summarized, so only the body of one that calls
+            // nothing is worth keeping until then: every function of the
+            // binary is lifted here before the first is settled.
+            if bodies == Bodies::Dropped
+                && (found.1 || !found.0.is_empty())
+                && let Some((size, starts)) = lifted_as(image, *addr)
+            {
+                image.lifts.forget(*addr, size, &starts);
+            }
+            found
+        });
         let mut next = Vec::new();
         for (addr, (callees, calls_itself)) in round.into_iter().zip(found) {
             if calls_itself {
@@ -971,13 +985,14 @@ fn compute(
         }
         _ => {
             let mut signature_blocks;
-            let signature_body = if convention == crate::ir::Convention::Aapcs64
-                && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-                    crate::ir::visit::statement_registers(stmt)
-                        .0
-                        .contains(&crate::arch::RETURN)
-                })
-                && super::results::ignored_by_callers(image, addr)
+            let signature_body = if matches!(
+                convention,
+                crate::ir::Convention::Aapcs64 | crate::ir::Convention::GoArm64
+            ) && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                crate::ir::visit::statement_registers(stmt)
+                    .0
+                    .contains(&crate::arch::RETURN)
+            }) && super::results::ignored_by_callers(image, addr)
             {
                 signature_blocks = blocks.as_ref().clone();
                 for stmt in signature_blocks
@@ -1045,7 +1060,9 @@ fn compute(
         .get()
         .filter(|_| image.go)
         .and_then(|sizes| sizes.get(&addr))
-        .map_or(usize::MAX, |&bytes| bytes as usize);
+        .map_or(usize::MAX, |&bytes| bytes as usize)
+        // Its function data may list each register that passes one.
+        .min(crate::loader::go::argument_registers(image, addr).unwrap_or(usize::MAX));
     let summary = Summary {
         promoted_parameters: (!image.go).then(|| {
             signature.params.iter().any(|param| crate::render::promoted_parameter(&param.ty))

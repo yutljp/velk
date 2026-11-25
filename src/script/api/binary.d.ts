@@ -21,7 +21,7 @@ interface Binary {
   sliceOffset: number;
   /** Successful direct recovery; null when the input was not packed. */
   packing: { packer: string; version: string | null; method: string } | null;
-  /** Report from bounded ELF unpacking, or null when unpacking was not requested. */
+  /** Report from bounded unpacking, or null when unpacking was not requested. */
   unpacking: UnpackReport | null;
   /** Save the complete recovered executable; destination must not already exist. */
   saveUnpacked(path: string): { saved: string };

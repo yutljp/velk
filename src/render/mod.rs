@@ -24,6 +24,7 @@ mod naming;
 mod params;
 mod prelude;
 mod provenance;
+mod results;
 pub(crate) mod seh;
 mod stack_bytes;
 mod stmt;
@@ -53,7 +54,7 @@ pub(crate) use function::variable_types;
 pub use function::{render, render_with_dependencies};
 use function::{vacant_name, variable_name};
 pub(crate) use globals::reserved_identifier;
-pub use prelude::{Prelude, combine};
+pub use prelude::{Prelude, combine, combine_owned};
 pub(crate) use prelude::{project_section, promoted_parameter};
 pub(crate) use stmt::render_stmt;
 use stmt::{argument, conformed, narrow_write, returned};
@@ -260,6 +261,10 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 Some((*addr, format!("{method}({tail}")))
             })
             .collect(),
+        go_types: go_values::type_names(image)
+            .into_iter()
+            .map(|(address, _)| address)
+            .collect(),
         go_value_shapes: image
             .functions
             .iter()
@@ -341,6 +346,11 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .data_symbols
             .iter()
             .map(|(address, name)| (*address, name.clone()))
+            .chain(
+                go_values::type_names(image)
+                    .into_iter()
+                    .filter(|(address, _)| !image.data_symbols.contains_key(address)),
+            )
             .collect(),
         ..Symbols::default()
     };

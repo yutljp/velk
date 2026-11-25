@@ -27,6 +27,13 @@ enum ValueType {
 
 impl ValueType {
     fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self {
+        if super::results(call, ctx).is_some() {
+            return Self::Integer {
+                bits: 64,
+                signed: true,
+                zero_extended: false,
+            };
+        }
         let ty = return_type(call, ctx);
         if let Some(precision) = precision(ty) {
             Self::Float(precision)
@@ -194,6 +201,89 @@ fn implicit_void_pointer_conversion(source: &str, target: &str) -> bool {
         .all(|qualifier| target_qualifiers.contains(qualifier))
 }
 
+/// The call as the value of its scalar result: the first member when the
+/// callee returns several values in a structure.
+fn value(call: &Stmt, ctx: &Ctx<'_>) -> String {
+    let text = expression(call, ctx);
+    if super::results(call, ctx).is_some() {
+        format!("{text}.r0")
+    } else {
+        text
+    }
+}
+
+/// The lines that take what a callee returning a structure returns into
+/// the destinations of `used`, when each is a member of it.
+fn members(
+    call: &Stmt,
+    used: &[(usize, &CallOutput)],
+    preserved: &[(usize, u16)],
+    ctx: &Ctx<'_>,
+) -> Option<String> {
+    let Some(count) = super::results(call, ctx) else {
+        return None;
+    };
+    // A register past what the callee returns is no member: it keeps a
+    // line of its own.
+    let mut positions = Vec::new();
+    let mut past = Vec::new();
+    for (index, output) in used {
+        if preserved.iter().any(|(at, _)| at == index) {
+            return None;
+        }
+        match super::result_position(call, output) {
+            Some(position) if position < count => positions.push((*output, position)),
+            _ => past.push(*output),
+        }
+    }
+    if positions.is_empty() {
+        return None;
+    }
+    let word = ValueType::Integer {
+        bits: 64,
+        signed: true,
+        zero_extended: false,
+    };
+    let text = expression(call, ctx);
+    let mut lines = Vec::new();
+    if let [(output, position)] = positions.as_slice() {
+        lines.push(render_assignment(
+            output,
+            format!("{text}.r{position}"),
+            &word,
+            ctx,
+        ));
+    } else {
+        let Some(name) = ctx.call_outputs.results.get(&count) else {
+            return None;
+        };
+        lines.push(format!("{name} = {text};"));
+        for (output, position) in positions {
+            lines.push(render_assignment(
+                output,
+                format!("{name}.r{position}"),
+                &word,
+                ctx,
+            ));
+        }
+    }
+    for output in past {
+        let Some(source) = ctx.call_outputs.sources.get(&output.register) else {
+            return None;
+        };
+        let ty = ValueType::Integer {
+            bits: 64,
+            signed: false,
+            zero_extended: false,
+        };
+        lines.push(format!(
+            "{} /* also returned by the call */",
+            render_assignment(output, source.clone(), &ty, ctx)
+        ));
+    }
+    Some(lines.join("\n"))
+}
+
 pub(in crate::render) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
     let Some(dest) = scalar_fusion(call, ctx) else {
         return None;
@@ -204,7 +294,7 @@ pub(in crate::render) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> 
     let Some(output) = scalar_output(call, ctx) else {
         return None;
     };
-    let value = expression(call, ctx);
+    let value = value(call, ctx);
     let ty = ValueType::returned(call, ctx);
     if let Some(declared) = ctx.declared.get(&dest.index)
         && declared.integer
@@ -242,7 +332,38 @@ pub(in crate::render) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> 
     Some(value)
 }
 
+/// The return of the call itself, when `value` is every value the callee
+/// returns in its structure, each as the call left it.
+fn passed_on(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    let Expr::Apply {
+        op: crate::ir::Operation::Results,
+        args,
+    } = value
+    else {
+        return None;
+    };
+    if ctx.results != args.len()
+        || super::results(call, ctx) != Some(ctx.results)
+        || !call.preserved_output_sources().is_empty()
+    {
+        return None;
+    }
+    for (position, arg) in args.iter().enumerate() {
+        let output = call
+            .call_outputs()
+            .iter()
+            .find(|output| super::result_position(call, output) == Some(position));
+        if !output.is_some_and(|output| *arg == Expr::reg(output.dest.index, 64)) {
+            return None;
+        }
+    }
+    Some(format!("return {};", expression(call, ctx)))
+}
+
 pub(in crate::render) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    if let Some(text) = passed_on(call, value, ctx) {
+        return Some(text);
+    }
     let Some(dest) = scalar_fusion(call, ctx) else {
         return None;
     };
@@ -258,7 +379,7 @@ pub(in crate::render) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> O
             .get(index)
             .is_some_and(|stored| stored.integer && stored.bits >= returned.bits)
     {
-        let value = bits(expression(call, ctx), &ValueType::returned(call, ctx));
+        let value = bits(self::value(call, ctx), &ValueType::returned(call, ctx));
         return Some(format!("return {value};"));
     }
     if *value != Expr::reg(dest.index, dest.width) || ctx.void_return || ctx.float_return.is_some()
@@ -281,7 +402,7 @@ pub(in crate::render) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> O
         && u32::from(dest.width) >= returned.bits
         && stored.bits >= returned.bits
     {
-        let value = expression(call, ctx);
+        let value = self::value(call, ctx);
         let ty = ValueType::returned(call, ctx);
         let value = if returned.bits == 64 {
             projected(value, 64, &ty)
@@ -300,7 +421,7 @@ pub(in crate::render) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> O
         return Some(format!(
             "return {};",
             projected(
-                expression(call, ctx),
+                self::value(call, ctx),
                 dest.width,
                 &ValueType::returned(call, ctx)
             )
@@ -339,12 +460,16 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     }
     let scalar = scalar_output(call, ctx);
     let preserved = call.preserved_output_sources();
+    if let Some(lines) = members(call, &used, &preserved, ctx) {
+        return lines;
+    }
     let scalar_type = ValueType::returned(call, ctx);
+    let scalar_text = self::value(call, ctx);
     if let [(index, output)] = used.as_slice()
         && scalar == Some(*output)
         && !preserved.iter().any(|(preserved, _)| preserved == index)
     {
-        return render_assignment(output, text, &scalar_type, ctx);
+        return render_assignment(output, scalar_text, &scalar_type, ctx);
     }
     let (_, mut reads) = crate::ir::visit::statement_registers(call);
     reads.extend(
@@ -367,7 +492,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 .any(|(index, used)| used == output && !preserved.iter().any(|(at, _)| at == index))
         });
         let mut lines = match primary {
-            Some(output) => vec![render_assignment(output, text, &scalar_type, ctx)],
+            Some(output) => vec![render_assignment(output, scalar_text, &scalar_type, ctx)],
             None => vec![format!("{text};")],
         };
         for (index, output) in &used {
@@ -434,7 +559,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     match scalar_at {
         Some((at, _)) => lines.push(format!(
             "    {temporary}[{at}] = {};",
-            bits(text, &scalar_type)
+            bits(scalar_text, &scalar_type)
         )),
         None => lines.push(format!("    {text};")),
     }

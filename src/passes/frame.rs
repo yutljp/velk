@@ -555,7 +555,10 @@ fn drop_alignment_pushes_unchecked(ir: &mut FunctionIr) {
 }
 
 fn callee_saved(ir: &FunctionIr, reg: u16, sp: u16) -> bool {
-    reg != sp && reg < 32 && !ir.convention.clobbered().contains(&reg)
+    // A function returns through the link register it was entered with
+    // under any convention, Go's included, which keeps no other register.
+    let link = ir.isa == crate::loader::Isa::AArch64 && reg == 30;
+    reg != sp && reg < 32 && (link || !ir.convention.clobbered().contains(&reg))
 }
 
 /// The save stores the register's value on entry: nothing writes it before

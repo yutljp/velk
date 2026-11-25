@@ -1290,9 +1290,13 @@
 #include <stdint.h>
 
 struct go_string { uint8_t * ptr; int64_t len; };
+struct velk_results2 { int64_t r0; int64_t r1; };
 
+extern uint8_t type_int; /* address: 0x46d400 */
+extern uint8_t type_string; /* address: 0x46d1c0 */
+
+struct velk_results2 main_divmod();
 uint64_t main_add();
-uint64_t main_divmod();
 uint64_t main_kindName();
 uint64_t main_sumSlice();
 uint64_t runtime_gwrite();
@@ -1346,18 +1350,18 @@ fn main.add @ 0x466ca0 (size 32)
 == 0x466cc0 main.divmod
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
-int64_t main_divmod(int64_t a0, int64_t a1) {
+struct velk_results2 main_divmod(int64_t a0, int64_t a1) {
     switch (a1) {
     case -1:;
         uint64_t v1 = -(uint64_t)a0;
         uint8_t v2 = 0;
-        return v1; /* also returns v2 */
+        return (struct velk_results2){ v1, v2 };
     case 0:
         runtime_panicdivide();
     default:;
         uint64_t v3 = (__int128)a0 % a1;
         uint64_t v4 = (__int128)a0 / a1;
-        return v4; /* also returns v3 */
+        return (struct velk_results2){ v4, v3 };
     }
 }
 -- signature
@@ -1430,12 +1434,12 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
     }
     int32_t v1 = a0[4];
     if (v1 != 0x778cdb8) {
-        if (v1 != 0xcb735792 || (uintptr_t)a0 != 0x46d400) {
+        if (v1 != 0xcb735792 || (uintptr_t)a0 != (uintptr_t)(&type_int)) {
             return 0;
         }
         return 1;
     }
-    if ((uintptr_t)a0 != 0x46d1c0) {
+    if ((uintptr_t)a0 != (uintptr_t)(&type_string)) {
         return 0;
     }
     return 2;
@@ -1473,14 +1477,15 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x46d400 .rodata */
 /* ref: 0x4967e8 .rodata */
 void main_main(void) {
-    uint64_t v5;
+    struct velk_results2 results;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; } local_2; /* [sp-28] */
     int64_t local_3; /* [sp-30] */
 
-    int64_t v1 = main_divmod(7, 3);
-    int64_t v2 = v5; /* also returned by the call */
+    results = main_divmod(7, 3);
+    int64_t v1 = results.r0;
+    int64_t v2 = results.r1;
     local_0 = v1;
     local_1 = v2;
     local_2.f_0 = 1;
@@ -1498,7 +1503,7 @@ void main_main(void) {
     runtime_printint(local_1);
     runtime_printnl();
     runtime_printunlock();
-    local_3 = ((int64_t)(main_kindName(0x46d400, 0x4967e8)));
+    local_3 = ((int64_t)(main_kindName((&type_int), 0x4967e8)));
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printnl();

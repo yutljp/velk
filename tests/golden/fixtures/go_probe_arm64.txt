@@ -1274,9 +1274,13 @@
 #include <stdint.h>
 
 struct go_string { uint8_t * ptr; int64_t len; };
+struct velk_results2 { int64_t r0; int64_t r1; };
 
+extern uint8_t type_int; /* address: 0x85420 */
+extern uint8_t type_string; /* address: 0x851e0 */
+
+struct velk_results2 main_divmod();
 uint64_t main_add();
-uint64_t main_divmod();
 uint64_t main_kindName();
 uint64_t main_sumSlice();
 uint64_t runtime_gwrite();
@@ -1292,10 +1296,8 @@ void runtime_printunlock();
 -- decompile
 /* velk pseudo-C: runtime.printstring @ 0x40bd0 */
 void runtime_printstring(const void *a0, int64_t a1) {
-    uint64_t g;
     struct go_string string = { .ptr = (uint8_t *)(uintptr_t)a0, .len = (int64_t)a1 };
 
-    int32_t v1 = *(uint64_t *)(g + 0x10);
     runtime_gwrite(string.ptr, string.len, string.len);
 }
 -- signature
@@ -1305,7 +1307,6 @@ void (const void * a0, int64_t a1)
 -- ir
 fn runtime.printstring @ 0x40bd0 (size 128)
   blk0 @ 0x40bd0:
-    v1 = load64((x28 + #0x10))
     br 0x40bdc
   blk1 @ 0x40bdc:
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40420(x0, x1, x1)
@@ -1333,14 +1334,11 @@ fn main.add @ 0x77420 (size 16)
 == 0x77430 main.divmod
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x77430 */
-int64_t main_divmod(int64_t a0, int64_t a1) {
-    uint64_t g;
-
-    int32_t v1 = *(uint64_t *)(g + 0x10);
+struct velk_results2 main_divmod(int64_t a0, int64_t a1) {
     if (a1 == 0) {
         runtime_panicdivide();
     }
-    return (__int128)a0 / a1; /* also returns (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)((__int128)a0 / a1) * a1)) */
+    return (struct velk_results2){ (int64_t)((__int128)a0 / a1), (int64_t)((__int128)a0 % a1) };
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -1349,12 +1347,11 @@ int64_t (int64_t a0, int64_t a1)
 -- ir
 fn main.divmod @ 0x77430 (size 96)
   blk0 @ 0x77430:
-    v1 = load64((x28 + #0x10))
     br 0x7743c
   blk1 @ 0x7743c:
     brif eq x1, #0x0 -> 0x77468
   blk2 @ 0x7744c:
-    ret results((x0 / x1), (x0 - ((x0 / x1) * x1)))
+    ret results((x0 / x1), (x0 % x1))
   blk3 @ 0x77468:
     call 0x3cc80()
     trap
@@ -1406,12 +1403,12 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
     }
     int32_t v1 = a0[4];
     if (v1 != 0x778cdb8) {
-        if (v1 != 0xcb735792 || (uintptr_t)a0 != 0x85420) {
+        if (v1 != 0xcb735792 || (uintptr_t)a0 != (uintptr_t)(&type_int)) {
             return 0;
         }
         return 1;
     }
-    if ((uintptr_t)a0 != 0x851e0) {
+    if ((uintptr_t)a0 != (uintptr_t)(&type_string)) {
         return 0;
     }
     return 2;
@@ -1449,39 +1446,35 @@ fn main.kindName @ 0x774c0 (size 112)
 /* ref: 0x85420 .rodata */
 /* ref: 0xaf010 .rodata */
 void main_main(void) {
-    uint64_t v5;
-    uint64_t g;
-    uint64_t v23;
-    int64_t local_0; /* [sp-60] */
-    int64_t local_1; /* [sp-38] */
-    int64_t local_2; /* [sp-40] */
-    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
+    struct velk_results2 results;
+    int64_t local_0; /* [sp-38] */
+    int64_t local_1; /* [sp-40] */
+    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_2; /* [sp-28] */
+    int64_t local_3; /* [sp-30] */
 
-    int32_t v1 = *(uint64_t *)(g + 0x10);
-    local_0 = v23;
-    int64_t v2 = main_divmod(7, 3);
-    int64_t v3 = v5; /* also returned by the call */
+    results = main_divmod(7, 3);
+    int64_t v1 = results.r0;
+    int64_t v2 = results.r1;
+    local_0 = v1;
     local_1 = v2;
-    local_2 = v3;
-    local_3.f_0 = 1;
-    local_3.f_8 = 2;
-    local_3.f_10 = 3;
-    local_4 = ((int64_t)(main_sumSlice(&local_3.f_0, 3)));
-    local_3.f_18 = ((int64_t)(main_add(1, 2)));
+    local_2.f_0 = 1;
+    local_2.f_8 = 2;
+    local_2.f_10 = 3;
+    local_3 = ((int64_t)(main_sumSlice(&local_2.f_0, 3)));
+    local_2.f_18 = ((int64_t)(main_add(1, 2)));
     runtime_printlock();
-    runtime_printint(local_4);
+    runtime_printint(local_3);
     runtime_printsp();
-    runtime_printint(local_3.f_18);
+    runtime_printint(local_2.f_18);
+    runtime_printsp();
+    runtime_printint(local_0);
     runtime_printsp();
     runtime_printint(local_1);
-    runtime_printsp();
-    runtime_printint(local_2);
     runtime_printnl();
     runtime_printunlock();
-    local_4 = ((int64_t)(main_kindName(0x85420, 0xaf010)));
+    local_3 = ((int64_t)(main_kindName((&type_int), 0xaf010)));
     runtime_printlock();
-    runtime_printint(local_4);
+    runtime_printint(local_3);
     runtime_printnl();
     runtime_printunlock();
 }
@@ -1493,20 +1486,18 @@ void ()
 -- ir
 fn main.main @ 0x77530 (size 240)
   blk0 @ 0x77530:
-    v1 = load64((x28 + #0x10))
     br 0x7753c
   blk1 @ 0x7753c:
-    store64(x30, (sp + #0xffffffffffffffa0))
-    v2:x0, v3:x1, x2 = call 0x77430(#0x7, #0x3)
-    store64(v2, (sp + #0xffffffffffffffc8))
-    store64(v3, (sp + #0xffffffffffffffc0))
+    v1:x0, v2:x1, x2 = call 0x77430(#0x7, #0x3)
+    store64(v1, (sp + #0xffffffffffffffc8))
+    store64(v2, (sp + #0xffffffffffffffc0))
     store64(#0x1, (sp + #0xffffffffffffffd8))
     store64(#0x2, (sp + #0xffffffffffffffe0))
     store64(#0x3, (sp + #0xffffffffffffffe8))
-    v2:x0, x2, x3, x4 = call 0x77490((sp + #0xffffffffffffffd8), #0x3)
-    store64(v2, (sp + #0xffffffffffffffd0))
-    v2:x0 = call 0x77420(#0x1, #0x2)
-    store64(v2, (sp + #0xfffffffffffffff0))
+    v1:x0, x2, x3, x4 = call 0x77490((sp + #0xffffffffffffffd8), #0x3)
+    store64(v1, (sp + #0xffffffffffffffd0))
+    v1:x0 = call 0x77420(#0x1, #0x2)
+    store64(v1, (sp + #0xfffffffffffffff0))
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40340()
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40530()
@@ -1517,12 +1508,12 @@ fn main.main @ 0x77530 (size 240)
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffc0)))
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40570()
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
-    v2:x0, x1, x2 = call 0x774c0(#0x85420, #0xaf010)
-    store64(v2, (sp + #0xffffffffffffffd0))
+    v1:x0, x1, x2 = call 0x774c0(#0x85420, #0xaf010)
+    store64(v1, (sp + #0xffffffffffffffd0))
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40340()
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x40570()
-    v2:x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
+    v1:x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, d0, d1, d2, d3 = call 0x403c0()
     ret #0x0
 -- card
 {"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"unsupported":0}

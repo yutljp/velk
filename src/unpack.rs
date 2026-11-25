@@ -12,6 +12,8 @@ const MAX_MEMORY_LIMIT: usize = 256 << 20;
 const MAX_TIME_LIMIT_MS: u64 = 60_000;
 const PAGE_SIZE: u64 = 4096;
 
+mod pe;
+
 /// Bounds and optional stop address for emulation based unpacking.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
@@ -75,18 +77,32 @@ pub struct Report {
 
 pub(crate) struct Output {
     pub report: Report,
-    pub elf: Option<Vec<u8>>,
+    /// The recovered image, in the format of the input.
+    pub image: Option<Vec<u8>>,
+}
+
+/// The regions the loader maps: the load segments of an ELF file, the
+/// sections of a PE file.
+fn mapped(image: &Image) -> &[Section] {
+    if image.load_segments.is_empty() {
+        &image.sections
+    } else {
+        &image.load_segments
+    }
 }
 
 pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
-    if image.format != Format::Elf {
+    let windows = image.format == Format::Pe && matches!(image.isa, Isa::X86_64 | Isa::I386);
+    if image.format != Format::Elf && !windows {
         return Err(Error::Emulation(
-            "emulation based unpacking currently requires a Linux ELF image".to_owned(),
+            "emulation based unpacking requires a Linux ELF image or a Windows PE image for x86"
+                .to_owned(),
         ));
     }
-    if image.load_segments.is_empty() {
+    let regions = mapped(image);
+    if regions.is_empty() {
         return Err(Error::Emulation(
-            "ELF image has no mapped load regions".to_owned(),
+            "image has no mapped load regions".to_owned(),
         ));
     }
     if options.step_limit > MAX_STEP_LIMIT {
@@ -104,8 +120,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
             "timeLimitMs exceeds {MAX_TIME_LIMIT_MS}"
         )));
     }
-    let mapped_size = image
-        .load_segments
+    let mapped_size = regions
         .iter()
         .filter(|section| section.loaded && section.size != 0)
         .try_fold(0usize, |total, section| {
@@ -123,7 +138,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         )));
     }
     let Some(entry) = image.entry else {
-        return Err(Error::Emulation("ELF image has no entry point".to_owned()));
+        return Err(Error::Emulation("image has no entry point".to_owned()));
     };
     let (heap_start, heap_end) = match crate::emulation::Memory::heap_range_for_unpack(image) {
         Ok(range) => range,
@@ -134,7 +149,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         .is_some_and(|section| section.executable)
     {
         return Err(Error::Emulation(
-            "ELF entry point is not in an executable region".to_owned(),
+            "entry point is not in an executable region".to_owned(),
         ));
     }
     if let Some(stop) = &options.stop_address {
@@ -171,8 +186,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
     let stop_address = crate::addr::parse(&run.address);
     if unpacked
         && stop_address.is_none_or(|address| {
-            !in_regions(address, &image.load_segments)
-                && !(address >= heap_start && address < heap_end)
+            !in_regions(address, regions) && !(address >= heap_start && address < heap_end)
         })
     {
         return Err(Error::Emulation(format!(
@@ -186,8 +200,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         heap_end,
         stop_address.filter(|_| unpacked),
     );
-    let mut mapped = image
-        .load_segments
+    let mut mapped = regions
         .iter()
         .filter(|section| section.loaded && section.size != 0)
         .map(|section| (section.vaddr, section.size))
@@ -203,7 +216,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         let Some(end) = address.checked_add(*size) else {
             continue;
         };
-        for section in &image.load_segments {
+        for section in regions {
             if let Some(range) = intersect(*address, end, section.vaddr, section.size) {
                 written.push(range);
             }
@@ -213,8 +226,7 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         }
     }
     let written_regions = to_regions(merge_ranges(written));
-    let mut executed = image
-        .load_segments
+    let mut executed = regions
         .iter()
         .filter(|section| {
             run.executed_addresses
@@ -253,20 +265,32 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
         executed_regions,
         unpacked,
     };
-    let elf = if unpacked {
+    let recovered = if unpacked {
         let Some(entry) = crate::addr::parse(&run.address) else {
             return Err(Error::Emulation(format!(
                 "invalid emulation stop address: {}",
                 run.address
             )));
         };
-        let rebuilt = match rebuild_elf(
-            image,
-            &run.memory,
-            entry,
-            &extra_segments,
-            options.memory_limit,
-        ) {
+        let rebuilt = if windows {
+            pe::rebuild(
+                image,
+                &run.memory,
+                entry,
+                &extra_segments,
+                &run.windows_exports,
+                options.memory_limit,
+            )
+        } else {
+            rebuild_elf(
+                image,
+                &run.memory,
+                entry,
+                &extra_segments,
+                options.memory_limit,
+            )
+        };
+        let rebuilt = match rebuilt {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
@@ -274,7 +298,10 @@ pub(crate) fn run_image(image: &Image, options: &Options) -> Result<Output> {
     } else {
         None
     };
-    Ok(Output { report, elf })
+    Ok(Output {
+        report,
+        image: recovered,
+    })
 }
 
 fn rebuild_elf(

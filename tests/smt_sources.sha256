@@ -2,7 +2,7 @@
 c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/indirect.rs	fn pointer_value(
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
 4fbbd30b31fcef84cc5899f25cb7b197cd12c50b8049863d2571147d1d399f78  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
-71c6d88d08c29bc422579026a418bccf936e7b6566b9d50c35b6fb189ac2fb64  src/analysis/structures.rs	fn rewrite(
+08e1af2c4258d901de51aadae8d8416f11622724c64153a277ecc8384a3d97fe  src/analysis/structures.rs	fn rewrite(
 614640da82c7164dcd1e11a96fa4404941f208170a0b0796344169283f77abf3  src/analysis/structures.rs	pub(super) fn layout_with_size(
 19954210ca7952d10273993b9a1f77057a22914ce61858178488a189ea81e06c  src/analysis/structures/pointers.rs	pub(super) fn normalize(
 c2ad1e69020a818c202168d6574bd3aa662bf7b10da60e7705cd33c8c35362d9  src/analysis/typing.rs	pub(crate) fn apply_width_types(
@@ -99,7 +99,7 @@ a441886a6bf5b3877d91ab02e8bd7735a82e9b485297044ada18b6da1b03f44a  src/passes/mem
 534a95756fc30892ed8b0c01421be1f601d26291431ecff12fad1343cabcaeaa  src/passes/read_once.rs	fn substitute_masked(
 1160180c855fdf4935e375750b2eeec1c62376f2e5a47c1316bee43759ce364a  src/passes/read_once.rs	fn substitute_tested(
 1d6e7f2048d790f911b4cd152463d5518e112f564ec50296fdf16b4c44f75ed2  src/passes/read_once.rs	pub(crate) fn substitute(
-9a458e849bb099e039ec101d30123155ab9d086d47d40f02d5b5afc53f3c2549  src/passes/simplify.rs	fn algebraic(
+a077480f355671477d9aa3e5e5bdde0fc3e00394695b2cdf4b16c6ffd461d249  src/passes/simplify.rs	fn algebraic(
 41e906bb6303fae6ac302e9466aadcd70390e98ad2b9b801626ed13c455007f4  src/passes/simplify.rs	fn cancel_round_trip(
 7354505c2c69e08efd4a8bf8633a78455d33d9bf7752c0753143e5229b5f053c  src/passes/simplify.rs	fn counted_bits(
 053a3eae1c860f38b76b25ece224da18c96a651bcfc0ca05810a993a7f557fa2  src/passes/simplify.rs	fn fold_offsets(
@@ -114,7 +114,7 @@ c542ea3ae09be21429b1ebec4e5855275cda0d16c7f5ac78b8c5a1da1f716c80  src/passes/sim
 bb6579a5fa30168d61c0fdf0fef1f7f5c0fd8f4db6bf2107387abfd890647fdc  src/passes/widths.rs	pub fn specialize_widths(
 cf000670e99aed0861b79b3b5ca9a8baec01ef2a7f1fced76d08f1af1ee2b06a  src/render/abi_objects.rs	fn rewrite_value(
 ee15b6a0d86466865436bf2ef93beb2060d0db199d469793c3ffeff03f9bc10b  src/render/calls.rs	fn return_type<'a>(
-20297bb00dadfbff5efadf981cd9305e5d2ed93961c16b4a4408fc6a5db82b1d  src/render/calls/outputs.rs	fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self
+3dce6246c9ef69a3913604c14c1a1e98e1f4f92ad8f66b8c266c4a22a6ff20df  src/render/calls/outputs.rs	fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self
 798ef6e453d9cd68735c5b8bf85876e5af02540ff60c16ab4fd13f8a53af88c5  src/render/com_calls.rs	pub(super) fn prepare(
 05d0feb7a50dc3bee4c032dcec12a89472d6afaaf1925511cda5a19d473666c3  src/render/expr.rs	fn arithmetic(
 1a7cd9cb6ff797e5d675c881fd0395bd98ec79d4bd70a9bbd4563e74e906ebb8  src/render/expr.rs	fn binary(
@@ -127,7 +127,7 @@ b00ae40caccfac18642500d008cbf19aafb732f15dcbc9c72d41ee9af1fb935b  src/render/exp
 94d70017f8b320948aa8a3f146a379ad44b08c7c6e0082263eaa12edb8273319  src/render/expr.rs	fn unfitted(
 02ea33969c543eeb26143fdb316a7e32d8a9bf55b6d14d00c060a47ef20b9003  src/render/expr.rs	pub(super) fn print_declared_value(
 4883fa4c92bccb350a54dd882053ad366297b400eed643fd2451f68d53aa5ffd  src/render/expr/condition.rs	fn compared(
-7638d3b4b055a843f6b577fbc6da54311870dbabb30aaa46d05022b958a2e96e  src/render/expr/condition.rs	pub(crate) fn condition(
+9db083575b24487b5ff4a5f77e8a4a0acf30520df8fa2d8dd3d9f394326101db  src/render/expr/condition.rs	pub(crate) fn condition(
 8ff487a64264bf0ce20c673a63e787dc912ca994daa50850e7264c2d77e4376f  src/render/expr/condition.rs	pub(super) fn logic(
 5f132c9a8f51d39925b03107e0a61d4ebbeb876297aac718672f209e6338f0fc  src/render/expr/memory.rs	pub(super) fn byte_sum(
 b0091cdf38df79b16172f7e8ea2a6eb01cc82212bfa7d7856019f8cf4f94e8b2  src/render/expr/memory.rs	pub(super) fn load(
@@ -139,7 +139,7 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
 8d1e498c8b2aeb31240fbeb1272b7b38621495fa6d2c4864a22e14913636c55e  src/render/locals.rs	fn slot_types(
-44544146381519b7b4fa4fb4e5bfbc7ce3d43c05fd7e7afc6f537f16da919e21  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
+6be21c9feda6ad92b9f96489299e12292fd4d7017ce4979e0b6aa3fcff6b4dfa  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 efd49598d2f2a58dbde8597563ca3459d92dc41221597e7c853928187e640d99  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 384408574e799baa7becbf1adbc451411a8a91216564a79138825b6770c32c0c  src/render/locals/returns.rs	fn replace_returns(
@@ -147,7 +147,7 @@ b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/loc
 f9e7d043201a52f00a838e7fcd85b84fcccf5c9c5597f08b820ecc28a83fd6f7  src/render/params.rs	fn drop_unused_parameter_outputs(
 9799d726329fe02e2799764a899a6883547131980c21e0268de1521baaa82d7e  src/render/params.rs	fn fold_parameter_copies(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
-66ce10303f8f57ececb8e64aef1e5b35e5ab6f2fcdb8dd4703fc68dc6614e649  src/render/prelude/calls.rs	pub(super) fn conform(code: &str) -> String
+182f2eacfa71c80f250e364996f076db86356694220eacfd5d826fa765ff74df  src/render/prelude/calls.rs	fn conversions<'code>(
 f6d2b0045015ba544bb52366dfc3e54acfc9c37a44a54824e871799ca1145187  src/render/stack_bytes.rs	fn rewrite_address(
 75d50d9d755c1e79af7666814fb0d744acef9c069461d8abccb345a2c99170de  src/render/stmt.rs	fn function_address(value: &Expr, ctx: &Ctx<'_>) -> bool
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(

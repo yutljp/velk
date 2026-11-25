@@ -250,10 +250,6 @@ fn _branch_bz @ 0xb8 (size 4)
 -- decompile
 /* velk pseudo-C: _invoke_a @ 0xbc */
 int32_t invoke_a(void *a0) {
-    uint64_t v3;
-    int64_t local_1; /* [sp-8] */
-
-    local_1 = v3;
     return ((uint64_t (*)())a0)();
 }
 -- signature
@@ -264,7 +260,6 @@ int32_t (void * a0)
 fn _invoke_a @ 0xbc (size 16)
   blk0 @ 0xbc:
     store64(#0x0, (sp + #0xfffffffffffffff0))
-    store64(x30, (sp + #0xfffffffffffffff8))
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
@@ -274,10 +269,6 @@ fn _invoke_a @ 0xbc (size 16)
 -- decompile
 /* velk pseudo-C: _invoke_b @ 0xcc */
 int32_t invoke_b(void *a0) {
-    uint64_t v3;
-    int64_t local_1; /* [sp-8] */
-
-    local_1 = v3;
     return ((uint64_t (*)())a0)();
 }
 -- signature
@@ -288,7 +279,6 @@ int32_t (void * a0)
 fn _invoke_b @ 0xcc (size 16)
   blk0 @ 0xcc:
     store64(#0x0, (sp + #0xfffffffffffffff0))
-    store64(x30, (sp + #0xfffffffffffffff8))
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
@@ -298,10 +288,6 @@ fn _invoke_b @ 0xcc (size 16)
 -- decompile
 /* velk pseudo-C: _invoke_az @ 0xdc */
 int32_t invoke_az(void *a0) {
-    uint64_t v3;
-    int64_t local_1; /* [sp-8] */
-
-    local_1 = v3;
     return ((uint64_t (*)())a0)();
 }
 -- signature
@@ -312,7 +298,6 @@ int32_t (void * a0)
 fn _invoke_az @ 0xdc (size 16)
   blk0 @ 0xdc:
     store64(#0x0, (sp + #0xfffffffffffffff0))
-    store64(x30, (sp + #0xfffffffffffffff8))
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
@@ -322,10 +307,6 @@ fn _invoke_az @ 0xdc (size 16)
 -- decompile
 /* velk pseudo-C: _invoke_bz @ 0xec */
 int32_t invoke_bz(void *a0) {
-    uint64_t v3;
-    int64_t local_1; /* [sp-8] */
-
-    local_1 = v3;
     return ((uint64_t (*)())a0)();
 }
 -- signature
@@ -336,7 +317,6 @@ int32_t (void * a0)
 fn _invoke_bz @ 0xec (size 16)
   blk0 @ 0xec:
     store64(#0x0, (sp + #0xfffffffffffffff0))
-    store64(x30, (sp + #0xfffffffffffffff8))
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card

@@ -1,8 +1,17 @@
 //! Counts explicit conversions in printed C.
 
 /// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.
+/// A type before a brace, as in `(struct s1){ 1, 2 }`, writes a value of
+/// the type and converts nothing.
 pub(crate) fn casts(code: &str) -> usize {
-    parenthesized_text(code)
+    code.match_indices('(')
+        .filter_map(|(start, _)| {
+            let rest = &code[start + 1..];
+            let Some(end) = rest.find(')') else {
+                return None;
+            };
+            (!rest[end + 1..].starts_with('{')).then_some(&rest[..end])
+        })
         .filter(|ty| {
             let ty = ty.trim();
             let mut inner = ty.trim_end_matches([' ', '*']);
@@ -94,6 +103,8 @@ mod tests {
             ("(float)", 1, 1),
             ("(uint_t + x)", 0, 0),
             ("(outer(uint64_t))", 1, 1),
+            ("(struct item){ 1 }", 0, 1),
+            ("(struct item) { 1 }", 1, 1),
             ("(uint64_t", 0, 0),
         ];
         for (text, general, transfer) in cases {

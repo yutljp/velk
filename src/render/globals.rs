@@ -58,8 +58,10 @@ struct Used<'shared> {
     names: super::names::Names<'shared>,
 }
 
+/// What the symbol tables say about the data of the binary: the same for
+/// every function, so built once.
 #[derive(Default)]
-pub(super) struct Globals<'shared> {
+pub(crate) struct Base {
     linkable: HashSet<u64>,
     types: HashMap<u64, CType>,
     sizes: HashMap<u64, u64>,
@@ -67,15 +69,21 @@ pub(super) struct Globals<'shared> {
     names: HashMap<u64, String>,
     repeated: HashSet<String>,
     bindings: HashMap<u64, (String, i64)>,
+}
+
+/// The data one function names. `types`, `sizes` and `names` hold what the
+/// function adds to, or replaces in, those of `base`.
+#[derive(Default)]
+pub(super) struct Globals<'shared> {
+    base: std::sync::Arc<Base>,
+    types: HashMap<u64, CType>,
+    sizes: HashMap<u64, u64>,
+    names: HashMap<u64, String>,
     used: RefCell<Used<'shared>>,
 }
 
-impl<'shared> Globals<'shared> {
-    pub(super) fn new(
-        symbols: &super::Symbols,
-        shared: impl IntoIterator<Item = &'shared HashSet<String>>,
-        reserved: impl IntoIterator<Item = String>,
-    ) -> Self {
+impl Base {
+    pub(super) fn new(symbols: &super::Symbols) -> Self {
         let mut names: HashMap<_, _> = symbols
             .import_slots
             .iter()
@@ -144,18 +152,50 @@ impl<'shared> Globals<'shared> {
                         .map(|name| (*slot, (super::sanitize(name), *addend)))
                 })
                 .collect(),
+        }
+    }
+}
+
+impl<'shared> Globals<'shared> {
+    pub(super) fn new(
+        symbols: &super::Symbols,
+        shared: impl IntoIterator<Item = &'shared HashSet<String>>,
+        reserved: impl IntoIterator<Item = String>,
+    ) -> Self {
+        Self {
+            base: symbols.globals(),
             used: RefCell::new(Used {
                 names: super::names::Names::over(shared, reserved),
                 ..Used::default()
             }),
+            ..Self::default()
         }
+    }
+
+    fn name(&self, address: &u64) -> Option<&String> {
+        self.names
+            .get(address)
+            .or_else(|| self.base.names.get(address))
+    }
+
+    fn ty(&self, address: &u64) -> Option<&CType> {
+        self.types
+            .get(address)
+            .or_else(|| self.base.types.get(address))
+    }
+
+    fn size(&self, address: &u64) -> Option<u64> {
+        self.sizes
+            .get(address)
+            .or_else(|| self.base.sizes.get(address))
+            .copied()
     }
 
     pub(super) fn pointer(&self, address: u64, view: View) -> String {
         if let Some(ty) = self.target(address)
             && match view {
-                View::Unsigned(width) if self.headers.contains_key(&address) => {
-                    self.sizes.get(&address) == Some(&u64::from(width))
+                View::Unsigned(width) if self.base.headers.contains_key(&address) => {
+                    self.size(&address) == Some(u64::from(width))
                 }
                 View::Unsigned(width) => ty
                     .integer()
@@ -169,7 +209,7 @@ impl<'shared> Globals<'shared> {
         if let Some((base, offset)) = self.containing(address)
             && offset
                 .checked_add(view.width())
-                .is_some_and(|end| end <= self.sizes[&base])
+                .is_some_and(|end| self.size(&base).is_some_and(|size| end <= size))
             && let Some(pointer) = self.object_pointer(base)
         {
             return if offset == 0 {
@@ -184,14 +224,13 @@ impl<'shared> Globals<'shared> {
             return format!("(&{})", global.name);
         }
         let base = self
-            .names
-            .get(&address)
+            .name(&address)
             .cloned()
             .unwrap_or_else(|| format!("g_{address:x}"));
         let mut name = base.clone();
         if let Some(name_at_address) = used.view_names.get(&address) {
             name = format!("{name_at_address}_{}", view.suffix());
-        } else if self.repeated.contains(&base) || used.names.contains(&name) {
+        } else if self.base.repeated.contains(&base) || used.names.contains(&name) {
             name = format!("{base}_{address:x}");
         }
         let name = super::vacant_name(&name, &mut used.names);
@@ -224,14 +263,14 @@ impl<'shared> Globals<'shared> {
         layouts: &HashMap<String, super::naming::Layout>,
     ) {
         for (address, ty, size) in &ir.debug_globals {
-            if self.headers.contains_key(address) {
+            if self.base.headers.contains_key(address) {
                 continue;
             }
-            let Some(name) = self.names.get(address) else {
+            let Some(name) = self.name(address) else {
                 continue;
             };
-            if !self.linkable.contains(address)
-                || self.repeated.contains(name)
+            if !self.base.linkable.contains(address)
+                || self.base.repeated.contains(name)
                 || self.used.borrow().names.contains(name)
                 || !ir
                     .definitions
@@ -277,9 +316,11 @@ impl<'shared> Globals<'shared> {
             }
         }
         self.used.borrow_mut().names.extend(
-            self.types
+            self.base
+                .types
                 .keys()
-                .filter_map(|address| self.names.get(address))
+                .chain(self.types.keys())
+                .filter_map(|address| self.name(address))
                 .cloned(),
         );
     }
@@ -292,17 +333,17 @@ impl<'shared> Globals<'shared> {
             let Some(name) = guid.names.first() else {
                 continue;
             };
-            if self.types.contains_key(&reference.addr) {
+            if self.ty(&reference.addr).is_some() {
                 continue;
             }
-            if self.names.get(&reference.addr).is_none_or(|name| {
-                self.repeated.contains(name) || self.used.borrow().names.contains(name)
+            if self.name(&reference.addr).is_none_or(|name| {
+                self.base.repeated.contains(name) || self.used.borrow().names.contains(name)
             }) {
                 let mut used = self.used.borrow_mut();
-                used.names.extend(self.names.values().cloned());
+                used.names
+                    .extend(self.base.names.values().chain(self.names.values()).cloned());
                 let base = self
-                    .names
-                    .get(&reference.addr)
+                    .name(&reference.addr)
                     .map_or(name.as_str(), String::as_str);
                 let name = super::vacant_name(base, &mut used.names);
                 self.names.insert(reference.addr, name);
@@ -316,28 +357,34 @@ impl<'shared> Globals<'shared> {
     }
 
     pub(super) fn target(&self, address: u64) -> Option<CType> {
-        self.types.get(&address).map(|ty| match ty {
+        self.ty(&address).map(|ty| match ty {
             CType::Array(element) => element.as_ref().clone(),
             ty => ty.clone(),
         })
     }
 
     pub(super) fn header_object(&self, address: u64, width: u8) -> Option<(String, CType)> {
-        if !self.headers.contains_key(&address)
-            || self.sizes.get(&address) != Some(&u64::from(width))
+        if !self.base.headers.contains_key(&address)
+            || self.size(&address) != Some(u64::from(width))
         {
             return None;
         }
         let Some(pointer) = self.object_pointer(address) else {
             return None;
         };
-        Some((format!("*{pointer}"), self.types[&address].clone()))
+        Some((format!("*{pointer}"), self.ty(&address)?.clone()))
     }
 
     pub(super) fn containing(&self, address: u64) -> Option<(u64, u64)> {
+        let inherited = self
+            .base
+            .sizes
+            .iter()
+            .filter(|(start, _)| !self.sizes.contains_key(start));
         let mut found = self
             .sizes
             .iter()
+            .chain(inherited)
             .filter(|(start, size)| address >= **start && address - **start < **size);
         let Some((start, _)) = found.next() else {
             return None;
@@ -349,10 +396,10 @@ impl<'shared> Globals<'shared> {
     }
 
     pub(super) fn object_pointer(&self, address: u64) -> Option<String> {
-        let Some(ty) = self.types.get(&address) else {
+        let Some(ty) = self.ty(&address) else {
             return None;
         };
-        let Some(name) = self.names.get(&address) else {
+        let Some(name) = self.name(&address) else {
             return None;
         };
         self.used.borrow_mut().objects.insert(address, name.clone());
@@ -370,14 +417,15 @@ impl<'shared> Globals<'shared> {
             .iter()
             .filter(|(_, name)| super::function::code_mentions(body, name))
             .map(|(address, name)| {
-                if let Some(header) = self.headers.get(address) {
+                if let Some(header) = self.base.headers.get(address) {
                     return format!("#include <{header}>\n\n");
                 }
                 format!(
                     "extern {}; /* address: 0x{address:x} */\n\n",
-                    match &self.types[address] {
-                        CType::Array(element) => format!("{element} {name}[]"),
-                        ty => super::declaration(ty, name),
+                    match self.ty(address) {
+                        Some(CType::Array(element)) => format!("{element} {name}[]"),
+                        Some(ty) => super::declaration(ty, name),
+                        None => name.clone(),
                     }
                 )
             })
@@ -457,7 +505,7 @@ impl<'shared> Globals<'shared> {
             declarations.push_str(&format!(
                 "extern {ty} {name}{suffix}; /* address: 0x{base:x} */\n\n"
             ));
-            if let Some((symbol, addend)) = self.bindings.get(&base) {
+            if let Some((symbol, addend)) = self.base.bindings.get(&base) {
                 declarations.push_str(&format!(
                     "/* Initial pointer: {symbol}, byte addend {addend}. */\n\n"
                 ));

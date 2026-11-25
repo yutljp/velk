@@ -42,6 +42,23 @@ pub(super) fn callees(input: &Input<'_>) -> String {
             .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
         call_returns.insert(name, ty);
     }
+    let results: Vec<(String, CType)> = ir
+        .callee_results
+        .iter()
+        .map(|(address, count)| {
+            let name = symbols
+                .functions
+                .get(address)
+                .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
+            (
+                name,
+                CType::Named(crate::render::results::type_name(*count)),
+            )
+        })
+        .collect();
+    for (name, ty) in &results {
+        call_returns.insert(name.clone(), ty);
+    }
     // The callees whose calls are printed with their declarations are
     // declared as their debug information declares them.
     let mut declared_callees: HashMap<String, String> = ir

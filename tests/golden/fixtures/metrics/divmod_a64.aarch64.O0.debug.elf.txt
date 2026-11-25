@@ -253,7 +253,7 @@ fn smod10 @ 0x2104fc (size 36)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x210520 */
 long long lmod10(long long x) {
-    return (uint64_t)x - (int64_t)((uint64_t)(x / 10) * 10);
+    return x % 10;
 }
 -- signature
 long long (long long x)
@@ -262,7 +262,7 @@ long long (long long x)
 -- ir
 fn lmod10 @ 0x210520 (size 36)
   blk0 @ 0x210520:
-    ret (x0 - ((x0 / #0xa) * #0xa))
+    ret (x0 % #0xa)
 -- card
 {"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
@@ -287,7 +287,7 @@ fn umod10b @ 0x210544 (size 36)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x210568 */
 long long lmod16(long long x) {
-    return (uint64_t)x - (int64_t)((uint64_t)(x / 16) * 16);
+    return x % 16;
 }
 -- signature
 long long (long long x)
@@ -296,7 +296,7 @@ long long (long long x)
 -- ir
 fn lmod16 @ 0x210568 (size 36)
   blk0 @ 0x210568:
-    ret (x0 - ((x0 / #0x10) * #0x10))
+    ret (x0 % #0x10)
 -- card
 {"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
@@ -406,7 +406,7 @@ fn lnegate @ 0x210620 (size 28)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x21063c */
 long long lmod3(long long x) {
-    return (uint64_t)x - (int64_t)((uint64_t)(x / 3) * 3);
+    return x % 3;
 }
 -- signature
 long long (long long x)
@@ -415,7 +415,7 @@ long long (long long x)
 -- ir
 fn lmod3 @ 0x21063c (size 36)
   blk0 @ 0x21063c:
-    ret (x0 - ((x0 / #0x3) * #0x3))
+    ret (x0 % #0x3)
 -- card
 {"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 

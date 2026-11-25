@@ -80,25 +80,25 @@ pub(crate) struct CallSource {
     pub required_definitions: Vec<TypeSource>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum CallTransport {
     Register { register: u16, bytes: u8 },
     Stack { offset: i64, bytes: u8 },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct CallInputPiece {
     pub object_offset: u64,
     pub source: CallTransport,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum CallInput {
     Direct(Vec<CallInputPiece>),
     Indirect { pointer: CallTransport },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum CallFallback {
     Named { count: usize, floats_named: bool },
     Implicit { floats_named: bool },
@@ -115,6 +115,36 @@ pub struct CallAbi {
     pub(crate) dependencies: Vec<u16>,
     pub(crate) deferred_memory: bool,
     pub(crate) fallback: CallFallback,
+}
+
+/// Two calls made through one declaration in the same way. Declarations
+/// are compared by identity: the copies of a call share theirs.
+impl PartialEq for CallAbi {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.declaration, &other.declaration)
+            && self.kind == other.kind
+            && self.target == other.target
+            && self.convention == other.convention
+            && self.arguments == other.arguments
+            && self.hidden_result == other.hidden_result
+            && self.dependencies == other.dependencies
+            && self.deferred_memory == other.deferred_memory
+            && self.fallback == other.fallback
+    }
+}
+
+impl std::hash::Hash for CallAbi {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Arc::as_ptr(&self.declaration).hash(state);
+        self.kind.hash(state);
+        self.target.hash(state);
+        self.convention.hash(state);
+        self.arguments.hash(state);
+        self.hidden_result.hash(state);
+        self.dependencies.hash(state);
+        self.deferred_memory.hash(state);
+        self.fallback.hash(state);
+    }
 }
 
 #[cfg(test)]

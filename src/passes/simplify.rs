@@ -702,6 +702,34 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
     {
         return Expr::bin(BinOp::ModU, low32(lhs).clone(), divisor.as_ref().clone());
     }
+    // So it is at the full width, signed or not: the product wraps as the
+    // quotient of the least value by minus one does, and leaves zero.
+    if let Expr::Bin {
+        op: BinOp::Sub,
+        lhs,
+        rhs,
+    } = &expr
+        && let Expr::Bin {
+            op: BinOp::Mul,
+            lhs: quotient,
+            rhs: times,
+        } = rhs.as_ref()
+        && let Expr::Bin {
+            op: op @ (BinOp::DivS | BinOp::DivU),
+            lhs: dividend,
+            rhs: divisor,
+        } = quotient.as_ref()
+        && times == divisor
+        && dividend == lhs
+        && crate::ir::semantics::width(lhs) == 64
+    {
+        let remainder = if *op == BinOp::DivS {
+            BinOp::ModS
+        } else {
+            BinOp::ModU
+        };
+        return Expr::bin(remainder, lhs.as_ref().clone(), divisor.as_ref().clone());
+    }
     // Only where the operations around it see the same width.
     if let Some(whole) = reassembled(&expr)
         && crate::ir::semantics::width(&whole) == crate::ir::semantics::width(&expr)

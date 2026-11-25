@@ -470,6 +470,28 @@ fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
         if !calls_growth {
             continue;
         }
+        // What the check compares is read for it alone: the stack limit,
+        // which AArch64 loads into a scratch register first, and for a
+        // large frame the stack pointer less the frame.
+        let Some(Stmt::Brif { lhs, rhs, .. }) = blocks[index].stmts.last() else {
+            continue;
+        };
+        let sp = crate::arch::stack_pointer(image.isa);
+        let mut compared = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(lhs, &mut compared);
+        crate::ir::visit::collect_reads(rhs, &mut compared);
+        compared.remove(&sp);
+        let stmts = &mut blocks[index].stmts;
+        let mut kept = stmts.len() - 1;
+        while kept > 0
+            && let Stmt::Assign { dest, value, .. } = &stmts[kept - 1]
+            && compared.contains(&dest.index)
+        {
+            crate::ir::visit::collect_reads(value, &mut compared);
+            compared.remove(&sp);
+            kept -= 1;
+        }
+        stmts.drain(kept..stmts.len() - 1);
         // The check falls through into the body.
         *blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br {
             target: Some(next),
@@ -1183,12 +1205,31 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // in the return register returns nothing either. A linkage stub returns
     // what the library function does, whatever these callers make of it.
     // So does one that returns on some path with the register unset.
+    // A Go function returns as many values as its callers read.
+    let further =
+        if (image.go || declared.is_none()) && float_return.is_none() && stack_results.is_empty() {
+            results::further_results(image, function.addr)
+        } else {
+            0
+        };
+    // A Go method returns what the method table of its type says.
+    let listed = if float_return.is_none() && stack_results.is_empty() {
+        results::method_results(image, function.addr)
+    } else {
+        None
+    };
     let ignored = declared.is_none()
         && float_return.is_none()
         && stack_results.is_empty()
+        && further == 0
         && !function.sources.contains(&crate::loader::NameSource::Plt)
-        && (results::ignored_by_callers(image, function.addr)
-            || results::returns_unset(&blocks, image.convention_of(function.addr)));
+        && match listed {
+            Some(results) => results == 0,
+            None => {
+                results::ignored_by_callers(image, function.addr)
+                    || results::returns_unset(&blocks, image.convention_of(function.addr))
+            }
+        };
     // A function the debug info says returns nothing returns no register.
     if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
@@ -1204,12 +1245,6 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             }
         }
     }
-    // A Go function returns as many values as its callers read.
-    let further = if image.go && float_return.is_none() && !ignored && stack_results.is_empty() {
-        results::further_results(image, function.addr)
-    } else {
-        0
-    };
     if further > 0 {
         let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
         let returned: Vec<crate::ir::Expr> = convention.results()[..=further]
@@ -1292,6 +1327,18 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             image.isa,
             image.convention_of(function.addr),
         );
+    }
+    // Go lists the registers that pass a function's arguments: one read
+    // past them, as one handed on to a callee is, is no parameter.
+    if let Some(listed) = crate::loader::go::argument_registers(image, function.addr) {
+        let arguments = image.convention_of(function.addr).arguments();
+        signature.params.retain(|param| {
+            param.name == "closure"
+                || arguments
+                    .iter()
+                    .position(|register| *register == param.index)
+                    .is_none_or(|position| position < listed)
+        });
     }
     // Read only now, the results are no arguments to the signature.
     if let Some(first) = stack_results.first() {
@@ -1403,6 +1450,9 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         frame_bottom: 0,
         entry_alignment: entry_alignment(image, function.addr),
         callee_signatures: Default::default(),
+        callee_results: Default::default(),
+        listed_callees: Default::default(),
+        callee_floats: Default::default(),
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,

@@ -245,29 +245,55 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             if c_string(position) {
                 continue;
             }
-            let known = references.iter().position(|known| known.addr == *addr);
-            if known.is_some_and(|known| {
-                references[known].text.is_some() || references[known].guid.is_some()
-            }) {
-                continue;
-            }
-            let Some((section, text)) = sized_string(image, *addr, *length) else {
-                continue;
-            };
-            match known {
-                Some(known) => references[known].text = Some(text),
-                None => references.push(Reference {
-                    addr: *addr,
-                    section,
-                    text: Some(text),
-                    pointer: None,
-                    guid: super::prototypes::guid_at(image, *addr),
-                }),
+            note_sized_string(&mut references, image, *addr, *length);
+        }
+    }
+    // A string among the values a Go function returns is a pointer and a
+    // length too.
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let Stmt::Ret {
+            value:
+                Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                },
+            ..
+        } = stmt
+        else {
+            continue;
+        };
+        for pair in args.windows(2) {
+            if let (Expr::Const(addr), Expr::Const(length)) = (&pair[0], &pair[1]) {
+                note_sized_string(&mut references, image, *addr, *length);
             }
         }
     }
     references.sort_by_key(|reference| reference.addr);
     references
+}
+
+/// Records the `length` characters at `addr` as a string, unless the
+/// address already reads as one or as an identifier.
+fn note_sized_string(references: &mut Vec<Reference>, image: &Image, addr: u64, length: u64) {
+    let known = references.iter().position(|known| known.addr == addr);
+    if known
+        .is_some_and(|known| references[known].text.is_some() || references[known].guid.is_some())
+    {
+        return;
+    }
+    let Some((section, text)) = sized_string(image, addr, length) else {
+        return;
+    };
+    match known {
+        Some(known) => references[known].text = Some(text),
+        None => references.push(Reference {
+            addr,
+            section,
+            text: Some(text),
+            pointer: None,
+            guid: super::prototypes::guid_at(image, addr),
+        }),
+    }
 }
 
 fn string_section(name: &str) -> bool {

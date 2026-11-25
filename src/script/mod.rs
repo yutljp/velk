@@ -150,7 +150,7 @@ impl Engine {
             outcome.error = Some(format!("timed out after {millis} ms"));
             outcome.stack = None;
         }
-        outcome.output = crate::render::combine(&outcome.output);
+        outcome.output = crate::render::combine_owned(std::mem::take(&mut outcome.output));
         outcome
     }
 
@@ -215,7 +215,8 @@ impl Engine {
         let finished = ctx
             .globals()
             .get::<_, Function>("__velkFinish")
-            .and_then(|finish| finish.call::<_, String>((value,)))
+            .and_then(|finish| finish.call::<_, ()>((value,)))
+            .and_then(|()| drain(ctx))
             .catch(ctx);
         let (output, failure) = match finished {
             Ok(output) => (
@@ -279,6 +280,29 @@ impl Engine {
             return Err(error);
         }
         eval_named(ctx, PRELUDE, PRELUDE_NAME)
+    }
+}
+
+/// The logged output, taken from the script a piece at a time.
+fn drain(ctx: &Ctx<'_>) -> rquickjs::Result<String> {
+    let next = match ctx.globals().get::<_, Function>("__velkDrain") {
+        Ok(next) => next,
+        Err(error) => return Err(error),
+    };
+    let mut output = String::new();
+    let mut first = true;
+    loop {
+        match next.call::<_, Option<String>>(()) {
+            Ok(Some(piece)) => {
+                if !first {
+                    output.push('\n');
+                }
+                first = false;
+                output.push_str(&piece);
+            }
+            Ok(None) => return Ok(output),
+            Err(error) => return Err(error),
+        }
     }
 }
 

@@ -134,20 +134,30 @@ pub(crate) fn order_switch_cases(nodes: &mut [Node]) {
                 position += 1;
             }
         }
+        // The first case that starts at each label.
+        let mut first = std::collections::HashMap::new();
+        for (position, (_, body)) in arms.iter().enumerate() {
+            for node in body {
+                let Node::Label(label) = node else {
+                    break;
+                };
+                first.entry(*label).or_insert(position);
+            }
+        }
         let next: Vec<Option<usize>> = arms
             .iter()
             .map(|(_, body)| match body.last() {
                 Some(Node::Stmt(Stmt::Br {
                     target: Some(target),
                     ..
-                })) => arms.iter().position(|(_, body)| starts_at(body, *target)),
+                })) => first.get(target).copied(),
                 _ => {
                     let mut targets = std::collections::HashSet::new();
                     super::collect_targets(body, &mut targets);
-                    arms.iter().position(|(_, body)| {
-                        body.iter().take_while(|node| matches!(node, Node::Label(_)))
-                            .any(|node| matches!(node, Node::Label(label) if targets.contains(label)))
-                    })
+                    targets
+                        .iter()
+                        .filter_map(|target| first.get(target).copied())
+                        .min()
                 }
             })
             .collect();

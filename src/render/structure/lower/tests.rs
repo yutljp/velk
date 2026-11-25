@@ -25,21 +25,15 @@ fn instruction_origins_do_not_change_exception_site_matching() {
         clobbers: None,
         via: None,
     };
-    let original = vec![super::exception_statement(&call)];
+    let original = super::exception_statement(&call);
     let mut moved = call;
     moved.set_origin(Some(0x20));
-    assert!(super::matches_exception_site(
-        std::slice::from_ref(&moved),
-        &original
-    ));
+    assert_eq!(super::exception_statement(&moved), original);
     let Stmt::Call { target, .. } = &mut moved else {
         panic!("call remains a call");
     };
     *target = Some(0x40);
-    assert!(!super::matches_exception_site(
-        std::slice::from_ref(&moved),
-        &original
-    ));
+    assert_ne!(super::exception_statement(&moved), original);
 }
 
 #[test]

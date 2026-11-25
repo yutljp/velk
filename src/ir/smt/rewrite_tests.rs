@@ -554,6 +554,59 @@ fn quotient_arithmetic_and_range_masks_are_equivalent() {
 }
 
 #[test]
+fn full_width_multiply_back_remainders_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let x = Expr::reg(0, 64);
+    let multiplied_back = |op: BinOp, divisor: Expr| {
+        raw_bin(
+            BinOp::Sub,
+            x.clone(),
+            raw_bin(BinOp::Mul, raw_bin(op, x.clone(), divisor.clone()), divisor),
+        )
+    };
+    for (op, remainder) in [(BinOp::DivS, BinOp::ModS), (BinOp::DivU, BinOp::ModU)] {
+        // A divisor in a register, and the constants at which the signed
+        // quotient wraps or the product does.
+        let after = crate::passes::simplify::algebraic(multiplied_back(op, Expr::reg(1, 64)));
+        assert_eq!(
+            after,
+            raw_bin(remainder, x.clone(), Expr::reg(1, 64)),
+            "{op:?}"
+        );
+        for divisor in [1, 2, 8, u64::MAX, 1 << 63] {
+            let before = multiplied_back(op, Expr::Const(divisor));
+            let after = crate::passes::simplify::algebraic(before.clone());
+            super::tests::check_rewrite(
+                &mut proofs,
+                &format!("multiply-back remainder/{op:?}/{divisor:#x}"),
+                &before,
+                &after,
+            );
+        }
+        // Every dividend and divisor, at widths the solver decides: the
+        // identity holds in wrapping arithmetic at any width.
+        let (divide, rest) = if op == BinOp::DivS {
+            ("bvsdiv", "bvsrem")
+        } else {
+            ("bvudiv", "bvurem")
+        };
+        for bits in [5, 8] {
+            let x = format!("((_ extract {} 0) r0)", bits - 1);
+            let d = format!("((_ extract {} 0) r1)", bits - 1);
+            proofs.predicate(
+                format!("multiply-back remainder/{op:?}/{bits} bits"),
+                &format!("(bvsub {x} (bvmul ({divide} {x} {d}) {d}))"),
+                &format!("({rest} {x} {d})"),
+            );
+        }
+    }
+    proofs.check();
+}
+
+#[test]
 fn full_width_power_of_two_reciprocals_are_equivalent() {
     if !Proofs::available() {
         return;

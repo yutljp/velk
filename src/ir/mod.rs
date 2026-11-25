@@ -517,7 +517,7 @@ impl Expr {
 use crate::loader::Isa;
 
 /// Where an indirect call takes its callee's address from.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Via {
     pub table: Table,
     /// The slot's index in the table: from the address point of a C++
@@ -528,7 +528,7 @@ pub struct Via {
     pub candidates: Vec<u64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Table {
     /// A C++ virtual table, read through the object.
     Vtable,
@@ -569,7 +569,7 @@ pub struct RegRef {
     pub width: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CallOutput {
     pub register: u16,
     pub dest: RegRef,
@@ -675,7 +675,7 @@ impl Ordering {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Stmt {
     /// An indivisible machine operation. Outputs are simultaneous writes.
     Machine {
@@ -1036,6 +1036,15 @@ pub struct FunctionIr {
     /// their debug information, where every parameter and the result is an
     /// integer or a pointer passed whole as the convention orders.
     pub callee_signatures: std::collections::BTreeMap<u64, DeclaredSignature>,
+    /// How many values each Go function called directly returns in the
+    /// integer result registers, where its callers read more than one.
+    pub callee_results: std::collections::BTreeMap<u64, usize>,
+    /// The Go functions called directly whose function data lists the
+    /// registers of their arguments: a call to one passes no more.
+    pub listed_callees: std::collections::BTreeSet<u64>,
+    /// How many floating-point registers each Go function called directly
+    /// takes arguments in: the last arguments of a call to it.
+    pub callee_floats: std::collections::BTreeMap<u64, usize>,
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
@@ -1073,6 +1082,9 @@ impl FunctionIr {
             frame_bottom: 0,
             entry_alignment: None,
             callee_signatures: Default::default(),
+            callee_results: Default::default(),
+            listed_callees: Default::default(),
+            callee_floats: Default::default(),
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),
             addr: 0,

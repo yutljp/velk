@@ -1826,6 +1826,11 @@ impl Runner<'_> {
                 .section_at(target)
                 .is_some_and(|section| section.executable)
         {
+            // Code the program wrote there is reached, not a function to
+            // pass over.
+            if let Some(stop) = self.unpack_stop(target) {
+                return Err(stop);
+            }
             self.external_result(convention, Some(0));
             return Ok(());
         }

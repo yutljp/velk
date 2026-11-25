@@ -38,6 +38,12 @@ pub(super) struct Outputs {
     pub(super) sources: HashMap<u16, String>,
     pub(super) declarations: Vec<String>,
     pub(super) temporary: String,
+    /// The variable that holds what a call returns in a structure of each
+    /// number of values.
+    pub(super) results: std::collections::BTreeMap<usize, String>,
+    /// How many values each call through a pointer returns, where what
+    /// follows it uses more than one.
+    sites: HashMap<CallKey, usize>,
     pub(super) dynamic_target: String,
     snapshot_sizes: std::cell::RefCell<HashSet<usize>>,
 }
@@ -124,6 +130,19 @@ impl Outputs {
             return outputs;
         }
         outputs.temporary = super::vacant_name("call_values", reserved);
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Call {
+                target: Some(target),
+                through: None,
+                ..
+            } = stmt
+                && let Some(count) = ir.callee_results.get(target)
+                && !outputs.results.contains_key(count)
+            {
+                let name = super::vacant_name("results", reserved);
+                outputs.results.insert(*count, name);
+            }
+        }
         if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
             matches!(
                 stmt,
@@ -152,6 +171,33 @@ impl Outputs {
                 let (writes, reads) = crate::ir::visit::statement_registers(stmt);
                 live.retain(|register| !writes.contains(register));
                 live.extend(reads);
+            }
+        }
+        // Go keeps no value in a register over a call, so the furthest
+        // result register used after a call through a pointer tells how
+        // many values its callee returns.
+        for (stmt, read) in read_after_pointer_calls(ir) {
+            // The values past the first are taken together: one read
+            // past a value nothing reads is no result.
+            let positions: HashSet<usize> = stmt
+                .call_outputs()
+                .iter()
+                .filter(|output| read.contains(&output.dest.index))
+                .filter_map(|output| result_position(stmt, output))
+                .collect();
+            let count = (1..)
+                .find(|position| !positions.contains(position))
+                .unwrap_or(1);
+            if count < 2 {
+                continue;
+            }
+            let known = outputs.sites.entry(key(stmt)).or_default();
+            *known = (*known).max(count);
+        }
+        for count in outputs.sites.values() {
+            if !outputs.results.contains_key(count) {
+                let name = super::vacant_name("results", reserved);
+                outputs.results.insert(*count, name);
             }
         }
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -197,11 +243,92 @@ impl Outputs {
             .retain(|register, _| writes.get(register) == Some(&1));
     }
 
+    /// The numbers of values the calls through pointers return.
+    pub(super) fn site_results(&self) -> impl Iterator<Item = usize> + '_ {
+        self.sites.values().copied()
+    }
+
     pub(super) fn used(&self, stmt: &Stmt, output: &CallOutput) -> bool {
         self.live
             .get(&key(stmt))
             .is_none_or(|live| live.contains(&output.dest.index))
     }
+}
+
+/// Each call of Go's register convention through a pointer, with the
+/// registers some path reads after it before writing them. What a later
+/// call takes as arguments is counted as read only where Go lists the
+/// arguments of the callee: elsewhere the number is itself an estimate.
+fn read_after_pointer_calls(ir: &FunctionIr) -> Vec<(&Stmt, HashSet<u16>)> {
+    let through_pointer = |stmt: &Stmt| {
+        matches!(stmt, Stmt::Call { target, through, convention, .. }
+            if convention.go_registers() && (through.is_some() || target.is_none()))
+    };
+    let mut found = Vec::new();
+    if !ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(through_pointer)
+    {
+        return found;
+    }
+    let step = |stmt: &Stmt, live: &mut HashSet<u16>| {
+        let (writes, mut reads) = crate::ir::visit::statement_registers(stmt);
+        if let Stmt::Call {
+            target,
+            through,
+            args,
+            ..
+        } = stmt
+        {
+            reads.clear();
+            if let Some(through) = through {
+                crate::ir::visit::collect_reads(through, &mut reads);
+            }
+            if through.is_none() && target.is_some_and(|target| ir.listed_callees.contains(&target))
+            {
+                for value in args.iter().flatten() {
+                    crate::ir::visit::collect_reads(value, &mut reads);
+                }
+            }
+        }
+        live.retain(|register| !writes.contains(register));
+        live.extend(reads);
+    };
+    let edges = crate::ir::cfg::all_edges(&ir.blocks, &ir.landing_pads);
+    let mut entering = vec![HashSet::new(); ir.blocks.len()];
+    let leaving = |entering: &[HashSet<u16>], index: usize| {
+        let mut live = HashSet::new();
+        for next in edges[index].normal.iter().chain(&edges[index].exceptional) {
+            live.extend(entering[*next].iter().copied());
+        }
+        live
+    };
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for index in (0..ir.blocks.len()).rev() {
+            let mut live = leaving(&entering, index);
+            for stmt in ir.blocks[index].stmts.iter().rev() {
+                step(stmt, &mut live);
+            }
+            if live != entering[index] {
+                entering[index] = live;
+                changed = true;
+            }
+        }
+    }
+    for (index, block) in ir.blocks.iter().enumerate() {
+        let mut live = leaving(&entering, index);
+        for stmt in block.stmts.iter().rev() {
+            if through_pointer(stmt) {
+                found.push((stmt, live.clone()));
+            }
+            step(stmt, &mut live);
+        }
+    }
+    found
 }
 
 pub(super) fn scalar_output<'a>(call: &'a Stmt, ctx: &Ctx<'_>) -> Option<&'a CallOutput> {
@@ -251,6 +378,37 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
             }
         }
     }
+}
+
+/// How many values the callee returns in one structure, when it does.
+pub(super) fn results(call: &Stmt, ctx: &Ctx<'_>) -> Option<usize> {
+    let target = match call {
+        Stmt::Call {
+            target: Some(target),
+            through: None,
+            ..
+        } => target,
+        Stmt::Call { .. } if !ctx.call_outputs.sites.is_empty() => {
+            return ctx.call_outputs.sites.get(&key(call)).copied();
+        }
+        _ => return None,
+    };
+    if *target == ctx.ir.addr {
+        return (ctx.results > 0).then_some(ctx.results);
+    }
+    ctx.ir.callee_results.get(target).copied()
+}
+
+/// Which of the integer values a callee returns `output` is.
+fn result_position(call: &Stmt, output: &CallOutput) -> Option<usize> {
+    let Stmt::Call { convention, .. } = call else {
+        return None;
+    };
+    convention
+        .results()
+        .iter()
+        .take_while(|register| !convention.float_arguments().contains(register))
+        .position(|register| *register == output.register)
 }
 
 pub(super) fn scalar_fusion(call: &Stmt, ctx: &Ctx<'_>) -> Option<crate::ir::RegRef> {
@@ -337,6 +495,19 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         .flatten()
         .map(|arg| super::argument(arg, ctx))
         .collect();
+    // The last arguments of a Go function that takes some in
+    // floating-point registers are numbers, not their bits.
+    if through.is_none()
+        && let Some(floats) = target.and_then(|target| ctx.ir.callee_floats.get(&target))
+        && let Some(values) = values
+        && let Some(first) = values.len().checked_sub(*floats)
+    {
+        for (text, value) in args.iter_mut().zip(values).skip(first) {
+            if let Some(precision) = super::stmt::value_precision(value, ctx) {
+                *text = super::expr::float_operand(value, precision, ctx, 0, false);
+            }
+        }
+    }
     let named_syscall = number.and_then(|name| match name {
         "read" | "write" => Some((name, 3)),
         "exit" | "exit_group" => Some((name, 1)),
@@ -376,10 +547,12 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             (Some(through), _) => {
                 let text = super::render_value(through, ctx);
+                let returned = results(call, ctx)
+                    .map_or_else(|| word_type.to_owned(), super::results::type_name);
                 if text.contains(char::is_whitespace) {
-                    format!("(({word_type} (*)())({text}))")
+                    format!("(({returned} (*)())({text}))")
                 } else {
-                    format!("(({word_type} (*)()){text})")
+                    format!("(({returned} (*)()){text})")
                 }
             }
             (None, Some(target)) => ctx
@@ -388,7 +561,8 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 .get(target)
                 .map_or_else(|| format!("sub_{target:x}"), |name| super::sanitize(name)),
             (None, None) => format!(
-                "(({word_type} (*)())(uintptr_t){}())",
+                "(({} (*)())(uintptr_t){}())",
+                results(call, ctx).map_or_else(|| word_type.to_owned(), super::results::type_name),
                 ctx.call_outputs.dynamic_target
             ),
         }

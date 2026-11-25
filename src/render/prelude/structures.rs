@@ -7,6 +7,8 @@ pub(super) struct StructureTagNames {
     definitions: BTreeMap<String, String>,
     tags: BTreeMap<String, String>,
     reserved: BTreeSet<String>,
+    /// Every `S` name numbered at or below this is reserved.
+    numbered: usize,
 }
 
 fn definitions(code: &str) -> Vec<(String, String)> {
@@ -41,7 +43,7 @@ impl StructureTagNames {
                 self.tags.entry(tag).or_insert(definition);
             }
         }
-        let mut output = String::new();
+        let mut output = String::with_capacity(code.len());
         for section in code.split_inclusive(super::START) {
             // A marked section and its following body share a tag namespace.
             let mut replacements = BTreeMap::new();
@@ -78,10 +80,9 @@ impl StructureTagNames {
                         .get(&tag)
                         .is_some_and(|known| *known != definition)
                     {
-                        let mut serial = 1;
                         loop {
-                            name = format!("S{serial}");
-                            serial += 1;
+                            self.numbered += 1;
+                            name = format!("S{}", self.numbered);
                             if self.reserved.insert(name.clone()) {
                                 break;
                             }
@@ -95,18 +96,25 @@ impl StructureTagNames {
                     replacements.insert(tag, name);
                 }
             }
-            output.push_str(&rename(section, &replacements));
+            rename_into(&mut output, section, &replacements);
         }
         output
     }
 }
 
 fn rename(code: &str, replacements: &BTreeMap<String, String>) -> String {
+    let mut output = String::new();
+    rename_into(&mut output, code, replacements);
+    output
+}
+
+/// Appends `code` to `output` with the structure tags replaced.
+fn rename_into(output: &mut String, code: &str, replacements: &BTreeMap<String, String>) {
     if replacements.is_empty() {
-        return code.to_owned();
+        output.push_str(code);
+        return;
     }
     let bytes = code.as_bytes();
-    let mut output = String::new();
     let mut copied = 0;
     let mut at = 0;
     let mut tag = false;
@@ -154,5 +162,4 @@ fn rename(code: &str, replacements: &BTreeMap<String, String>) -> String {
         }
     }
     output.push_str(&code[copied..]);
-    output
 }

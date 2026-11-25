@@ -1,8 +1,8 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 145 -> 0; 826; 1; 0
 C/C++ stripped: 97 -> 0; 761; 0; 0
-Go: 5880 -> 0; 27798; 500; 2
-Rust: 8190 -> 0; 51019; 706; 189
+Go: 8069 -> 0; 36899; 649; 2
+Rust: 8316 -> 0; 51331; 711; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -162,10 +162,11 @@ Rust: 8190 -> 0; 51019; 706; 189
 # flattened_x86_64_O2.o | C/C++ stripped: 0 -> 0; 6; 0; 0
 # frame_bounds_a64.o | C/C++ stripped: 1 -> 0; 4; 0; 0
 # frame_bounds_x64.o | C/C++ stripped: 0 -> 0; 4; 0; 0
-# go_probe | Go: 1433 -> 0; 6568; 84; 0
-# go_probe_arm64 | Go: 1508 -> 0; 7333; 166; 1
-# go_stripped | Go: 1432 -> 0; 6566; 84; 0
-# go_stripped_arm64 | Go: 1507 -> 0; 7331; 166; 1
+# go_probe | Go: 1436 -> 0; 6533; 85; 0
+# go_probe_arm64 | Go: 1520 -> 0; 7345; 167; 1
+# go_probe_arm64_1_27 | Go: 2159 -> 0; 9147; 145; 0
+# go_stripped | Go: 1435 -> 0; 6531; 85; 0
+# go_stripped_arm64 | Go: 1519 -> 0; 7343; 167; 1
 # i386_switch.elf | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_x64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
@@ -515,12 +516,12 @@ Rust: 8190 -> 0; 51019; 706; 189
 # predicates_aarch64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # predicates_x86_64_O0.o | C/C++ stripped: 0 -> 0; 1; 0; 0
 # predicates_x86_64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
-# rust_demo | Rust: 1362 -> 0; 9556; 101; 0
-# rust_demo_arm64 | Rust: 1357 -> 0; 7426; 134; 63
-# rust_probe | Rust: 1362 -> 0; 9556; 101; 0
-# rust_probe_arm64 | Rust: 1357 -> 0; 7426; 134; 63
-# rust_probe_arm64_stripped | Rust: 1315 -> 0; 7409; 135; 63
-# rust_probe_stripped | Rust: 1437 -> 0; 9646; 101; 0
+# rust_demo | Rust: 1425 -> 0; 9678; 102; 0
+# rust_demo_arm64 | Rust: 1361 -> 0; 7439; 135; 63
+# rust_probe | Rust: 1425 -> 0; 9678; 102; 0
+# rust_probe_arm64 | Rust: 1361 -> 0; 7439; 135; 63
+# rust_probe_arm64_stripped | Rust: 1319 -> 0; 7419; 135; 63
+# rust_probe_stripped | Rust: 1425 -> 0; 9678; 102; 0
 # seh.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh.O2.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh_cpp.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0

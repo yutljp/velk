@@ -132,12 +132,19 @@ fn native_hook(
     let path = matrix::fixtures().join(format!("{host}.{optimization}.hooks.native"));
     let mut command = Command::new(path);
     command.args(arguments.map(|argument| argument.to_string()));
-    let input = matrix::fixtures().join("hook.input");
-    std::fs::write(&input, bytes).expect("libc input");
-    let output = command
-        .stdin(std::fs::File::open(input).expect("libc input file"))
-        .output()
+    // Through a pipe of its own: tests that run side by side share no file.
+    let mut child = command
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .expect("native libc reference");
+    {
+        use std::io::Write as _;
+        let mut input = child.stdin.take().expect("libc input");
+        input.write_all(bytes).expect("libc input");
+    }
+    let output = child.wait_with_output().expect("native libc reference");
     assert!(output.status.success(), "{output:?}");
     assert_eq!(output.stdout.len(), 132);
     output.stdout

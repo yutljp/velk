@@ -20,7 +20,7 @@ use crate::render::structure::cleanup::flatten_early_returns;
 use crate::render::structure::cleanup::prune_labels;
 use crate::render::structure::cleanup::prune_unreachable;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Node {
     Stmt(Stmt),
     Label(u64),
@@ -271,6 +271,24 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     };
     // Code the entry does not reach keeps its label, which names where it starts.
     let entries: std::collections::HashSet<u64> = graph.entries().into_iter().collect();
+    // Two settings often structure the function the same way, and the
+    // second of them can never win. A hash stands for each structuring, so
+    // that a large function is not kept once per setting.
+    let hash = |candidate: &Vec<Node>| {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        candidate.hash(&mut hasher);
+        hasher.finish()
+    };
+    let mut tried = vec![hash(&nodes)];
+    let mut untried = |candidate: &Vec<Node>| {
+        let candidate = hash(candidate);
+        let new = !tried.contains(&candidate);
+        if new {
+            tried.push(candidate);
+        }
+        new
+    };
     cleanup_structure(&mut nodes, entries.clone(), ir);
     if label_count(&nodes) == 0 {
         return Some(nodes);
@@ -294,6 +312,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
             if (order != dominance::RootOrder::Address || absorb != dominance::Absorb::Nothing)
                 && let Some(mut absorbing) =
                     graph.structure(absorb, /* switch_cases */ false, order)
+                && untried(&absorbing)
             {
                 cleanup_structure(&mut absorbing, entries.clone(), ir);
                 if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
@@ -304,6 +323,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
                 && label_count(&best) != 0
                 && let Some(mut candidate) =
                     graph.structure(absorb, /* switch_cases */ true, order)
+                && untried(&candidate)
             {
                 cleanup_structure(&mut candidate, entries.clone(), ir);
                 if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {

@@ -331,10 +331,7 @@ impl Readability {
                 *total += count;
             }
             self.indirect_calls += indirect_calls(code);
-            self.registers += code
-                .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
-                .filter(|word| is_register(word))
-                .count();
+            self.registers += register_words(code);
         }
         self.unsigned += decompiled.matches("/* unsigned */").count();
         self.traps += decompiled.matches("__builtin_trap").count();
@@ -524,7 +521,11 @@ fn cast_classes(code: &str) -> [usize; 5] {
             continue;
         };
         let ty = &rest[..end];
-        if ty.contains('(') || cost::casts(&code[start..start + end + 2]) != 1 {
+        // With the character after it, which tells a cast from a value.
+        let text = code
+            .get(start..start + end + 3)
+            .unwrap_or(&code[start..start + end + 2]);
+        if ty.contains('(') || cost::casts(text) != 1 {
             continue;
         }
         let class = if ty.trim_end().ends_with('*') {
@@ -589,10 +590,39 @@ fn cast_scorers_preserve_distinct_recognition() {
 /// Calls through a pointer the analysis could not resolve, printed
 /// `((uint64_t (*)())address)(arguments)`.
 fn indirect_calls(code: &str) -> usize {
-    code.matches("((uint64_t (*)())").count()
+    // A callee returning several values returns a structure of them.
+    code.matches("((uint64_t (*)())").count() + code.matches("((struct velk_results").count()
 }
 
 /// A machine register name left in the output instead of a variable.
+/// The words of `code` that name machine registers. A member of a
+/// structure, which follows `.` or `->`, is none whatever its name.
+fn register_words(code: &str) -> usize {
+    let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
+    let mut count = 0;
+    let mut rest = code;
+    let mut member = false;
+    while let Some(start) = rest.find(word) {
+        member |= rest[..start].ends_with('.') || rest[..start].ends_with("->");
+        let end = rest[start..]
+            .find(|c: char| !word(c))
+            .map_or(rest.len(), |end| start + end);
+        if !member && is_register(&rest[start..end]) {
+            count += 1;
+        }
+        member = false;
+        rest = &rest[end..];
+    }
+    count
+}
+
+#[test]
+fn members_are_not_counted_as_registers() {
+    assert_eq!(register_words("rax = r8 + results.r9 + p->r10 + r11;"), 3);
+    assert_eq!(register_words("x.rax"), 0);
+    assert_eq!(register_words(""), 0);
+}
+
 fn is_register(word: &str) -> bool {
     const X86: [&str; 16] = [
         "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "eax", "ebx", "ecx", "edx", "esi",

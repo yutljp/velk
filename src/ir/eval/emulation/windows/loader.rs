@@ -250,6 +250,113 @@ impl Runner<'_> {
         Ok(pointer)
     }
 
+    /// Maps a modeled image of `dll` exporting `functions`.
+    fn map_module(
+        &mut self,
+        dll: &str,
+        functions: BTreeSet<String>,
+        width: u8,
+    ) -> Result<Module, String> {
+        let mut bytes = match synthetic_image(dll, &functions, width as usize) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        let base = match self
+            .machine
+            .strict_memory
+            .as_mut()
+            .expect("strict memory")
+            .map_zeroed(bytes.len() as u64, true)
+        {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        put(
+            &mut bytes,
+            0x98 + if width == 8 { 24 } else { 28 },
+            base,
+            width as usize,
+        );
+        for (offset, byte) in bytes.into_iter().enumerate() {
+            if byte != 0 {
+                self.machine.memory.insert(base + offset as u64, byte);
+            }
+        }
+        let mut module = Module {
+            name: dll.to_owned(),
+            path: format!("C:\\Windows\\System32\\{dll}"),
+            base,
+            size: 0x10000,
+            exports: BTreeMap::new(),
+        };
+        for (index, name) in functions.into_iter().enumerate() {
+            let address = base + 0x8000 + index as u64 * 16;
+            module.exports.insert(name, (address, index as u32 + 1));
+        }
+        Ok(module)
+    }
+
+    /// The base of a modeled image of `dll`, mapped now: a packed program
+    /// loads the libraries of the program it holds by name.
+    pub(in super::super) fn load_library(&mut self, dll: &str) -> Result<u64, String> {
+        if self.windows_state().modules.len() >= 64 {
+            return Err("more than 64 DLLs are loaded".to_owned());
+        }
+        let functions = apis(dll)
+            .iter()
+            .map(|(name, _)| (*name).to_owned())
+            .collect();
+        let width = crate::arch::pointer_bytes(self.machine.isa);
+        let module = match self.map_module(dll, functions, width) {
+            Ok(module) => module,
+            Err(error) => return Err(error),
+        };
+        let base = module.base;
+        let process = self
+            .windows
+            .as_mut()
+            .expect("Windows setup precedes API calls");
+        for (name, (address, _)) in &module.exports {
+            process.exports.insert(
+                *address,
+                Export {
+                    dll: dll.to_owned(),
+                    name: name.clone(),
+                },
+            );
+        }
+        process.modules.push(module);
+        Ok(base)
+    }
+
+    /// An address for the export `name` of the module at `index`, which
+    /// its modeled image does not list: the image has room for more
+    /// entry points than its export directory names.
+    pub(in super::super) fn add_export(&mut self, index: usize, name: &str) -> Option<u64> {
+        let process = self
+            .windows
+            .as_mut()
+            .expect("Windows setup precedes API calls");
+        let module = &mut process.modules[index];
+        let position = module.exports.len() as u64;
+        if position >= 0x800 || name.is_empty() || name.len() > 255 {
+            return None;
+        }
+        let address = module.base + 0x8000 + position * 16;
+        module
+            .exports
+            .insert(name.to_owned(), (address, position as u32 + 1));
+        process.exports.insert(
+            address,
+            Export {
+                dll: module.name.clone(),
+                name: name.to_owned(),
+            },
+        );
+        self.machine.memory.insert(address, 0xc3);
+        Some(address)
+    }
+
     pub(in super::super) fn initialize_windows(&mut self) -> Result<(), String> {
         if self.image.format != Format::Pe
             || !matches!(self.image.isa, Isa::X86_64 | Isa::I386)
@@ -332,48 +439,18 @@ impl Runner<'_> {
             for &(name, _) in table {
                 functions.insert(name.to_owned());
             }
-            let mut bytes = match synthetic_image(&dll, &functions, width as usize) {
-                Ok(value) => value,
+            let module = match self.map_module(&dll, functions, width) {
+                Ok(module) => module,
                 Err(error) => return Err(error),
             };
-            let base = match self
-                .machine
-                .strict_memory
-                .as_mut()
-                .expect("strict memory")
-                .map_zeroed(bytes.len() as u64, true)
-            {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
-            put(
-                &mut bytes,
-                0x98 + if width == 8 { 24 } else { 28 },
-                base,
-                width as usize,
-            );
-            for (offset, byte) in bytes.into_iter().enumerate() {
-                if byte != 0 {
-                    self.machine.memory.insert(base + offset as u64, byte);
-                }
-            }
-            let mut module = Module {
-                name: dll.clone(),
-                path: format!("C:\\Windows\\System32\\{dll}"),
-                base,
-                size: 0x10000,
-                exports: BTreeMap::new(),
-            };
-            for (index, name) in functions.into_iter().enumerate() {
-                let address = base + 0x8000 + index as u64 * 16;
+            for (name, (address, _)) in &module.exports {
                 exports.insert(
-                    address,
+                    *address,
                     Export {
                         dll: dll.clone(),
                         name: name.clone(),
                     },
                 );
-                module.exports.insert(name, (address, index as u32 + 1));
             }
             modules.push(module);
         }

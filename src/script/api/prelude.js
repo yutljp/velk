@@ -149,9 +149,9 @@
   }
 
   const output = [];
-  Object.defineProperty(globalThis, "__velkReset", { value: () => { output.length = 0; } });
+  Object.defineProperty(globalThis, "__velkReset", { value: () => { output.length = 0; drained = 0; } });
   const show = (value) => (typeof value === "string" ? value : JSON.stringify(value) ?? String(value));
-  const log = (...values) => { output.push(values.map(show).join(" ")); };
+  const log = (...values) => { output.push(values.length === 1 && typeof values[0] === "string" ? values[0] : values.map(show).join(" ")); };
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
   globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project, arch: opts.arch, raw: opts.raw, cache: opts.cache, unpack: opts.unpack, signatureOptions: { defaults: opts.defaultSignatures !== false, files: opts.signatures ?? [] } })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
@@ -159,8 +159,8 @@
     try { return JSON.stringify({ log: output, result: value === undefined ? null : value }); }
     catch (error) { return JSON.stringify({ log: output, error: `cannot serialize the result: ${error?.message ?? error}` }); }
   };
-  // The logged output, and the result's text unless showing it fails: then
-  // the failure is left in __velkFinishError and the log still returned.
+  // Adds the result's text to the logged output unless showing it fails:
+  // then the failure is left in __velkFinishError and the log still kept.
   globalThis.__velkFinish = (value) => {
     if (value !== undefined) {
       try {
@@ -169,6 +169,20 @@
         globalThis.__velkFinishError = `cannot show the result: ${error?.message ?? error}`;
       }
     }
-    return output.join("\n");
+  };
+  // The next lines of the logged output, about a megabyte at a time, each
+  // released once handed over so a large output is never held twice.
+  let drained = 0;
+  globalThis.__velkDrain = () => {
+    if (drained >= output.length) {
+      drained = 0;
+      output.length = 0;
+      return undefined;
+    }
+    const start = drained;
+    for (let size = 0; drained < output.length && size < 1 << 20; drained++) size += output[drained].length;
+    const piece = output.slice(start, drained).join("\n");
+    output.fill(undefined, start, drained);
+    return piece;
   };
 })();

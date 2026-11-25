@@ -13,6 +13,83 @@ use crate::sigs::Database;
 
 type Analyses = HashMap<u64, Arc<Result<Analysis, LiftError>>>;
 
+/// The analyses a request holds while it renders, and for a large request
+/// how many of its functions still want each of them.
+struct Held {
+    analyses: Analyses,
+    /// For each requested function, how many requested functions not yet
+    /// rendered may ask for its analysis. None when every analysis is kept
+    /// until the request ends.
+    wanted: Option<Wanted>,
+}
+
+struct Wanted {
+    counts: HashMap<u64, usize>,
+    /// The requested functions each requested function may ask for: its
+    /// callees and the callers `neighbors` can reach.
+    asked: HashMap<u64, Vec<u64>>,
+}
+
+impl Wanted {
+    /// What the `requested` functions ask of each other, `callers` giving
+    /// the functions that call one.
+    fn new(requested: impl Iterator<Item = u64>, callers: impl Fn(u64) -> Vec<u64>) -> Self {
+        let mut asked: HashMap<u64, Vec<u64>> = requested.map(|addr| (addr, Vec::new())).collect();
+        let requested: Vec<u64> = asked.keys().copied().collect();
+        for &callee in &requested {
+            let callers = callers(callee);
+            // `neighbors` takes the lowest addresses among callers and
+            // callees, so no caller after that many.
+            let near = callers.iter().take(NEIGHBORS).copied();
+            asked.get_mut(&callee).expect("requested").extend(near);
+            for caller in callers {
+                if let Some(asked) = asked.get_mut(&caller) {
+                    asked.push(callee);
+                }
+            }
+        }
+        let mut counts: HashMap<u64, usize> = requested.iter().map(|&addr| (addr, 1)).collect();
+        for (addr, others) in &mut asked {
+            others.sort_unstable();
+            others.dedup();
+            others.retain(|other| other != addr && counts.contains_key(other));
+            for other in others.iter() {
+                *counts.get_mut(other).expect("requested") += 1;
+            }
+        }
+        Self { counts, asked }
+    }
+}
+
+impl Held {
+    /// Drops the analyses no function left to render is expected to ask
+    /// for, now that `addr` is rendered. One asked for all the same is made
+    /// again.
+    fn rendered(&mut self, addr: u64) {
+        let Some(wanted) = &mut self.wanted else {
+            return;
+        };
+        let Some(asked) = wanted.asked.remove(&addr) else {
+            return;
+        };
+        for other in std::iter::once(addr).chain(asked) {
+            if let Some(count) = wanted.counts.get_mut(&other) {
+                *count -= 1;
+                if *count == 0 {
+                    self.analyses.remove(&other);
+                }
+            }
+        }
+    }
+
+    fn keeps(&self, addr: u64) -> bool {
+        self.wanted
+            .as_ref()
+            .and_then(|wanted| wanted.counts.get(&addr))
+            .is_none_or(|count| *count != 0)
+    }
+}
+
 /// The most functions of one request whose analyses are kept for later
 /// requests. Those of a larger request, such as every function of a
 /// binary, would stay in memory for as long as the binary is open.
@@ -21,6 +98,9 @@ const KEPT_ANALYSES: usize = 256;
 /// How many functions are rendered between drops of the lifts made for
 /// them, which nothing reads again once a function is analysed.
 const LIFTS_DROPPED_EVERY: usize = 512;
+
+/// The most functions around one that share with it.
+const NEIGHBORS: usize = 8;
 
 pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
     let addr = analysis.ir.addr;
@@ -86,7 +166,7 @@ pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
     // Prune after the limit so skipped callees do not change the sharing neighborhood.
     neighbors
         .into_iter()
-        .take(8)
+        .take(NEIGHBORS)
         .filter(|addr| required.contains(addr))
         .collect()
 }
@@ -207,14 +287,19 @@ pub(super) fn shared(
 
 fn original(
     image: &Image,
-    analyses: &Mutex<Analyses>,
+    held: &Mutex<Held>,
     addr: u64,
     deadline: Option<Instant>,
 ) -> Result<Arc<Result<Analysis, LiftError>>> {
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    if let Some(analysis) = analyses.lock().expect("analysis cache lock").get(&addr) {
+    if let Some(analysis) = held
+        .lock()
+        .expect("analysis cache lock")
+        .analyses
+        .get(&addr)
+    {
         return Ok(Arc::clone(analysis));
     }
     let Some(function) = image.functions.get(&addr) else {
@@ -228,9 +313,14 @@ fn original(
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    let mut analyses = analyses.lock().expect("analysis cache lock");
+    let mut held = held.lock().expect("analysis cache lock");
+    if !held.keeps(addr) {
+        return Ok(Arc::new(analyzed));
+    }
     Ok(Arc::clone(
-        analyses.entry(addr).or_insert_with(|| Arc::new(analyzed)),
+        held.analyses
+            .entry(addr)
+            .or_insert_with(|| Arc::new(analyzed)),
     ))
 }
 
@@ -293,7 +383,15 @@ impl Binary {
             .into_iter()
             .map(|(addr, analysis)| (addr, Arc::new(analysis)))
             .collect();
-        let originals = Mutex::new(originals);
+        let originals = Mutex::new(Held {
+            analyses: originals,
+            wanted: (addresses.len() > KEPT_ANALYSES).then(|| {
+                Wanted::new(
+                    addresses.iter().map(|&addr| self.image.code_address(addr)),
+                    |addr| analysis::results::callers(&self.image, addr),
+                )
+            }),
+        });
         let finished = std::sync::atomic::AtomicUsize::new(0);
         let results = crate::parallel::map(addresses, |&addr| {
             if finished.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % LIFTS_DROPPED_EVERY
@@ -301,68 +399,24 @@ impl Binary {
             {
                 self.image.lifts.clear();
             }
-            let addr = self.image.code_address(addr);
-            let decoded_strings = if self.string_decoding {
-                match self.decoded_strings.get(&addr) {
-                    Some(strings) => strings.clone(),
-                    None => crate::string_decoding::recover(&self.image, addr, deadline)
-                        .unwrap_or_default(),
-                }
-            } else {
-                Vec::new()
-            };
-            if let Some(analysis) = self.shared_analyses.get(&addr) {
-                return match analysis {
-                    Ok(analysis) => self
-                        .render_analysis(
-                            analysis,
-                            &overrides,
-                            identified.get(&addr).map(String::as_str),
-                            &decoded_strings,
-                            deadline,
-                        )
-                        .map(|rendered| (rendered.code, None)),
-                    Err(source) => Err(Error::Lift {
-                        addr,
-                        source: source.clone(),
-                    }),
-                };
-            }
-            let root = match original(&self.image, &originals, addr, deadline) {
-                Ok(root) => root,
-                Err(error) => return Err(error),
-            };
-            let root = match root.as_ref() {
-                Ok(root) => root,
-                Err(source) => {
-                    return Err(Error::Lift {
-                        addr,
-                        source: source.clone(),
-                    });
-                }
-            };
-            let analysis = match shared(&self.image, &self.data_ranges, root.clone(), |address| {
-                original(&self.image, &originals, address, deadline)
-                    .map(|analysis| analysis.as_ref().as_ref().ok().cloned())
-            }) {
-                Ok(analysis) => analysis,
-                Err(error) => return Err(error),
-            };
-            match self.render_analysis(
-                &analysis,
+            let result = self.render_one(
+                addr,
+                addresses.len() <= KEPT_ANALYSES,
+                &originals,
                 &overrides,
-                identified.get(&addr).map(String::as_str),
-                &decoded_strings,
+                &identified,
                 deadline,
-            ) {
-                Ok(rendered) => Ok((
-                    rendered.code,
-                    (addresses.len() <= KEPT_ANALYSES).then_some(analysis),
-                )),
-                Err(error) => Err(error),
-            }
+            );
+            originals
+                .lock()
+                .expect("analysis cache lock")
+                .rendered(self.image.code_address(addr));
+            result
         });
-        let mut originals = originals.into_inner().expect("analysis cache lock");
+        let mut originals = originals
+            .into_inner()
+            .expect("analysis cache lock")
+            .analyses;
         if addresses.len() > KEPT_ANALYSES {
             originals.clear();
         }
@@ -387,5 +441,167 @@ impl Binary {
             }
         }
         Ok(output)
+    }
+
+    /// One function of a batch rendered, with its analysis when `kept`.
+    fn render_one(
+        &self,
+        addr: u64,
+        kept: bool,
+        originals: &Mutex<Held>,
+        overrides: &std::collections::BTreeMap<u64, crate::ir::DeclaredSignature>,
+        identified: &HashMap<u64, String>,
+        deadline: Option<Instant>,
+    ) -> Result<(String, Option<Analysis>)> {
+        let addr = self.image.code_address(addr);
+        let decoded_strings = if self.string_decoding {
+            match self.decoded_strings.get(&addr) {
+                Some(strings) => strings.clone(),
+                None => {
+                    crate::string_decoding::recover(&self.image, addr, deadline).unwrap_or_default()
+                }
+            }
+        } else {
+            Vec::new()
+        };
+        if let Some(analysis) = self.shared_analyses.get(&addr) {
+            return match analysis {
+                Ok(analysis) => self
+                    .render_analysis(
+                        analysis,
+                        overrides,
+                        identified.get(&addr).map(String::as_str),
+                        &decoded_strings,
+                        deadline,
+                    )
+                    .map(|rendered| (rendered.code, None)),
+                Err(source) => Err(Error::Lift {
+                    addr,
+                    source: source.clone(),
+                }),
+            };
+        }
+        let root = match original(&self.image, originals, addr, deadline) {
+            Ok(root) => root,
+            Err(error) => return Err(error),
+        };
+        let root = match root.as_ref() {
+            Ok(root) => root,
+            Err(source) => {
+                return Err(Error::Lift {
+                    addr,
+                    source: source.clone(),
+                });
+            }
+        };
+        let analysis = match shared(&self.image, &self.data_ranges, root.clone(), |address| {
+            original(&self.image, originals, address, deadline)
+                .map(|analysis| analysis.as_ref().as_ref().ok().cloned())
+        }) {
+            Ok(analysis) => analysis,
+            Err(error) => return Err(error),
+        };
+        match self.render_analysis(
+            &analysis,
+            overrides,
+            identified.get(&addr).map(String::as_str),
+            &decoded_strings,
+            deadline,
+        ) {
+            Ok(rendered) => Ok((rendered.code, kept.then_some(analysis))),
+            Err(error) => Err(error),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn held(requested: &[u64], calls: &[(u64, u64)]) -> Held {
+        let wanted = Wanted::new(requested.iter().copied(), |callee| {
+            calls
+                .iter()
+                .filter(|(_, to)| *to == callee)
+                .map(|(from, _)| *from)
+                .collect()
+        });
+        Held {
+            analyses: requested
+                .iter()
+                .map(|&addr| (addr, Arc::new(Err(LiftError::NoInstructions))))
+                .collect(),
+            wanted: Some(wanted),
+        }
+    }
+
+    fn left(held: &Held) -> Vec<u64> {
+        let mut left: Vec<u64> = held.analyses.keys().copied().collect();
+        left.sort_unstable();
+        left
+    }
+
+    #[test]
+    fn an_analysis_is_dropped_once_it_and_its_callers_are_rendered() {
+        // 1 and 2 call 3; 3 calls 4; 5 is alone and 9 was not requested.
+        let mut held = held(&[1, 2, 3, 4, 5], &[(1, 3), (2, 3), (3, 4), (9, 4)]);
+        held.rendered(5);
+        assert_eq!(left(&held), [1, 2, 3, 4]);
+        // 3 may still ask for its caller 1.
+        held.rendered(1);
+        assert_eq!(left(&held), [1, 2, 3, 4]);
+        held.rendered(3);
+        assert_eq!(left(&held), [2, 3, 4]);
+        assert!(!held.keeps(1) && held.keeps(3));
+        // 4 may still ask for its caller 3.
+        held.rendered(2);
+        assert_eq!(left(&held), [3, 4]);
+        // One not requested is kept until the request ends.
+        assert!(held.keeps(9));
+        held.rendered(4);
+        assert!(left(&held).is_empty());
+    }
+
+    #[test]
+    fn a_function_rendered_twice_or_calling_itself_counts_once() {
+        let mut held = held(&[1, 2, 1], &[(1, 1), (1, 2)]);
+        held.rendered(1);
+        assert_eq!(left(&held), [1, 2]);
+        held.rendered(1);
+        assert_eq!(left(&held), [1, 2]);
+        held.rendered(2);
+        assert!(left(&held).is_empty());
+    }
+
+    #[test]
+    fn a_callee_asks_for_no_more_callers_than_share_with_it() {
+        // 100 is called by 1..=20: only its lowest callers wait for it.
+        let callers: Vec<u64> = (1..=20).collect();
+        let calls: Vec<(u64, u64)> = callers.iter().map(|&from| (from, 100)).collect();
+        let requested: Vec<u64> = callers.iter().copied().chain([100]).collect();
+        let mut held = held(&requested, &calls);
+        for &caller in &callers[NEIGHBORS..] {
+            held.rendered(caller);
+        }
+        let mut expected: Vec<u64> = callers[..NEIGHBORS].to_vec();
+        expected.push(100);
+        assert_eq!(left(&held), expected);
+        // Those callers may ask for it in turn.
+        held.rendered(100);
+        assert_eq!(left(&held), expected);
+        for &caller in &callers[..NEIGHBORS] {
+            held.rendered(caller);
+        }
+        assert!(left(&held).is_empty());
+    }
+
+    #[test]
+    fn a_request_that_keeps_everything_drops_nothing() {
+        let mut held = Held {
+            analyses: [(1, Arc::new(Err(LiftError::NoInstructions)))].into(),
+            wanted: None,
+        };
+        held.rendered(1);
+        assert!(held.keeps(1) && left(&held) == [1]);
     }
 }

@@ -2,23 +2,23 @@
 
 `tests/scripts/local_usage.py` は CLI の関数全体の出力にある宣言を分類します。
 以下は `go_probe`、`go_stripped`、`go_probe_arm64`、`go_stripped_arm64` の
-ランタイムを含む 5,088 関数が対象です。構文上の分類では 69,293 宣言が見つかります。
+ランタイムを含む 5,112 関数が対象です。構文上の分類では 57,454 宣言が見つかります。
 レジスタの束縛や匿名の結果領域も含むため、名前付き変数の読みやすさ指標とは
 数え方が異なります。分類は出力された定義についてのものであり、Go のソース変数を
 復元して識別したものではありません。
 
 | 定義または領域 | 数 | `go_probe` の例 |
 | --- | ---: | --- |
-| 複数の定義、または認識できた定義なし | 18,330 | `internal/abi.Name.IsBlank`: `v1` |
-| その他の計算値 | 15,750 | `internal/abi.Kind.String`: `v1` |
-| メモリ読み出し | 13,732 | `internal/abi.Kind.String`: `v4` |
-| スタックスロットまたはオブジェクト | 9,985 | `internal/abi.(*Kind).String`: `local_0` |
-| 呼び出しを含む式 | 6,049 | `type:.eq.internal/abi.RegArgs`: `v1` |
-| 定数 | 2,531 | `runtime.memhashFallback`: `v3` |
-| 配列、集約値、または `&` の後のオペランド | 1,362 | `internal/cpu.doinit`: `call_values` |
-| 同じ型のレジスタコピー | 1,174 | `internal/cpu.processOptions`: `v56` |
-| 同じローカルからの繰り返しコピー | 326 | `runtime.chansend`: `v15` |
-| 型が判明している文字列、スライス、インターフェースのヘッダー | 54 | `runtime.(*mheap).sysAlloc`: `string` |
+| 複数の定義、または認識できた定義なし | 14,206 | `internal/abi.Name.IsBlank`: `v1` |
+| その他の計算値 | 13,941 | `internal/abi.Kind.String`: `v1` |
+| メモリ読み出し | 11,236 | `internal/abi.Kind.String`: `v4` |
+| スタックスロットまたはオブジェクト | 9,578 | `internal/abi.(*Kind).String`: `local_0` |
+| 呼び出しを含む式 | 5,002 | `type:.eq.internal/abi.RegArgs`: `v1` |
+| 配列、集約値、または `&` の後のオペランド | 1,276 | `internal/cpu.doinit`: `call_values` |
+| 同じ型のレジスタコピー | 946 | `internal/cpu.processOptions`: `v56` |
+| 定数 | 863 | `runtime.printpanicval`: `v5` |
+| 同じローカルからの繰り返しコピー | 308 | `runtime.chansend`: `v51` |
+| 型が判明している文字列、スライス、インターフェースのヘッダー | 98 | `runtime.typeBitsBulkBarrier`: `string` |
 
 `&` の分類は保守的で、ビット演算のオペランドも含む場合があります。
 コピー元が後続の読み出しまでに変化することもあるため、構文上のコピー数は
@@ -53,3 +53,23 @@ uv run python tests/scripts/local_usage.py target/go_probe.c target/go_stripped.
 読み出し幅と、分岐やループでのコピーの有効性は単体テストでも検査します。
 制御フローと ABI の規則は記号的な等価性モデルの対象外であり、
 `tests/smt_inventory.tsv` にその検証範囲を記録しています。
+
+## 型記述子
+
+Go の型記述子のアドレスは `&type_<名前>` と出力します。名前は Go の型の表記を C の識別子に
+直したものです。`main.Rect` は `type_main_Rect`、そのポインターは `type_ptr_main_Rect`、
+`[]string` は `type_slice_string`、`[4]uint8` は `type_array4_uint8` になります。
+48 文字を超える名前と、ほかの記述子と重なる名前には、末尾に記述子のアドレスを付けます。
+型スイッチのように記述子と比較する箇所は `== (uintptr_t)(&type_string)` と出力します。
+
+名前は、モジュールデータが挙げる記述子から読みます。型のリンクとインターフェーステーブル、
+Go 1.27 以降は型の領域に並んでいる記述子が対象です。そこから、要素、フィールド、引数、
+インターフェースのメソッドの型と、その型へのポインターをたどります。どこからもたどれない
+記述子は数値のままです。
+
+インターフェーステーブルは `&itab_<型>_<インターフェース>` と出力します。`*os.File` を
+`io.Writer` として使うテーブルは `itab_ptr_os_File_io_Writer` です。対象は、モジュールデータが
+挙げるテーブルと、Go 1.27 以降は型の領域の中に置かれているテーブルです。
+
+関数が返す値の中の文字列、つまり定数のポインターに続いて 2 から 256 の定数の長さがある場合は、
+その文字列として出力します。

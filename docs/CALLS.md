@@ -33,7 +33,39 @@ condition guards a register read. This analysis has a state budget; on exhaustio
 it retains the conservative parameter estimate.
 For AArch64 and Go, parameter recovery treats calls as writes to every register
 the convention allows them to change; save/restore reads can otherwise introduce
-extra parameters.
+extra parameters. Go lists, for printing a traceback, each register that passes an
+argument of a function; where the list is whole, a register past it is no parameter of
+the function and no argument of a call to it. A direct call to a Go function that takes
+arguments in floating-point registers passes them last, and a value the caller computed
+as a number is passed as that number.
+
+A Go function that returns several values in registers is printed as returning
+`struct velk_resultsN`, with one `int64_t` member, `r0` onwards, for each value. A direct
+call reads the members it uses, and a function that returns what its callee returned
+returns the call. The number of values is the furthest result register some path
+from a direct call reads before anything writes it. A caller that returns with such
+a register unread passes on its own number, through at most two callers. A register
+counts only if the function writes it on every path to a return or takes it as an
+argument. A method takes its number from the
+method table of its type instead, where every result fits the integer registers: a
+string counts two, a slice three, a structure its fields. Another function with no
+direct caller is printed with one result. A call through a pointer has no callee
+to count for, and returns as many values as are read after it, each value past the first
+only when the one before it is read too. What a later call takes as arguments is counted
+as read, for a direct call and a call through a pointer alike, only where Go lists the
+arguments of the callee. A register past the number keeps the comment
+`/* also returned by the call */`. A function of
+Go's assembly convention returns on the stack and keeps `/* also returns ... */`.
+The summary's `return` stays the type of the first value.
+
+Under the System V and AArch64 conventions a value of two words, such as a Rust slice,
+comes back in two registers, and a function without a declared return type is printed
+the same way with `struct velk_results2`. The second register counts when a direct
+caller reads it after the call before anything writes it. A caller that returns with it
+unread passes on its own number only when the function sets the register on every path
+to a return. A function whose return type debug information or a library prototype
+gives keeps that type. Debug information made for line numbers alone holds no types, and
+a function it describes is not taken to return nothing.
 
 Pointer tracking follows stored function addresses and constant data words at the
 target's pointer width. Overlapping writes invalidate stored values. Unknown

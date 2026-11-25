@@ -229,7 +229,9 @@ pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
 
 #[must_use]
 pub fn statement_reads(stmt: &Stmt) -> FxHashSet<u16> {
-    statement_registers(stmt).1
+    let mut reads = FxHashSet::default();
+    collect_statement_reads(stmt, &mut reads);
+    reads
 }
 
 pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
@@ -318,30 +320,39 @@ pub(crate) fn statement_writes_register(stmt: &Stmt, register: u16) -> bool {
 pub(crate) fn statement_registers(stmt: &Stmt) -> (FxHashSet<u16>, FxHashSet<u16>) {
     let writes = statement_writes(stmt);
     let mut reads = FxHashSet::default();
+    collect_statement_reads(stmt, &mut reads);
+    (writes, reads)
+}
+
+/// Adds the registers `stmt` reads to `reads`.
+pub(crate) fn collect_statement_reads<S: std::hash::BuildHasher>(
+    stmt: &Stmt,
+    reads: &mut std::collections::HashSet<u16, S>,
+) {
     match stmt {
         Stmt::Machine { inputs, .. } => {
             for input in inputs {
-                expr_reads(input, &mut reads);
+                expr_reads(input, reads);
             }
         }
-        Stmt::Assign { value, .. } => expr_reads(value, &mut reads),
+        Stmt::Assign { value, .. } => expr_reads(value, reads),
         Stmt::Store { addr, value, .. } => {
-            expr_reads(addr, &mut reads);
-            expr_reads(value, &mut reads);
+            expr_reads(addr, reads);
+            expr_reads(value, reads);
         }
         Stmt::Brif { lhs, rhs, .. } => {
-            expr_reads(lhs, &mut reads);
-            expr_reads(rhs, &mut reads);
+            expr_reads(lhs, reads);
+            expr_reads(rhs, reads);
         }
-        Stmt::Ret { value, .. } => expr_reads(value, &mut reads),
-        Stmt::BrIndirect { target, .. } => expr_reads(target, &mut reads),
-        Stmt::Switch { index, .. } => expr_reads(index, &mut reads),
+        Stmt::Ret { value, .. } => expr_reads(value, reads),
+        Stmt::BrIndirect { target, .. } => expr_reads(target, reads),
+        Stmt::Switch { index, .. } => expr_reads(index, reads),
         Stmt::Call { through, args, .. } => {
             if let Some(through) = through {
-                expr_reads(through, &mut reads);
+                expr_reads(through, reads);
             }
             for arg in args.iter().flatten() {
-                expr_reads(arg, &mut reads);
+                expr_reads(arg, reads);
             }
             reads.extend(stmt.unnamed_call_reads());
             reads.extend(stmt.declared_call_reads());
@@ -353,7 +364,6 @@ pub(crate) fn statement_registers(stmt: &Stmt) -> (FxHashSet<u16>, FxHashSet<u16
         }
         _ => {}
     }
-    (writes, reads)
 }
 
 /// The temporaries no statement and no annotation of the function names,

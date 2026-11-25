@@ -14,6 +14,87 @@ pub(super) struct Group {
     pub(super) stack_fields: Vec<(String, String, CType)>,
 }
 
+/// A name for each type descriptor of a Go image, from the name Go gives
+/// the type: `type_main_Rect` for `main.Rect`, `type_ptr_main_Rect` for a
+/// pointer to it, `type_slice_string` for `[]string`. A name another
+/// descriptor has, or a long one, ends with the descriptor's address.
+/// An interface table is named after its type and its interface:
+/// `itab_ptr_os_File_io_Writer`.
+pub(super) fn type_names(image: &crate::loader::Image) -> Vec<(u64, String)> {
+    if !image.go {
+        return Vec::new();
+    }
+    let types = image
+        .go_types
+        .get_or_init(|| crate::loader::go::types::read(image));
+    let mut taken = std::collections::HashSet::new();
+    let described = types
+        .names
+        .iter()
+        .map(|(address, name)| (*address, type_identifier(name)));
+    // An interface table reads as its type, then the interface.
+    let tables = types.tables.iter().map(|(address, (interface, ty))| {
+        let part = |descriptor: &u64| {
+            let identifier = type_identifier(&types.names[descriptor]);
+            identifier
+                .strip_prefix("type")
+                .unwrap_or(&identifier)
+                .to_owned()
+        };
+        (*address, format!("itab{}{}", part(ty), part(interface)))
+    });
+    described
+        .chain(tables)
+        .map(|(address, mut identifier)| {
+            if identifier.len() > 48 {
+                identifier.truncate(48);
+                identifier = format!("{}_{address:x}", identifier.trim_end_matches('_'));
+            } else if taken.contains(&identifier) {
+                identifier = format!("{identifier}_{address:x}");
+            }
+            taken.insert(identifier.clone());
+            (address, identifier)
+        })
+        .collect()
+}
+
+/// `name`, a type as Go writes it, as a C identifier.
+fn type_identifier(name: &str) -> String {
+    let mut identifier = String::from("type");
+    let word = |identifier: &mut String, text: &str| {
+        if !identifier.ends_with('_') {
+            identifier.push('_');
+        }
+        identifier.push_str(text);
+    };
+    let mut rest = name;
+    while let Some(c) = rest.chars().next() {
+        let mut taken = c.len_utf8();
+        if c == '*' {
+            word(&mut identifier, "ptr_");
+        } else if let Some(after) = rest.strip_prefix("[]") {
+            word(&mut identifier, "slice_");
+            taken = rest.len() - after.len();
+        } else if c == '['
+            && let Some(end) = rest.find(']')
+            && rest[1..end].bytes().all(|byte| byte.is_ascii_digit())
+            && end > 1
+        {
+            word(&mut identifier, &format!("array{}_", &rest[1..end]));
+            taken = end + 1;
+        } else if c.is_ascii_alphanumeric() {
+            if identifier == "type" {
+                identifier.push('_');
+            }
+            identifier.push(c);
+        } else if !identifier.ends_with('_') {
+            identifier.push('_');
+        }
+        rest = &rest[taken..];
+    }
+    identifier.trim_end_matches('_').to_owned()
+}
+
 pub(crate) fn shape(name: &str) -> Option<&'static str> {
     match name {
         "runtime.printstring" => Some("struct go_string"),
@@ -279,6 +360,66 @@ mod tests {
             let code = crate::render::render(&ir, &[], &symbols, &[]);
             assert!(!code.contains("struct go_string"), "{code}");
             assert!(code.contains("print_words("), "{code}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod type_name_tests {
+    #[test]
+    fn go_type_names_read_as_identifiers() {
+        for (name, identifier) in [
+            ("main.Rect", "type_main_Rect"),
+            ("*main.Rect", "type_ptr_main_Rect"),
+            ("[]string", "type_slice_string"),
+            ("[4]uint8", "type_array4_uint8"),
+            ("**[]*int", "type_ptr_ptr_slice_ptr_int"),
+            ("map[string]int", "type_map_string_int"),
+            ("func(int, string) error", "type_func_int_string_error"),
+            (
+                "struct { F uintptr; X0 *int }",
+                "type_struct_F_uintptr_X0_ptr_int",
+            ),
+            ("interface {}", "type_interface"),
+            ("internal/abi.Type", "type_internal_abi_Type"),
+            ("型", "type"),
+        ] {
+            assert_eq!(super::type_identifier(name), identifier, "{name}");
+        }
+    }
+
+    #[test]
+    fn fixture_type_descriptors_have_distinct_names() {
+        for file in ["go_probe", "go_probe_arm64", "go_probe_arm64_1_27"] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(file);
+            let image = crate::loader::load(&path).unwrap();
+            let names = super::type_names(&image);
+            assert!(names.len() >= 400, "{file}: {}", names.len());
+            let distinct: std::collections::HashSet<&String> =
+                names.iter().map(|(_, name)| name).collect();
+            assert_eq!(distinct.len(), names.len(), "{file}");
+            for wanted in [
+                "type_string",
+                "type_int",
+                "type_ptr_runtime_g",
+                "type_error",
+            ] {
+                assert!(
+                    distinct.iter().any(|name| *name == wanted),
+                    "{file}: {wanted}"
+                );
+            }
+            for (_, name) in &names {
+                assert!(
+                    name.len() <= 66
+                        && name
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_'),
+                    "{file}: {name}"
+                );
+            }
         }
     }
 }

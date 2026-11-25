@@ -50,6 +50,19 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         _ => 8,
     };
     let [mut a, mut b] = compared(cond, lhs, rhs, ctx);
+    // A value tested against the descriptor of a Go type, as a type switch
+    // tests it, reads against the type's name.
+    if matches!(cond, Cond::Eq | Cond::Ne)
+        && let Expr::Const(address) = rhs
+        && ctx.symbols.go_types.contains(address)
+        && let Some(name) = crate::render::naming::global_pointer(
+            rhs,
+            crate::render::globals::View::Unsigned(1),
+            ctx,
+        )
+    {
+        b = Printed::new(format!("(uintptr_t){name}"), Int::U64, ALL, 13);
+    }
     // C compares in the common type of the two sides: an unsigned test of
     // values one of which may be negative there reads one side unsigned,
     // which takes the other along.

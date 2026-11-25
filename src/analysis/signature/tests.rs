@@ -1675,3 +1675,39 @@ fn declared_calls_do_not_offer_positional_parameter_types() {
         assert_eq!(param.ty.is_pointer(), !attached);
     }
 }
+
+#[test]
+fn a_bit_scan_does_not_read_the_register_it_leaves_unchanged() {
+    let scan = |count: Expr| Expr::Select {
+        cond: crate::ir::Cond::Eq,
+        lhs: Box::new(Expr::reg(1, 64)),
+        rhs: Box::new(Expr::Const(0)),
+        then: Box::new(Expr::reg(10, 64)),
+        els: Box::new(count),
+    };
+    let lowest = Expr::apply(
+        crate::ir::Operation::CountTrailingZeros(64),
+        vec![Expr::reg(1, 64)],
+    );
+    let highest = Expr::bin(
+        crate::ir::BinOp::Sub,
+        Expr::Const(63),
+        Expr::apply(
+            crate::ir::Operation::CountLeadingZeros(64),
+            vec![Expr::reg(1, 64)],
+        ),
+    );
+    for count in [lowest, highest] {
+        let value = scan(count.clone());
+        assert_eq!(super::scan_source(&value, 10), Some(&count));
+        // Another register is one the choice reads.
+        assert_eq!(super::scan_source(&value, 11), None);
+    }
+    // A scan of another value is a plain choice.
+    let other = Expr::apply(
+        crate::ir::Operation::CountTrailingZeros(64),
+        vec![Expr::reg(2, 64)],
+    );
+    assert_eq!(super::scan_source(&scan(other), 10), None);
+    assert_eq!(super::scan_source(&scan(Expr::reg(2, 64)), 10), None);
+}

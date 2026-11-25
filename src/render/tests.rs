@@ -1439,7 +1439,244 @@ fn a_further_result_in_a_parameter_register_is_no_parameter() {
         "{text}"
     );
     assert!(text.contains("v2 = v15;"), "{text}");
-    assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
+    assert!(
+        text.contains("struct velk_results2 sub_0(int64_t a0, int64_t a1) {")
+            && text.contains("struct velk_results2 { int64_t r0; int64_t r1; };")
+            && text.contains("return (struct velk_results2){ v1, v2 };"),
+        "{text}"
+    );
+}
+
+/// `sub_1000()` called under Go's register convention, then `rest`.
+fn after_go_call(rest: Vec<Stmt>) -> FunctionIr {
+    let convention = crate::ir::Convention::GoAmd64;
+    let mut stmts = vec![Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
+        target: Some(0x1000),
+        through: None,
+        convention,
+        args: Some(Vec::new()),
+        floats_named: false,
+        abi: None,
+        clobbers: None,
+        outputs: crate::ir::fallback_call_outputs(convention, None),
+        via: None,
+        at: None,
+    }];
+    stmts.extend(rest);
+    let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
+    ir.convention = convention;
+    crate::ssa::split_variables(&mut ir, convention.results());
+    crate::ssa::take_results_directly(&mut ir);
+    ir
+}
+
+fn results(values: &[Expr]) -> Stmt {
+    Stmt::Ret {
+        value: Expr::Apply {
+            op: Operation::Results,
+            args: values.to_vec(),
+        },
+        at: None,
+    }
+}
+
+#[test]
+fn several_results_of_a_call_are_members_of_what_it_returns() {
+    // rax and rbx are the first two result registers, rcx the third.
+    let store = |register| Stmt::Store {
+        addr: Expr::Const(0x2000 + u64::from(register) * 8),
+        value: Expr::reg(register, 64),
+        width: 8,
+        at: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::Const(0),
+        at: None,
+    };
+    // Two of three are read: one variable takes the structure.
+    let mut ir = after_go_call(vec![store(0), store(1), returned.clone()]);
+    ir.callee_results.insert(0x1000, 3);
+    let text = rendered(&ir);
+    assert!(
+        text.contains("struct velk_results3 { int64_t r0; int64_t r1; int64_t r2; };")
+            && text.contains("struct velk_results3 sub_1000();")
+            && text.contains("struct velk_results3 results;")
+            && text.contains("results = sub_1000();")
+            && text.contains("= results.r0;")
+            && text.contains("= results.r2;"),
+        "{text}"
+    );
+    assert!(!text.contains("also returned by the call"), "{text}");
+    // One is read: the member is taken from the call.
+    let mut ir = after_go_call(vec![store(3), returned.clone()]);
+    ir.callee_results.insert(0x1000, 3);
+    let text = rendered(&ir);
+    assert!(text.contains("sub_1000().r1;"), "{text}");
+    assert!(!text.contains("results ="), "{text}");
+    // A register past what the callee returns is no member.
+    let mut ir = after_go_call(vec![store(0), store(1), returned]);
+    ir.callee_results.insert(0x1000, 2);
+    let text = rendered(&ir);
+    assert!(
+        text.contains("sub_1000().r0;") && text.contains("also returned by the call"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_call_through_a_pointer_returns_as_many_values_as_are_read_after_it() {
+    let store = |register| Stmt::Store {
+        addr: Expr::Const(0x2000 + u64::from(register) * 8),
+        value: Expr::reg(register, 64),
+        width: 8,
+        at: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::Const(0),
+        at: None,
+    };
+    let through_pointer = |ir: &mut FunctionIr| {
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let Stmt::Call {
+                target, through, ..
+            } = stmt
+            {
+                *target = None;
+                *through = Some(Expr::Load {
+                    addr: Box::new(Expr::Const(0x3000)),
+                    width: 8,
+                    signed: false,
+                });
+            }
+        }
+    };
+    // rax and rbx, the first two result registers, are read.
+    let mut ir = after_go_call(vec![store(0), store(3), returned.clone()]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(
+        text.contains("struct velk_results2 { int64_t r0; int64_t r1; };")
+            && text.contains("struct velk_results2 results;")
+            && text.contains("results = ((struct velk_results2 (*)())")
+            && text.contains("= results.r0;")
+            && text.contains("= results.r1;"),
+        "{text}"
+    );
+    assert!(!text.contains("also returned by the call"), "{text}");
+    // One value read is the plain result of the call.
+    let mut ir = after_go_call(vec![store(0), returned.clone()]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(!text.contains("velk_results"), "{text}");
+    // A register read past one nothing reads is no result: rcx is the
+    // third, and the second is not read.
+    let mut ir = after_go_call(vec![store(0), store(1), returned]);
+    through_pointer(&mut ir);
+    let text = rendered(&ir);
+    assert!(
+        !text.contains("velk_results") && text.contains("also returned by the call"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_go_callee_takes_its_float_arguments_as_numbers() {
+    let convention = crate::ir::Convention::GoAmd64;
+    let negated = Expr::apply(
+        Operation::FloatNegate(crate::ir::Precision::Double),
+        vec![Expr::reg(1, 64)],
+    );
+    let call = |floats_named| Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
+        target: Some(0x1000),
+        through: None,
+        convention,
+        args: Some(vec![Expr::reg(0, 64), negated.clone()]),
+        floats_named,
+        abi: None,
+        clobbers: None,
+        outputs: crate::ir::fallback_call_outputs(convention, None),
+        via: None,
+        at: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::Const(0),
+        at: None,
+    };
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![call(true), returned]);
+    ir.convention = convention;
+    // Nothing known of the callee: the argument is passed as its bits.
+    let text = rendered(&ir);
+    assert!(text.contains(".bits);"), "{text}");
+    // The callee takes its last argument in a floating-point register.
+    ir.callee_floats.insert(0x1000, 1);
+    let text = rendered(&ir);
+    assert!(
+        text.contains(", -(((union { uint64_t bits; double value; }){ .bits = v2 }).value));")
+            && !text.contains(".bits);"),
+        "{text}"
+    );
+}
+
+#[test]
+fn results_passed_on_whole_return_the_call() {
+    let passed = |ir: &mut FunctionIr| {
+        ir.callee_results.insert(0x1000, 2);
+    };
+    let mut ir = after_go_call(vec![results(&[Expr::reg(0, 64), Expr::reg(3, 64)])]);
+    passed(&mut ir);
+    let text = rendered(&ir);
+    assert!(text.contains("    return sub_1000();"), "{text}");
+    // In another order they are taken apart.
+    let mut ir = after_go_call(vec![results(&[Expr::reg(3, 64), Expr::reg(0, 64)])]);
+    passed(&mut ir);
+    let text = rendered(&ir);
+    assert!(
+        text.contains("results = sub_1000();") && text.contains("return (struct velk_results2){"),
+        "{text}"
+    );
+}
+
+#[test]
+fn returns_of_different_counts_keep_the_further_values_in_a_comment() {
+    let convention = crate::ir::Convention::GoAmd64;
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![Stmt::Brif {
+            cond: crate::ir::Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::Const(0),
+            target: 0x10,
+            at: None,
+        }],
+    );
+    ir.blocks.push(crate::ir::Block {
+        start: 0x8,
+        stmts: vec![results(&[Expr::Const(1), Expr::Const(2)])],
+    });
+    ir.blocks.push(crate::ir::Block {
+        start: 0x10,
+        stmts: vec![results(&[Expr::Const(1), Expr::Const(2), Expr::Const(3)])],
+    });
+    ir.convention = convention;
+    let text = rendered(&ir);
+    assert!(text.contains("/* also returns 2, 3 */"), "{text}");
+    assert!(!text.contains("velk_results"), "{text}");
+    // So does a function of a convention that returns one register.
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![results(&[Expr::Const(1), Expr::Const(2)])],
+    );
+    ir.convention = crate::ir::Convention::Win64;
+    let text = rendered(&ir);
+    assert!(text.contains("return 1; /* also returns 2 */"), "{text}");
+    ir.convention = convention;
+    let text = rendered(&ir);
+    assert!(
+        text.contains("return (struct velk_results2){ 1, 2 };"),
+        "{text}"
+    );
 }
 
 #[test]

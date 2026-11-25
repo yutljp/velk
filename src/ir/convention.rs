@@ -2,7 +2,7 @@ use super::{Expr, Registers};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Convention {
     Aapcs64,
     Aapcs32,
@@ -109,6 +109,14 @@ impl Convention {
     #[must_use]
     pub fn go_assembly(self) -> bool {
         matches!(self, Self::GoAbi0 | Self::GoAbi0Arm64)
+    }
+
+    /// Whether a function may return more than one integer in registers:
+    /// Go's register ABI returns each result in one, and the System V and
+    /// `AArch64` conventions return a value of two words in two.
+    #[must_use]
+    pub fn several_results(self) -> bool {
+        self.go_registers() || matches!(self, Self::SysV | Self::Aapcs64)
     }
 
     /// Whether the convention is Go's register ABI, whose callee spills its
@@ -369,7 +377,7 @@ impl Convention {
 
 /// How control reaches a callee, which decides what the transfer pushes
 /// on the stack before the callee's first instruction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CallKind {
     /// A call that returns here.
     Invoke,
