@@ -1042,6 +1042,9 @@ pub struct FunctionIr {
     /// The Go functions called directly whose function data lists the
     /// registers of their arguments: a call to one passes no more.
     pub listed_callees: std::collections::BTreeSet<u64>,
+    /// How many floating-point registers each Go function called directly
+    /// takes arguments in: the last arguments of a call to it.
+    pub callee_floats: std::collections::BTreeMap<u64, usize>,
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
@@ -1081,6 +1084,7 @@ impl FunctionIr {
             callee_signatures: Default::default(),
             callee_results: Default::default(),
             listed_callees: Default::default(),
+            callee_floats: Default::default(),
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),
             addr: 0,

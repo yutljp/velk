@@ -4090,6 +4090,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         callee_signatures: Default::default(),
         callee_results: Default::default(),
         listed_callees: Default::default(),
+        callee_floats: Default::default(),
         value_types: Default::default(),
         variable_registers: Default::default(),
         addr: 0,

@@ -1581,6 +1581,45 @@ fn a_call_through_a_pointer_returns_as_many_values_as_are_read_after_it() {
 }
 
 #[test]
+fn a_go_callee_takes_its_float_arguments_as_numbers() {
+    let convention = crate::ir::Convention::GoAmd64;
+    let negated = Expr::apply(
+        Operation::FloatNegate(crate::ir::Precision::Double),
+        vec![Expr::reg(1, 64)],
+    );
+    let call = |floats_named| Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
+        target: Some(0x1000),
+        through: None,
+        convention,
+        args: Some(vec![Expr::reg(0, 64), negated.clone()]),
+        floats_named,
+        abi: None,
+        clobbers: None,
+        outputs: crate::ir::fallback_call_outputs(convention, None),
+        via: None,
+        at: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::Const(0),
+        at: None,
+    };
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![call(true), returned]);
+    ir.convention = convention;
+    // Nothing known of the callee: the argument is passed as its bits.
+    let text = rendered(&ir);
+    assert!(text.contains(".bits);"), "{text}");
+    // The callee takes its last argument in a floating-point register.
+    ir.callee_floats.insert(0x1000, 1);
+    let text = rendered(&ir);
+    assert!(
+        text.contains(", -(((union { uint64_t bits; double value; }){ .bits = v2 }).value));")
+            && !text.contains(".bits);"),
+        "{text}"
+    );
+}
+
+#[test]
 fn results_passed_on_whole_return_the_call() {
     let passed = |ir: &mut FunctionIr| {
         ir.callee_results.insert(0x1000, 2);

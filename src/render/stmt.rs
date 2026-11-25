@@ -240,7 +240,7 @@ fn implicit_pointer_qualification(target: &CType, parameter: &str) -> bool {
         .eq(parameter.split_whitespace().filter(unqualified))
 }
 
-fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {
+pub(super) fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {
     match value {
         Expr::Apply { op, .. } => op.result_precision(),
         Expr::Reg { index, .. } => ctx.floats.get(index).copied(),

@@ -495,6 +495,19 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         .flatten()
         .map(|arg| super::argument(arg, ctx))
         .collect();
+    // The last arguments of a Go function that takes some in
+    // floating-point registers are numbers, not their bits.
+    if through.is_none()
+        && let Some(floats) = target.and_then(|target| ctx.ir.callee_floats.get(&target))
+        && let Some(values) = values
+        && let Some(first) = values.len().checked_sub(*floats)
+    {
+        for (text, value) in args.iter_mut().zip(values).skip(first) {
+            if let Some(precision) = super::stmt::value_precision(value, ctx) {
+                *text = super::expr::float_operand(value, precision, ctx, 0, false);
+            }
+        }
+    }
     let named_syscall = number.and_then(|name| match name {
         "read" | "write" => Some((name, 3)),
         "exit" | "exit_group" => Some((name, 1)),
