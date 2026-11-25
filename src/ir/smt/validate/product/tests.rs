@@ -1673,6 +1673,76 @@ fn a_load_after_stores_to_other_bytes_suggests_an_equation_at_the_entry() {
 }
 
 #[test]
+fn a_difference_after_an_assignment_suggests_an_equation_over_the_entry_values() {
+    // The shift count is at most 52 past the branch, so the test of it
+    // against 64 is dropped; the count is assigned in the block itself.
+    let count = raw_bin(BinOp::Sub, Expr::Const(1075), r(1));
+    let shifted = |count: Expr| raw_bin(BinOp::Shl, Expr::Const(1), count);
+    let tested = |count: Expr| Expr::Select {
+        cond: Cond::Cc,
+        lhs: Box::new(count.clone()),
+        rhs: Box::new(Expr::Const(64)),
+        then: Box::new(shifted(raw_bin(BinOp::And, count, Expr::Const(63)))),
+        els: Box::new(Expr::Const(0)),
+    };
+    let blocks = |bound: u64, value: Expr| {
+        vec![
+            block(
+                0,
+                vec![Stmt::Brif {
+                    at: None,
+                    cond: Cond::Cs,
+                    lhs: raw_bin(BinOp::Sub, r(1), Expr::Const(1023)),
+                    rhs: Expr::Const(bound),
+                    target: 2,
+                }],
+            ),
+            block(1, vec![assign(1, count.clone()), assign(0, value)]),
+            block(2, vec![ret(r(0))]),
+        ]
+    };
+    let found = candidates(&application(
+        blocks(52, tested(r(1))),
+        blocks(52, shifted(r(1))),
+    ));
+    assert!(
+        found.contains(&(tested(count.clone()), shifted(count.clone()))),
+        "{found:?}"
+    );
+    assert!(matches!(
+        verdict(blocks(52, tested(r(1))), blocks(52, shifted(r(1)))),
+        Verdict::Proved
+    ));
+    // A count that may reach 64 leaves the two apart.
+    assert!(not_proved(&verdict(
+        blocks(5000, tested(r(1))),
+        blocks(5000, shifted(r(1)))
+    )));
+
+    // A register written by a call, or read in part, is not followed.
+    let after_call = |value: Expr| vec![block(0, vec![assign(1, r(2)), call(), ret(value)])];
+    let found = candidates(&application(
+        after_call(plus(1, 1)),
+        after_call(raw_bin(BinOp::Sub, r(1), Expr::Const(u64::MAX))),
+    ));
+    assert!(
+        !found.iter().any(|(old, _)| *old == plus(2, 1)),
+        "{found:?}"
+    );
+    let narrow = |value: Expr| vec![block(0, vec![assign(1, r(2)), ret(value)])];
+    let low = raw_bin(BinOp::Add, Expr::reg(1, 32), Expr::Const(1));
+    let found = candidates(&application(
+        narrow(low.clone()),
+        narrow(raw_bin(BinOp::Sub, Expr::reg(1, 32), Expr::Const(u64::MAX))),
+    ));
+    assert!(
+        !found.iter().any(|(old, _)| *old == plus(2, 1)),
+        "{found:?}"
+    );
+    assert!(!found.iter().any(|(old, _)| *old == low), "{found:?}");
+}
+
+#[test]
 fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
     if !crate::ir::smt::z3_available("solver replies") {
         return;

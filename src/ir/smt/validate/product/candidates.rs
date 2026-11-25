@@ -524,12 +524,41 @@ pub(super) struct Written {
     stores: Vec<(Expr, u8)>,
     /// Whether a call or a machine statement may have written any memory.
     memory: bool,
+    /// What each register assigned whole holds, over what the block entered
+    /// with.
+    values: Vec<(u16, Expr)>,
+}
+
+/// The most nodes an expression put over the entry values may have.
+const ENTRY_NODES: usize = 64;
+
+fn nodes(expr: &Expr) -> usize {
+    1 + crate::ir::visit::children(expr)
+        .into_iter()
+        .map(nodes)
+        .sum::<usize>()
+}
+
+fn reads_part(expr: &Expr, registers: &BTreeSet<u16>) -> bool {
+    matches!(expr, Expr::Reg { index, width } if *width < 64 && registers.contains(index))
+        || crate::ir::visit::children(expr)
+            .into_iter()
+            .any(|child| reads_part(child, registers))
 }
 
 impl Written {
     fn record(&mut self, stmt: &Stmt) {
         match stmt {
-            Stmt::Assign { dest, .. } => {
+            Stmt::Assign { dest, value, .. } => {
+                let held = if dest.width == 64 {
+                    self.at_entry(value)
+                } else {
+                    None
+                };
+                self.values.retain(|(register, _)| *register != dest.index);
+                if let Some(held) = held {
+                    self.values.push((dest.index, held));
+                }
                 self.registers.insert(dest.index);
             }
             Stmt::Store { addr, width, .. } => self.stores.push((addr.clone(), *width)),
@@ -538,14 +567,51 @@ impl Written {
                 self.registers
                     .extend(stmt.call_outputs().iter().map(|output| output.dest.index));
                 self.memory = true;
+                self.values.clear();
             }
             Stmt::Machine { outputs, .. } => {
                 self.registers
                     .extend(outputs.iter().map(|output| output.index));
                 self.memory = true;
+                self.values.clear();
             }
             _ => {}
         }
+    }
+
+    /// `expr` over what the block entered with: itself when it still has
+    /// the value it had there, and otherwise with each register written
+    /// since replaced by what it was assigned, when that is known.
+    fn at_entry(&self, expr: &Expr) -> Option<Expr> {
+        if self.keeps(expr) {
+            return Some(expr.clone());
+        }
+        let mut read = BTreeSet::new();
+        registers_read(expr, &mut read);
+        let written: BTreeSet<u16> = read.intersection(&self.registers).copied().collect();
+        if written
+            .iter()
+            .any(|register| !self.values.iter().any(|(valued, _)| valued == register))
+            || reads_part(expr, &written)
+        {
+            return None;
+        }
+        let held = crate::ir::visit::substitute_values(expr.clone(), &self.values);
+        if nodes(&held) > ENTRY_NODES || !self.loads_kept(&held) {
+            return None;
+        }
+        Some(held)
+    }
+
+    /// Whether each load of `expr`, whose registers are unwritten, reads
+    /// bytes no store since the block's entry wrote.
+    fn loads_kept(&self, expr: &Expr) -> bool {
+        !loads(expr)
+            || (!self.memory
+                && self
+                    .stores
+                    .iter()
+                    .all(|(addr, width)| crate::passes::memory::loads_avoid(expr, addr, *width)))
     }
 
     /// Whether `expr` still has the value it had at the block's entry: it
@@ -555,12 +621,7 @@ impl Written {
     fn keeps(&self, expr: &Expr) -> bool {
         let mut read = BTreeSet::new();
         registers_read(expr, &mut read);
-        read.is_disjoint(&self.registers)
-            && (!loads(expr)
-                || (!self.memory
-                    && self.stores.iter().all(|(addr, width)| {
-                        crate::passes::memory::loads_avoid(expr, addr, *width)
-                    })))
+        read.is_disjoint(&self.registers) && self.loads_kept(expr)
     }
 }
 
@@ -573,12 +634,13 @@ pub(super) fn differences(
     if old == new {
         return;
     }
-    if written.0.keeps(old)
-        && written.1.keeps(new)
-        && unmodeled(old).is_none()
+    if unmodeled(old).is_none()
         && unmodeled(new).is_none()
+        && let Some(old) = written.0.at_entry(old)
+        && let Some(new) = written.1.at_entry(new)
+        && old != new
     {
-        found((old.clone(), new.clone()));
+        found((old, new));
     }
     let (old_children, new_children) = (
         crate::ir::visit::children(old),
