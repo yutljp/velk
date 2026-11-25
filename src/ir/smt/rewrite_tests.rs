@@ -975,6 +975,55 @@ fn range_branches_and_switch_pruning_preserve_results() {
             crate::ssa::ranges::simplify(&mut after);
             proofs.function(format!("range branch/{bits}/{cond:?}"), &before, &after);
         }
+        // A choice between two values, decided the same way: a value
+        // with a bit set is never zero, and one below a bound never
+        // reaches it.
+        for (name, value, cond, compared) in [
+            (
+                "set bit",
+                raw_bin(BinOp::Or, Expr::reg(0, 64), Expr::Const(1)),
+                Cond::Eq,
+                0,
+            ),
+            (
+                "set bit, unequal",
+                raw_bin(BinOp::Or, Expr::reg(0, 64), Expr::Const(1)),
+                Cond::Ne,
+                0,
+            ),
+            (
+                "bound",
+                raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask >> 1)),
+                Cond::Cs,
+                mask,
+            ),
+        ] {
+            let chosen = Expr::Select {
+                cond,
+                lhs: Box::new(Expr::reg(3, bits)),
+                rhs: Box::new(Expr::Const(compared)),
+                then: Box::new(Expr::reg(1, 64)),
+                els: Box::new(Expr::reg(2, 64)),
+            };
+            let before = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(3, bits, raw_bin(BinOp::And, value, Expr::Const(mask))),
+                    Stmt::Ret {
+                        value: chosen,
+                        at: None,
+                    },
+                ],
+            );
+            let mut after = before.clone();
+            crate::ssa::ranges::simplify(&mut after);
+            assert!(
+                !after.render().contains('?'),
+                "{name}/{bits}: the choice must be decided: {}",
+                after.render()
+            );
+            proofs.function(format!("range choice/{bits}/{name}"), &before, &after);
+        }
         for value in [
             Expr::Const(1),
             raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(1)),

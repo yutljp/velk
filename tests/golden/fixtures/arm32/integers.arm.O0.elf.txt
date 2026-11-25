@@ -103,7 +103,7 @@ fn in_range @ 0x201ac (size 88)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x20204 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    return ((k & 0x1f) >= 32 ? 0 : x << (k & 0x1f)) | ((32 - k & 0x1f) >= 32 ? 0 : x >> (32 - k & 0x1f));
+    return x << (k & 0x1f) | x >> (32 - k & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -112,7 +112,7 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x20204 (size 72)
   blk0 @ 0x20204:
-    ret ((select cs ((r1 & #0x1f) & #0xff), #0x20 ? #0x0, (r0 << (r1 & #0x1f)) & #0xffffffff) | select cs (((#0x20 - r1) & #0x1f) & #0xff), #0x20 ? #0x0, (r0 >> ((#0x20 - r1) & #0x1f)))
+    ret (((r0 << (r1 & #0x1f)) & #0xffffffff) | (r0 >> ((#0x20 - r1) & #0x1f)))
 -- card
 {"addr":"0x20204","approxTokens":204,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}
 
