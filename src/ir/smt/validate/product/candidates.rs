@@ -550,7 +550,8 @@ impl Written {
     fn record(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Assign { dest, value, .. } => {
-                let held = if dest.width == 64 {
+                // An equation states only what the solver has a meaning for.
+                let held = if dest.width == 64 && unmodeled(value).is_none() {
                     self.at_entry(value)
                 } else {
                     None

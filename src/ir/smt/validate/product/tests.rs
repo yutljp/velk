@@ -1729,6 +1729,27 @@ fn a_difference_after_an_assignment_suggests_an_equation_over_the_entry_values()
         !found.iter().any(|(old, _)| *old == plus(2, 1)),
         "{found:?}"
     );
+    // Nor is one assigned an operation the solver has no meaning for.
+    let divided = Expr::Apply {
+        op: crate::ir::Operation::WideDivide {
+            signed: false,
+            remainder: false,
+            bits: 16,
+        },
+        args: vec![r(2), r(3), r(5)],
+    };
+    let after_division = |value: Expr| vec![block(0, vec![assign(1, divided.clone()), ret(value)])];
+    let found = candidates(&application(
+        after_division(plus(1, 1)),
+        after_division(raw_bin(BinOp::Sub, r(1), Expr::Const(u64::MAX))),
+    ));
+    assert!(
+        found.iter().all(|(old, new)| {
+            crate::ir::smt::validate::unmodeled(old).is_none()
+                && crate::ir::smt::validate::unmodeled(new).is_none()
+        }),
+        "{found:?}"
+    );
     let narrow = |value: Expr| vec![block(0, vec![assign(1, r(2)), ret(value)])];
     let low = raw_bin(BinOp::Add, Expr::reg(1, 32), Expr::Const(1));
     let found = candidates(&application(
