@@ -95,6 +95,18 @@ struct Checked {
     verdict: Verdict,
 }
 
+/// Ends the process when dropped by a panic.
+struct EndRunOnPanic;
+
+impl Drop for EndRunOnPanic {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            eprintln!("a check panicked; the run ends here");
+            std::process::exit(1);
+        }
+    }
+}
+
 /// Checks `application` in at most `seconds`, writing a line to `profile`:
 /// where the solver work went, for finding what makes a run slow; and
 /// saving it to `directory` when it is not proved.
@@ -298,14 +310,9 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                             };
                             // A check that panics would leave the
                             // decompiling thread waiting for a worker.
-                            let one =
-                                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                    check_one(&application, seconds, &profile, &directory)
-                                }));
-                            let Ok(one) = one else {
-                                eprintln!("{tag}: a check panicked; the run ends here");
-                                std::process::exit(1);
-                            };
+                            let ending = EndRunOnPanic;
+                            let one = check_one(&application, seconds, &profile, &directory);
+                            drop(ending);
                             checked.lock().expect("verdicts").push(one);
                         }
                     });
