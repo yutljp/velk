@@ -296,7 +296,16 @@ fn every_applied_rewrite_keeps_what_the_function_does() {
                             let Ok(application) = received else {
                                 break;
                             };
-                            let one = check_one(&application, seconds, &profile, &directory);
+                            // A check that panics would leave the
+                            // decompiling thread waiting for a worker.
+                            let one =
+                                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                    check_one(&application, seconds, &profile, &directory)
+                                }));
+                            let Ok(one) = one else {
+                                eprintln!("{tag}: a check panicked; the run ends here");
+                                std::process::exit(1);
+                            };
                             checked.lock().expect("verdicts").push(one);
                         }
                     });
