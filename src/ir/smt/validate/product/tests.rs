@@ -1764,6 +1764,57 @@ fn a_difference_after_an_assignment_suggests_an_equation_over_the_entry_values()
 }
 
 #[test]
+fn a_register_replaced_by_a_constant_suggests_that_it_holds_the_constant() {
+    // A loop multiplies by a register set before it; the rewrite puts the
+    // constant in its place and drops a mask the product then needs not.
+    let low = |value: Expr| raw_bin(BinOp::And, value, Expr::Const(0xffff_ffff));
+    let digits = raw_bin(BinOp::And, r(2), Expr::Const(0x3fff));
+    let original = low(raw_bin(BinOp::Mul, digits.clone(), low(r(15))));
+    let rewritten = raw_bin(BinOp::Mul, digits, Expr::Const(0x147b));
+    let blocks = |set: u64, product: Expr| {
+        vec![
+            block(0, vec![assign(15, Expr::Const(set))]),
+            block(
+                1,
+                vec![
+                    assign(2, raw_bin(BinOp::Shr, product, Expr::Const(17))),
+                    Stmt::Brif {
+                        at: None,
+                        cond: Cond::Ne,
+                        lhs: r(2),
+                        rhs: Expr::Const(0),
+                        target: 1,
+                    },
+                ],
+            ),
+            block(2, vec![ret(r(2))]),
+        ]
+    };
+    let found = candidates(&application(
+        blocks(0x147b, original.clone()),
+        blocks(0x147b, rewritten.clone()),
+    ));
+    assert!(found.contains(&(r(15), Expr::Const(0x147b))), "{found:?}");
+    assert!(matches!(
+        verdict(
+            blocks(0x147b, original.clone()),
+            blocks(0x147b, rewritten.clone())
+        ),
+        Verdict::Proved
+    ));
+    assert!(not_proved(&verdict(
+        blocks(0x147c, original.clone()),
+        blocks(0x147c, rewritten)
+    )));
+    // A register still read where it was is not proposed.
+    let found = candidates(&application(
+        blocks(0x147b, original.clone()),
+        blocks(0x147b, low(original)),
+    ));
+    assert!(!found.contains(&(r(15), Expr::Const(0x147b))), "{found:?}");
+}
+
+#[test]
 fn a_reply_with_an_error_decides_nothing_and_leaves_the_next_reply_its_own() {
     if !crate::ir::smt::z3_available("solver replies") {
         return;

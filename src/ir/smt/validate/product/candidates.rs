@@ -75,6 +75,9 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
         }
     }
     let mut seen: BTreeSet<String> = found.iter().map(|pair| format!("{pair:?}")).collect();
+    // The registers a statement of the original reads and the statement in
+    // its place does not.
+    let mut replaced: BTreeSet<u16> = BTreeSet::new();
     for (old, new) in application.before.iter().zip(&application.after) {
         let paired: Vec<(&Stmt, &Stmt)> = if old.stmts.len() == new.stmts.len() {
             old.stmts.iter().zip(&new.stmts).collect()
@@ -85,6 +88,16 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
         };
         let mut written = (Written::default(), Written::default());
         for (old_stmt, new_stmt) in paired {
+            if old_stmt != new_stmt {
+                let read = |stmt: &Stmt| {
+                    let mut read = BTreeSet::new();
+                    for expr in expressions(stmt) {
+                        registers_read(expr, &mut read);
+                    }
+                    read
+                };
+                replaced.extend(read(old_stmt).difference(&read(new_stmt)));
+            }
             // Two assignments at one place may assign different registers,
             // as a renaming does: the registers may then correspond too.
             let assignments = match (old_stmt, new_stmt) {
@@ -148,6 +161,19 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             found.push(pair);
         }
     };
+    // A register no longer read where it was may hold a constant there, as
+    // when a constant takes its place: each constant it is assigned.
+    for block in &application.before {
+        for stmt in &block.stmts {
+            if let Stmt::Assign { dest, value, .. } = stmt
+                && dest.width == 64
+                && matches!(value, Expr::Const(_))
+                && replaced.contains(&dest.index)
+            {
+                push((Expr::reg(dest.index, 64), value.clone()));
+            }
+        }
+    }
     // An assignment one side has and the other lacks: its register on that
     // side may hold what its expression computes on the other.
     let mut copies: Vec<(u16, u16)> = Vec::new();
