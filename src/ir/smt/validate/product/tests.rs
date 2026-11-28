@@ -1017,7 +1017,7 @@ fn functions_are_compared_across_blocks_and_loops() {
     // A slot one side reaches below pushes in this block and an earlier one
     // and the other from where the function entered: the blocks agree on it
     // alone only knowing how far apart the two stack pointers start, which
-    // no single push's candidate says.
+    // the stack entries say, or the address put over the entry values.
     let pushed = |entries: [Vec<Option<i64>>; 2]| {
         let push = || assign(4, plus(4, -8));
         let mut application = application(
@@ -1044,7 +1044,19 @@ fn functions_are_compared_across_blocks_and_loops() {
             .is_none()
     };
     assert!(pushed([vec![Some(0), Some(-16)], vec![Some(0), Some(0)]]));
-    assert!(!pushed([Vec::new(), vec![Some(0), Some(0)]]));
+    assert!(pushed([Vec::new(), vec![Some(0), Some(0)]]));
+    // A slot at another distance is another slot.
+    let push = || assign(4, plus(4, -8));
+    assert!(not_proved(&verdict(
+        vec![
+            block(0, vec![push(), push(), br(1)]),
+            block(1, vec![push(), store(r(4), r(1)), ret(Expr::Const(0))]),
+        ],
+        vec![
+            block(0, vec![br(1)]),
+            block(1, vec![store(plus(4, -16), r(1)), ret(Expr::Const(0))]),
+        ],
+    )));
 
     // A value moved out of a register a call of unknown floating-point
     // arguments reads unnamed: the same call only when the register holds
@@ -1812,6 +1824,63 @@ fn a_register_replaced_by_a_constant_suggests_that_it_holds_the_constant() {
         blocks(0x147b, low(original)),
     ));
     assert!(!found.contains(&(r(15), Expr::Const(0x147b))), "{found:?}");
+}
+
+#[test]
+fn a_register_one_side_lacks_is_put_over_the_entry_values() {
+    // A loop counts in a register that holds a byte; the rewrite drops the
+    // copy that masks it and reads the counter itself.
+    let byte = |value: Expr| raw_bin(BinOp::And, value, Expr::Const(0xff));
+    let load = Expr::Load {
+        addr: Box::new(plus(4, 0x17)),
+        width: 1,
+        signed: false,
+    };
+    let scaled = |index: u16| raw_bin(BinOp::Shl, r(index), Expr::Const(4));
+    let blocks = |next: Expr, copied: bool| {
+        let mut body = vec![Stmt::Store {
+            at: None,
+            addr: plus(4, 0x17),
+            value: raw_bin(BinOp::Add, r(10), Expr::Const(1)),
+            width: 1,
+        }];
+        if copied {
+            body.push(assign(11, byte(r(10))));
+        }
+        body.push(store(plus(4, 0x20), scaled(if copied { 11 } else { 10 })));
+        body.push(assign(10, next));
+        body.push(Stmt::Brif {
+            at: None,
+            cond: Cond::Ne,
+            lhs: byte(r(10)),
+            rhs: Expr::Const(4),
+            target: 1,
+        });
+        vec![
+            block(0, vec![assign(10, Expr::Const(0))]),
+            block(1, body),
+            block(2, vec![ret(Expr::Const(0))]),
+        ]
+    };
+    let found = candidates(&application(
+        blocks(load.clone(), true),
+        blocks(load.clone(), false),
+    ));
+    assert!(found.contains(&(byte(r(10)), r(10))), "{found:?}");
+    assert!(matches!(
+        verdict(blocks(load.clone(), true), blocks(load, false)),
+        Verdict::Proved
+    ));
+    // A counter that may pass a byte is not the masked copy.
+    let wide = Expr::Load {
+        addr: Box::new(plus(4, 0x17)),
+        width: 4,
+        signed: false,
+    };
+    assert!(not_proved(&verdict(
+        blocks(wide.clone(), true),
+        blocks(wide, false)
+    )));
 }
 
 #[test]

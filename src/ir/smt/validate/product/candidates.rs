@@ -87,7 +87,27 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             old.into_iter().zip(new).collect()
         };
         let mut written = (Written::default(), Written::default());
+        // With statements one side lacks, the paired ones are not all of
+        // them: what each side has written counting the others too, which
+        // puts a register one of them assigns over the entry values.
+        let unpaired = old.stmts.len() != new.stmts.len();
+        let mut every = (Written::default(), Written::default());
+        let mut rest = (old.stmts.iter(), new.stmts.iter());
         for (old_stmt, new_stmt) in paired {
+            if unpaired {
+                for stmt in rest.0.by_ref() {
+                    if std::ptr::eq(stmt, old_stmt) {
+                        break;
+                    }
+                    every.0.record(stmt);
+                }
+                for stmt in rest.1.by_ref() {
+                    if std::ptr::eq(stmt, new_stmt) {
+                        break;
+                    }
+                    every.1.record(stmt);
+                }
+            }
             if old_stmt != new_stmt {
                 let read = |stmt: &Stmt| {
                     let mut read = BTreeSet::new();
@@ -119,6 +139,13 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
                             found.push(pair);
                         }
                     });
+                    if unpaired {
+                        differences(a, b, &every, &mut |pair| {
+                            if seen.insert(format!("{pair:?}")) {
+                                found.push(pair);
+                            }
+                        });
+                    }
                 }
             }
             // A narrow store keeps the low bits of what it stores, which
@@ -143,6 +170,10 @@ pub(super) fn candidates(application: &Application) -> Vec<Candidate> {
             }
             written.0.record(old_stmt);
             written.1.record(new_stmt);
+            if unpaired {
+                every.0.record(old_stmt);
+                every.1.record(new_stmt);
+            }
         }
     }
     // Registers a copy or a renaming joins, on the two sides.
